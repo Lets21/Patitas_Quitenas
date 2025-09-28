@@ -1,121 +1,78 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Search, Filter, Heart, MapPin, Calendar, Eye } from 'lucide-react';
-import { Card } from '../components/ui/Card';
-import { Button } from '../components/ui/Button';
-import { Badge } from '../components/ui/Badge';
-import { Input } from '../components/ui/Input';
-import type { Animal, FilterOptions } from '../types';
+// src/pages/CatalogPage.tsx
+import React, { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import { Search, Filter, Heart, MapPin, Calendar, Eye } from "lucide-react";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
+import { Input } from "@/components/ui/Input";
+import { getAnimals } from "@/lib/api"; // usa mock/API unificado
+import type { Animal } from "@/lib/api"; // tipo del nuevo modelo
 
-export const CatalogPage: React.FC = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filters, setFilters] = useState<FilterOptions>({});
+type LocalFilters = {
+  size?: Array<"small" | "medium" | "large">;
+  energy?: Array<"low" | "medium" | "high">;
+  q?: string;
+};
+
+const SIZE_OPTIONS: Array<"small" | "medium" | "large"> = ["small", "medium", "large"];
+const ENERGY_OPTIONS: Array<"low" | "medium" | "high"> = ["low", "medium", "high"];
+
+const sizeLabel = (s: Animal["size"]) =>
+  s === "small" ? "Pequeño" : s === "medium" ? "Mediano" : "Grande";
+
+const energyLabel = (e: Animal["energy"]) =>
+  e === "low" ? "Tranquilo" : e === "medium" ? "Activo" : "Muy activo";
+
+const ageBucket = (years: number) =>
+  years < 1 ? "Cachorro" : years < 3 ? "Joven" : years < 7 ? "Adulto" : "Senior";
+
+const CatalogPage: React.FC = () => {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filters, setFilters] = useState<LocalFilters>({});
   const [showFilters, setShowFilters] = useState(false);
 
-  // Mock data - would come from API
-  const animals: Animal[] = [
-    {
-      id: '1',
-      name: 'Luna',
-      photos: ['https://images.pexels.com/photos/1805164/pexels-photo-1805164.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&fit=crop'],
-      attributes: {
-        age: 2,
-        size: 'MEDIUM',
-        breed: 'Mestizo',
-        gender: 'FEMALE',
-        energy: 'MEDIUM',
-        coexistence: { children: true, cats: false, dogs: true }
-      },
-      clinicalSummary: 'Saludable, vacunada y esterilizada',
-      state: 'AVAILABLE',
-      foundationId: '1',
-      createdAt: '2025-01-01',
-      updatedAt: '2025-01-01'
-    },
-    {
-      id: '2', 
-      name: 'Max',
-      photos: ['https://images.pexels.com/photos/1390361/pexels-photo-1390361.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&fit=crop'],
-      attributes: {
-        age: 4,
-        size: 'LARGE',
-        breed: 'Labrador Mix',
-        gender: 'MALE',
-        energy: 'HIGH',
-        coexistence: { children: true, cats: true, dogs: true }
-      },
-      clinicalSummary: 'Muy saludable, requiere ejercicio diario',
-      state: 'AVAILABLE',
-      foundationId: '1',
-      createdAt: '2025-01-02',
-      updatedAt: '2025-01-02'
-    },
-    {
-      id: '3',
-      name: 'Bella',
-      photos: ['https://images.pexels.com/photos/1938126/pexels-photo-1938126.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&fit=crop'],
-      attributes: {
-        age: 1,
-        size: 'SMALL',
-        breed: 'Chihuahua Mix',
-        gender: 'FEMALE',
-        energy: 'LOW',
-        coexistence: { children: false, cats: true, dogs: false }
-      },
-      clinicalSummary: 'Muy tranquila, ideal para departamento',
-      state: 'AVAILABLE',
-      foundationId: '1',
-      createdAt: '2025-01-03',
-      updatedAt: '2025-01-03'
-    }
-  ];
+  // Lista base desde mock/API
+  const animals: Animal[] = getAnimals();
 
-  const getAgeLabel = (age: number) => {
-    if (age < 1) return 'Cachorro';
-    if (age < 3) return 'Joven';
-    if (age < 7) return 'Adulto';
-    return 'Senior';
+  // Filtro en memoria para UI rápida. Si quieres server-side, manda estos filtros a apiClient.getAnimals().
+  const filteredAnimals = useMemo(() => {
+    let list = [...animals];
+
+    if (searchTerm.trim()) {
+      const q = searchTerm.toLowerCase();
+      list = list.filter(
+        a => a.name.toLowerCase().includes(q) || a.breed.toLowerCase().includes(q)
+      );
+    }
+
+    if (filters.size?.length) {
+      list = list.filter(a => filters.size!.includes(a.size));
+    }
+
+    if (filters.energy?.length) {
+      list = list.filter(a => filters.energy!.includes(a.energy));
+    }
+
+    return list;
+  }, [animals, searchTerm, filters]);
+
+  const toggleFilter = <T extends string>(
+    key: keyof LocalFilters,
+    value: T
+  ) => {
+    setFilters(prev => {
+      const arr = (prev[key] as T[] | undefined) ?? [];
+      const exists = arr.includes(value);
+      const next = exists ? arr.filter(v => v !== value) : [...arr, value];
+      return { ...prev, [key]: next.length ? next : undefined };
+    });
   };
-
-  const getSizeLabel = (size: string) => {
-    const labels = {
-      SMALL: 'Pequeño',
-      MEDIUM: 'Mediano', 
-      LARGE: 'Grande'
-    };
-    return labels[size as keyof typeof labels] || size;
-  };
-
-  const getEnergyLabel = (energy: string) => {
-    const labels = {
-      LOW: 'Tranquilo',
-      MEDIUM: 'Moderado',
-      HIGH: 'Activo'
-    };
-    return labels[energy as keyof typeof labels] || energy;
-  };
-
-  const filteredAnimals = animals.filter(animal => {
-    if (searchTerm && !animal.name.toLowerCase().includes(searchTerm.toLowerCase()) && 
-        !animal.attributes.breed.toLowerCase().includes(searchTerm.toLowerCase())) {
-      return false;
-    }
-    
-    if (filters.size?.length && !filters.size.includes(animal.attributes.size)) {
-      return false;
-    }
-    
-    if (filters.energy?.length && !filters.energy.includes(animal.attributes.energy)) {
-      return false;
-    }
-    
-    return true;
-  });
 
   return (
     <div className="min-h-screen bg-surface-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
+        {/* Encabezado */}
         <div className="mb-8">
           <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
             Encuentra tu compañero perfecto
@@ -124,104 +81,76 @@ export const CatalogPage: React.FC = () => {
             {filteredAnimals.length} caninos esperando un hogar lleno de amor
           </p>
 
-          {/* Search and Filter Bar */}
+          {/* Search + Filtros */}
           <div className="flex flex-col md:flex-row gap-4 mb-6">
             <div className="flex-1">
               <Input
                 placeholder="Buscar por nombre o raza..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={e => setSearchTerm(e.target.value)}
                 className="w-full"
               />
             </div>
-            <Button
-              variant="outline"
-              onClick={() => setShowFilters(!showFilters)}
-              className="md:w-auto"
-            >
+            <Button variant="outline" onClick={() => setShowFilters(v => !v)} className="md:w-auto">
               <Filter className="h-4 w-4 mr-2" />
               Filtros
             </Button>
           </div>
 
-          {/* Filters Panel */}
+          {/* Panel de filtros */}
           {showFilters && (
             <Card className="mb-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Tamaño */}
                 <div>
                   <h3 className="font-semibold text-gray-900 mb-3">Tamaño</h3>
                   <div className="space-y-2">
-                    {['SMALL', 'MEDIUM', 'LARGE'].map(size => (
+                    {SIZE_OPTIONS.map(size => (
                       <label key={size} className="flex items-center">
                         <input
                           type="checkbox"
                           className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                          checked={filters.size?.includes(size) || false}
-                          onChange={(e) => {
-                            const newSizes = filters.size || [];
-                            if (e.target.checked) {
-                              setFilters({ ...filters, size: [...newSizes, size] });
-                            } else {
-                              setFilters({ ...filters, size: newSizes.filter(s => s !== size) });
-                            }
-                          }}
+                          checked={!!filters.size?.includes(size)}
+                          onChange={() => toggleFilter("size", size)}
                         />
-                        <span className="ml-2 text-sm text-gray-700">
-                          {getSizeLabel(size)}
-                        </span>
+                        <span className="ml-2 text-sm text-gray-700">{sizeLabel(size)}</span>
                       </label>
                     ))}
                   </div>
                 </div>
 
+                {/* Energía */}
                 <div>
                   <h3 className="font-semibold text-gray-900 mb-3">Energía</h3>
                   <div className="space-y-2">
-                    {['LOW', 'MEDIUM', 'HIGH'].map(energy => (
+                    {ENERGY_OPTIONS.map(energy => (
                       <label key={energy} className="flex items-center">
                         <input
                           type="checkbox"
                           className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                          checked={filters.energy?.includes(energy) || false}
-                          onChange={(e) => {
-                            const newEnergy = filters.energy || [];
-                            if (e.target.checked) {
-                              setFilters({ ...filters, energy: [...newEnergy, energy] });
-                            } else {
-                              setFilters({ ...filters, energy: newEnergy.filter(e => e !== energy) });
-                            }
-                          }}
+                          checked={!!filters.energy?.includes(energy)}
+                          onChange={() => toggleFilter("energy", energy)}
                         />
-                        <span className="ml-2 text-sm text-gray-700">
-                          {getEnergyLabel(energy)}
-                        </span>
+                        <span className="ml-2 text-sm text-gray-700">{energyLabel(energy)}</span>
                       </label>
                     ))}
                   </div>
                 </div>
 
+                {/* Convivencia (placeholder UI; con tu API lo conectamos) */}
                 <div>
                   <h3 className="font-semibold text-gray-900 mb-3">Convivencia</h3>
                   <div className="space-y-2">
                     <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                      />
+                      <input type="checkbox" className="rounded border-gray-300 text-primary-600 focus:ring-primary-500" disabled />
                       <span className="ml-2 text-sm text-gray-700">Con niños</span>
                     </label>
                     <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                      />
+                      <input type="checkbox" className="rounded border-gray-300 text-primary-600 focus:ring-primary-500" disabled />
                       <span className="ml-2 text-sm text-gray-700">Con gatos</span>
                     </label>
                     <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                      />
+                      <input type="checkbox" className="rounded border-gray-300 text-primary-600 focus:ring-primary-500" disabled />
                       <span className="ml-2 text-sm text-gray-700">Con otros perros</span>
                     </label>
                   </div>
@@ -231,7 +160,7 @@ export const CatalogPage: React.FC = () => {
           )}
         </div>
 
-        {/* Animals Grid */}
+        {/* Grid de animales */}
         {filteredAnimals.length === 0 ? (
           <Card className="text-center py-16">
             <div className="text-gray-400 mb-4">
@@ -243,10 +172,10 @@ export const CatalogPage: React.FC = () => {
             <p className="text-gray-600 mb-4">
               Intenta ajustar tus filtros o términos de búsqueda
             </p>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => {
-                setSearchTerm('');
+                setSearchTerm("");
                 setFilters({});
               }}
             >
@@ -255,7 +184,7 @@ export const CatalogPage: React.FC = () => {
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredAnimals.map((animal) => (
+            {filteredAnimals.map(animal => (
               <Card key={animal.id} className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
                 <div className="aspect-video overflow-hidden rounded-t-2xl">
                   <img
@@ -264,49 +193,43 @@ export const CatalogPage: React.FC = () => {
                     className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                   />
                 </div>
-                
+
                 <div className="p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div>
-                      <h3 className="text-xl font-semibold text-gray-900 mb-1">
-                        {animal.name}
-                      </h3>
-                      <p className="text-gray-600">{animal.attributes.breed}</p>
+                      <h3 className="text-xl font-semibold text-gray-900 mb-1">{animal.name}</h3>
+                      <p className="text-gray-600">{animal.breed}</p>
                     </div>
                     <Badge variant="success">
-                      Disponible
+                      {animal.status === "available" ? "Disponible" : animal.status === "reserved" ? "Reservado" : "Adoptado"}
                     </Badge>
                   </div>
 
                   <div className="space-y-2 mb-4">
                     <div className="flex items-center text-sm text-gray-600">
                       <Calendar className="h-4 w-4 mr-2 text-gray-400" />
-                      {animal.attributes.age} {animal.attributes.age === 1 ? 'año' : 'años'} • {getAgeLabel(animal.attributes.age)}
+                      {animal.age} {animal.age === 1 ? "año" : "años"} • {ageBucket(animal.age)}
                     </div>
                     <div className="flex items-center text-sm text-gray-600">
                       <MapPin className="h-4 w-4 mr-2 text-gray-400" />
-                      {getSizeLabel(animal.attributes.size)} • {getEnergyLabel(animal.attributes.energy)}
+                      {sizeLabel(animal.size)} • {energyLabel(animal.energy)}
                     </div>
                   </div>
 
                   <div className="flex flex-wrap gap-1 mb-4">
-                    {animal.attributes.coexistence.children && (
-                      <Badge size="sm">Con niños</Badge>
-                    )}
-                    {animal.attributes.coexistence.cats && (
-                      <Badge size="sm">Con gatos</Badge>
-                    )}
-                    {animal.attributes.coexistence.dogs && (
-                      <Badge size="sm">Con perros</Badge>
-                    )}
+                    {animal.goodWith?.children && <Badge size="sm">Con niños</Badge>}
+                    {animal.goodWith?.cats && <Badge size="sm">Con gatos</Badge>}
+                    {animal.goodWith?.dogs && <Badge size="sm">Con perros</Badge>}
                   </div>
 
                   <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                    {animal.clinicalSummary}
+                    {/* breve resumen con salud/raza */}
+                    {animal.breed} • {animal.health.vaccinated ? "Vacunado" : "No vacunado"}
+                    {animal.health.sterilized ? " • Esterilizado" : ""}
                   </p>
 
                   <div className="flex gap-2">
-                    <Link to={`/animals/${animal.id}`} className="flex-1">
+                    <Link to={`/adoptar/${animal.id}`} className="flex-1">
                       <Button variant="outline" size="sm" className="w-full">
                         <Eye className="h-4 w-4 mr-2" />
                         Ver más
@@ -328,4 +251,5 @@ export const CatalogPage: React.FC = () => {
     </div>
   );
 };
+
 export default CatalogPage;
