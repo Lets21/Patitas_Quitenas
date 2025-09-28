@@ -57,7 +57,7 @@ export const HomePage: React.FC = () => {
                 Un proceso transparente, seguro y respaldado por profesionales.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link to="/catalog">
+                <Link to="/adoptar">
                   <Button size="lg" className="w-full sm:w-auto">
                     <Heart className="h-5 w-5 mr-2 fill-current" />
                     Ver Animales
@@ -211,3 +211,4 @@ export const HomePage: React.FC = () => {
     </div>
   );
 };
+export default HomePage;
