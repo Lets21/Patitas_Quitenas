@@ -9,8 +9,10 @@ import type {
 } from "../types";
 
 // 1) Config
+// src/lib/api.ts
 const API_BASE =
-  (import.meta as any).env?.VITE_API_BASE_URL?.replace(/\/$/, "") || "/api/v1";
+  import.meta.env.VITE_API_BASE_URL?.trim() ||
+  "http://localhost:4000/api/v1";  // fallback sensato en dev
 
 // Activa mocks en dev o si quieres forzar con VITE_USE_MOCK=true
 const USE_MOCK =

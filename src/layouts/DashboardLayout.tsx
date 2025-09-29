@@ -1,24 +1,45 @@
-import { Outlet, NavLink } from "react-router-dom";
-import Header from "@/components/layout/Header";
+// src/layouts/DashboardLayout.tsx (extracto)
+import { NavLink, Outlet } from "react-router-dom";
+import { useAuthStore } from "@/lib/auth";
+
+type Role = "ADMIN" | "ADOPTANTE" | "FUNDACION" | "CLINICA";
+type Item = { label: string; to: string; roles: Role[] };
+
+const ITEMS: Item[] = [
+  { label: "Fundación",   to: "/fundacion",   roles: ["FUNDACION"] },
+  { label: "Clínica",     to: "/clinica",     roles: ["CLINICA"] },
+  { label: "Analítica",   to: "/analitica",   roles: ["ADMIN","FUNDACION","CLINICA"] },
+  { label: "Admin",       to: "/admin",       roles: ["ADMIN"] },
+  { label: "Notificaciones", to: "/notificaciones", roles: ["ADMIN","FUNDACION","CLINICA","ADOPTANTE"] },
+];
 
 export default function DashboardLayout() {
+  const { user } = useAuthStore();
+  const role = user?.role as Role | undefined;
+
+  const menu = ITEMS.filter(i => (role ? i.roles.includes(role) : false));
+
   return (
-    <div className="min-h-dvh flex flex-col">
-      <Header />
-      <div className="grid grid-cols-[260px_1fr] flex-1">
-        <aside className="border-r bg-white p-4 space-y-2">
-          <nav className="flex flex-col gap-2 text-sm">
-            <NavLink to="/fundacion">Fundación</NavLink>
-            <NavLink to="/clinica">Clínica</NavLink>
-            <NavLink to="/analitica">Analítica</NavLink>
-            <NavLink to="/admin">Admin</NavLink>
-            <NavLink to="/notificaciones">Notificaciones</NavLink>
-          </nav>
-        </aside>
-        <main className="p-6 bg-[#F8F7F5]">
-          <Outlet />
-        </main>
-      </div>
+    <div className="flex">
+      <aside className="w-64 p-4">
+        <nav className="space-y-2">
+          {menu.map(item => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              className={({ isActive }) =>
+                `block rounded px-3 py-2 ${isActive ? "bg-primary-50 text-primary-700" : "hover:bg-gray-100"}`
+              }
+            >
+              {item.label}
+            </NavLink>
+          ))}
+        </nav>
+      </aside>
+
+      <main className="flex-1">
+        <Outlet />
+      </main>
     </div>
   );
 }

@@ -1,68 +1,39 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import type { User } from '../types';
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
-interface AuthState {
+type Role = "ADMIN" | "ADOPTANTE" | "FUNDACION" | "CLINICA";
+type User = {
+  _id?: string; id?: string;
+  email: string;
+  role: Role;
+  profile: { firstName: string; lastName: string; phone?: string; address?: string };
+  status: "ACTIVE" | "SUSPENDED";
+};
+
+type AuthState = {
   user: User | null;
   token: string | null;
-  isAuthenticated: boolean;
   login: (user: User, token: string) => void;
   logout: () => void;
-  updateProfile: (profile: Partial<User['profile']>) => void;
-}
+};
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       user: null,
       token: null,
-      isAuthenticated: false,
-      login: (user, token) => {
-        set({ user, token, isAuthenticated: true });
-      },
-      logout: () => {
-        set({ user: null, token: null, isAuthenticated: false });
-      },
-      updateProfile: (profileUpdate) => {
-        const { user } = get();
-        if (user) {
-          set({
-            user: {
-              ...user,
-              profile: { ...user.profile, ...profileUpdate }
-            }
-          });
-        }
-      }
+      login: (user, token) => set({ user, token }),
+      logout: () => set({ user: null, token: null }),
     }),
-    {
-      name: 'auth-storage'
-    }
+    { name: "auth-storage" }
   )
 );
 
-export const hasRole = (allowedRoles: string[]) => {
-  const { user } = useAuthStore.getState();
-  return user && allowedRoles.includes(user.role);
-};
-
-export const requireAuth = () => {
-  const { isAuthenticated } = useAuthStore.getState();
-  return isAuthenticated;
-};
-
-// Función para obtener la ruta de redirección según el rol
-export const getRedirectPath = (role: string) => {
+export function getRedirectPath(role: "ADMIN"|"ADOPTANTE"|"FUNDACION"|"CLINICA") {
   switch (role) {
-    case 'ADOPTANTE':
-      return '/'; // Página principal con catálogo
-    case 'FUNDACION':
-      return '/fundacion';
-    case 'CLINICA':
-      return '/clinica';
-    case 'ADMIN':
-      return '/admin';
-    default:
-      return '/';
+    case "CLINICA": return "/clinica";
+    case "FUNDACION": return "/fundacion";
+    case "ADMIN": return "/admin";
+    default: return "/adoptar";
   }
-};
+}

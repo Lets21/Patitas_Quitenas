@@ -8,7 +8,7 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card } from '../components/ui/Card';
 import toast from 'react-hot-toast';
-
+import { apiClient } from "@/lib/api";
 const registerSchema = z.object({
   email: z.string().email('Email inválido'),
   password: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres'),
@@ -46,21 +46,36 @@ export const RegisterPage: React.FC = () => {
 
   const selectedRole = watch('role');
 
-  const onSubmit = async (data: RegisterForm) => {
-    setLoading(true);
-    
-    try {
-      // Mock registration - replace with actual API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      toast.success('Registro exitoso. Por favor verifica tu email.');
-      navigate('/login');
-    } catch (error) {
-      toast.error('Error al registrar. Intenta nuevamente.');
-    } finally {
-      setLoading(false);
-    }
-  };
+
+const onSubmit = async (data: RegisterForm) => {
+  setLoading(true);
+  try {
+    const payload = {
+      email: data.email,
+      password: data.password,
+      role: data.role, // "ADOPTANTE" | "FUNDACION" | "CLINICA"
+      profile: {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        phone: data.phone,
+        address: data.address,
+      },
+      foundationName: data.role === "FUNDACION" ? data.firstName + " " + data.lastName : undefined,
+      clinicName: data.role === "CLINICA" ? data.firstName + " " + data.lastName : undefined,
+    };
+
+    const res = await apiClient.register(payload);
+    if ((res as any).error) throw new Error((res as any).error);
+
+    toast.success("Registro exitoso. Ahora puedes iniciar sesión.");
+    navigate("/login");
+  } catch (error: any) {
+    toast.error(error?.message || "Error al registrar.");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const getRoleDescription = (role: string) => {
     switch (role) {
@@ -235,11 +250,11 @@ export const RegisterPage: React.FC = () => {
               <div className="ml-3">
                 <p className="text-sm text-gray-700">
                   Acepto los{' '}
-                  <Link to="/terms" className="text-primary-600 hover:text-primary-500">
+                  <Link to="/terminos" className="text-primary-600 hover:text-primary-500">
                     términos y condiciones
                   </Link>
                   {' '}y la{' '}
-                  <Link to="/privacy" className="text-primary-600 hover:text-primary-500">
+                  <Link to="/privacidad" className="text-primary-600 hover:text-primary-500">
                     política de privacidad
                   </Link>
                 </p>

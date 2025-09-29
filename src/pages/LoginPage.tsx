@@ -9,6 +9,7 @@ import { Input } from '../components/ui/Input';
 import { Card } from '../components/ui/Card';
 import { useAuthStore, getRedirectPath } from '../lib/auth';
 import toast from 'react-hot-toast';
+import { apiClient } from "@/lib/api";
 
 const loginSchema = z.object({
   email: z.string().email('Email inválido'),
@@ -36,49 +37,22 @@ export const LoginPage: React.FC = () => {
   });
 
   const onSubmit = async (data: LoginForm) => {
-    setLoading(true);
-    
-    try {
-      // Detectar tipo de usuario por email
-      let userRole: 'ADOPTANTE' | 'FUNDACION' | 'CLINICA' | 'ADMIN' = 'ADOPTANTE';
-      let userName = 'Usuario';
-      
-      if (data.email.includes('fundacion')) {
-        userRole = 'FUNDACION';
-        userName = 'Fundación PAE';
-      } else if (data.email.includes('clinica')) {
-        userRole = 'CLINICA';
-        userName = 'Dr. María Sánchez';
-      } else if (data.email.includes('admin')) {
-        userRole = 'ADMIN';
-        userName = 'Administrador';
-      }
+  setLoading(true);
+  try {
+    const res = await apiClient.login(data.email, data.password);
+    if ((res as any).error) throw new Error((res as any).error);
 
-      const mockUser = {
-        id: '1',
-        email: data.email,
-        role: userRole,
-        profile: {
-          firstName: userName,
-          lastName: 'Demo'
-        },
-        status: 'ACTIVE' as const,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-
-      login(mockUser, 'mock-jwt-token');
-      toast.success(`¡Bienvenido ${userName}!`);
-      
-      // Redirigir según el rol
-      const redirectPath = getRedirectPath(userRole);
-      navigate(redirectPath);
-    } catch (error) {
-      toast.error('Error al iniciar sesión. Verifica tus credenciales.');
-    } finally {
-      setLoading(false);
-    }
-  };
+    // la API devuelve { user, token }
+    const { user, token } = res as any;
+    login(user, token);
+    toast.success(`¡Bienvenido ${user?.profile?.firstName || "Usuario"}!`);
+    navigate(getRedirectPath(user.role));
+  } catch (error: any) {
+    toast.error(error?.message || "Error al iniciar sesión.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="min-h-screen bg-surface-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
@@ -141,7 +115,7 @@ export const LoginPage: React.FC = () => {
               </label>
 
               <Link
-                to="/forgot-password"
+                to="/olvide"
                 className="text-sm text-primary-600 hover:text-primary-500"
               >
                 ¿Olvidaste tu contraseña?
@@ -177,10 +151,10 @@ export const LoginPage: React.FC = () => {
               Credenciales de demostración:
             </p>
             <div className="text-xs text-blue-700 space-y-1">
-              <p><strong>Adoptante:</strong> adoptante@demo.com / demo123</p>
-              <p><strong>Fundación:</strong> fundacion@demo.com / demo123</p>
-              <p><strong>Clínica:</strong> clinica@demo.com / demo123</p>
-              <p><strong>Admin:</strong> admin@demo.com / demo123</p>
+              <p><strong>Adoptante:</strong> adoptante@demo.com / demo123456</p>
+              <p><strong>Fundación:</strong> fundacion@demo.com / demo123456</p>
+              <p><strong>Clínica:</strong> clinica@demo.com / demo123456</p>
+              <p><strong>Admin:</strong> admin@demo.com / demo123456</p>
             </div>
             <p className="text-xs text-blue-600 mt-2">
               💡 Cada usuario será redirigido a su dashboard correspondiente

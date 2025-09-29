@@ -1,52 +1,43 @@
-import React from 'react';
-import { clsx } from 'clsx';
 
-interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+import { clsx } from 'clsx';
+import * as React from "react";
+
+
+type InputProps = React.InputHTMLAttributes<HTMLInputElement> & {
   label?: string;
   error?: string;
-  helperText?: string;
-}
-
-export const Input: React.FC<InputProps> = ({
-  label,
-  error,
-  helperText,
-  className,
-  id,
-  ...props
-}) => {
-  const inputId = id || `input-${Math.random().toString(36).substr(2, 9)}`;
-
-  return (
-    <div className="w-full">
-      {label && (
-        <label
-          htmlFor={inputId}
-          className="block text-sm font-medium text-gray-700 mb-1"
-        >
-          {label}
-        </label>
-      )}
-      <input
-        id={inputId}
-        className={clsx(
-          'w-full px-4 py-2 border rounded-2xl shadow-sm transition-colors duration-200',
-          'focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent',
-          error
-            ? 'border-red-300 bg-red-50'
-            : 'border-gray-300 hover:border-gray-400 focus:border-primary-500',
-          className
-        )}
-        {...props}
-      />
-      {error && (
-        <p className="mt-1 text-sm text-red-600" role="alert">
-          {error}
-        </p>
-      )}
-      {helperText && !error && (
-        <p className="mt-1 text-sm text-gray-500">{helperText}</p>
-      )}
-    </div>
-  );
 };
+
+export const Input = React.forwardRef<HTMLInputElement, InputProps>(
+  ({ label, error, className = "", id, name, ...props }, ref) => {
+    const inputId = id || name; // útil para label htmlFor
+    return (
+      <div className="w-full">
+        {label && (
+          <label
+            htmlFor={inputId}
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
+            {label}
+          </label>
+        )}
+
+        <input
+          id={inputId}
+          name={name}
+          ref={ref}
+          {...props}
+          className={[
+            "w-full rounded-xl border px-3 py-2 outline-none",
+            "border-gray-300 focus:ring-2 focus:ring-primary-200 focus:border-primary-500",
+            error ? "border-red-500 focus:ring-red-200 focus:border-red-500" : "",
+            className,
+          ].join(" ")}
+        />
+
+        {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
+      </div>
+    );
+  }
+);
+Input.displayName = "Input";
