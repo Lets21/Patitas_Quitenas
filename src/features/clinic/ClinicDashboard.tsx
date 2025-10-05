@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
-import { Search, Filter, FileText, Stethoscope, User, CheckCircle, AlertTriangle, Clock } from 'lucide-react';
+import { useState } from 'react';
+import { Search, Filter, FileText, Stethoscope, User, CheckCircle, AlertTriangle, Clock, BarChart3, Bell } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Input } from '@/components/ui/Input';
+import { useNavigate } from 'react-router-dom';
 
 function ClinicDashboard() {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('todos');
 
@@ -87,34 +89,71 @@ function ClinicDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-3">
-              <div className="bg-green-500 p-2 rounded-xl">
-                <span className="text-white font-bold text-lg">?</span>
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">AdoptaConCausa</h1>
-                <p className="text-sm text-gray-600">Panel Clínica Veterinaria UDLA</p>
-              </div>
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Sidebar */}
+      <div className="w-64 bg-white shadow-sm border-r flex flex-col">
+        {/* Header del Sidebar */}
+        <div className="p-6 border-b">
+          <div className="flex items-center space-x-3">
+            <div className="bg-green-500 p-2 rounded-xl">
+              <span className="text-white font-bold text-lg">?</span>
             </div>
-            <div className="flex items-center space-x-4">
-              <div className="text-right">
-                <p className="text-sm font-medium text-gray-900">Dr. María Sánchez</p>
-                <p className="text-xs text-gray-500">Veterinaria Principal</p>
-              </div>
-              <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
-                <span className="text-white font-bold text-sm">MS</span>
-              </div>
+            <div>
+              <h1 className="text-lg font-bold text-gray-900">AdoptaConCausa</h1>
+              <p className="text-sm text-gray-600">Panel Clínica Veterinaria UDLA</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Navigation */}
+        <nav className="flex-1 p-4">
+          <div className="space-y-2">
+            {/* Solo mostrar Analítica y Notificaciones para usuarios CLINICA */}
+            <button 
+              onClick={() => navigate('/analitica')}
+              className="w-full flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
+            >
+              <BarChart3 className="w-5 h-5 mr-3 text-gray-400" />
+              Analítica
+            </button>
+            
+            <button 
+              onClick={() => navigate('/notificaciones')}
+              className="w-full flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
+            >
+              <Bell className="w-5 h-5 mr-3 text-gray-400" />
+              Notificaciones
+            </button>
+          </div>
+        </nav>
+
+        {/* User Info */}
+        <div className="p-4 border-t">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
+              <span className="text-white font-bold text-sm">MS</span>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-900">Dr. María Sánchez</p>
+              <p className="text-xs text-gray-500">Veterinaria Principal</p>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Main Content */}
+      <div className="flex-1">
+        {/* Header */}
+        <div className="bg-white border-b border-gray-200 px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Panel Clínica Veterinaria</h1>
+              <p className="text-sm text-gray-600">Gestión de fichas clínicas y evaluaciones</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-6">
         {/* Navigation Tabs */}
         <div className="border-b border-gray-200 mb-8">
           <nav className="flex space-x-8">
@@ -201,6 +240,7 @@ function ClinicDashboard() {
               </Card>
             ))}
           </div>
+        </div>
         </div>
       </div>
     </div>

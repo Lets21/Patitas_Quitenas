@@ -1,6 +1,5 @@
 // src/lib/api.ts
 import type {
-  ApiResponse,
   User,
   Animal,
   Application,
@@ -8,156 +7,166 @@ import type {
   FilterOptions,
 } from "../types";
 
-// 1) Config
-// src/lib/api.ts
+/**
+ * =======================
+ * Config
+ * =======================
+ */
 const API_BASE =
-  import.meta.env.VITE_API_BASE_URL?.trim() ||
-  "http://localhost:4000/api/v1";  // fallback sensato en dev
+  import.meta.env.VITE_API_BASE_URL?.trim() || "http://localhost:4000/api/v1";
 
-// Activa mocks en dev o si quieres forzar con VITE_USE_MOCK=true
-const USE_MOCK =
-  (import.meta as any).env?.VITE_USE_MOCK === "true" ||
-  (import.meta as any).env?.MODE === "development";
+// Entra a mocks sólo si lo fuerzas con VITE_USE_MOCK=true
+const USE_MOCK = String((import.meta as any).env?.VITE_USE_MOCK) === "true";
 
-// 2) Mock data mínimo para que catálogo y detalle respiren sin backend
+/**
+ * =======================
+ * Mocks compatibles (opcionales)
+ * =======================
+ */
 const MOCK_ANIMALS: Animal[] = [
   {
-    id: "luna",
+    // si tu tipo Animal tiene _id en vez de id, puedes poner _id: "1"
+    // yo incluyo ambos para que no truene en ningún sitio
+    // y abajo el adaptador prioriza id.
+    _id: "a1",
+    id: "a1",
     name: "Luna",
-    breed: "Mestizo",
-    age: 2,
-    size: "medium",
-    energy: "medium",
-    status: "available",
-    foundation: { name: "Fundación PAE" } as any,
-    description:
-      "Luna es una perrita muy inteligente y leal. Ideal para familias que buscan una compañera juguetona.",
     photos: [
-      "https://images.unsplash.com/photo-1552053831-71594a27632d?w=800&h=600&fit=crop&crop=face",
+      "https://images.pexels.com/photos/1805164/pexels-photo-1805164.jpeg?auto=compress&cs=tinysrgb&w=800&h=600&fit=crop",
     ],
-    goodWith: { children: true, dogs: true, cats: true } as any,
-    health: {
-      vaccinated: true,
-      sterilized: true,
-      dewormed: true,
-      lastCheckup: "2025-06-10",
-    } as any,
-    createdAt: "2024-12-31",
-  } as Animal,
+    attributes: {
+      age: 2,
+      size: "MEDIUM",
+      breed: "Mestizo",
+      gender: "FEMALE",
+      energy: "MEDIUM",
+      coexistence: { children: true, cats: false, dogs: true },
+    },
+    clinicalSummary: "Saludable, vacunada y esterilizada",
+    state: "AVAILABLE",
+    foundationId: "fundacion-demo",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
   {
-    id: "max",
+    _id: "a2",
+    id: "a2",
     name: "Max",
-    breed: "Labrador Mix",
-    age: 4,
-    size: "large",
-    energy: "high",
-    status: "available",
-    foundation: { name: "Fundación PAE" } as any,
-    description:
-      "Max es un perro guardián muy leal y protector. Necesita una familia activa.",
     photos: [
-      "https://images.pexels.com/photos/59523/pexels-photo-59523.jpeg?auto=compress&cs=tinysrgb&w=1200",
+      "https://images.pexels.com/photos/1390361/pexels-photo-1390361.jpeg?auto=compress&cs=tinysrgb&w=800&h=600&fit=crop",
     ],
-    goodWith: { children: true, dogs: false, cats: true } as any,
-    health: {
-      vaccinated: true,
-      sterilized: true,
-      dewormed: true,
-      lastCheckup: "2025-05-18",
-    } as any,
-    createdAt: "2024-12-31",
-  } as Animal,
+    attributes: {
+      age: 4,
+      size: "LARGE",
+      breed: "Labrador Mix",
+      gender: "MALE",
+      energy: "HIGH",
+      coexistence: { children: true, cats: true, dogs: true },
+    },
+    clinicalSummary: "Muy saludable, requiere ejercicio diario",
+    state: "AVAILABLE",
+    foundationId: "fundacion-demo",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
   {
-    id: "bella",
+    _id: "a3",
+    id: "a3",
     name: "Bella",
-    breed: "Chihuahua Mix",
-    age: 1,
-    size: "small",
-    energy: "low",
-    status: "available",
-    foundation: { name: "Fundación PAE" } as any,
-    description:
-      "Bella es una cachorra dulce y pequeña. Perfecta para apartamentos y espacios tranquilos.",
     photos: [
-      "https://images.pexels.com/photos/1108099/pexels-photo-1108099.jpeg?auto=compress&cs=tinysrgb&w=1200",
+      "https://images.pexels.com/photos/1938126/pexels-photo-1938126.jpeg?auto=compress&cs=tinysrgb&w=800&h=600&fit=crop",
     ],
-    goodWith: { children: false, dogs: true, cats: true } as any,
-    health: {
-      vaccinated: true,
-      sterilized: false,
-      dewormed: true,
-      lastCheckup: "2025-04-02",
-    } as any,
-    createdAt: "2025-01-15",
-  } as Animal,
+    attributes: {
+      age: 1,
+      size: "SMALL",
+      breed: "Chihuahua Mix",
+      gender: "FEMALE",
+      energy: "LOW",
+      coexistence: { children: false, cats: true, dogs: false },
+    },
+    clinicalSummary: "Muy tranquila, ideal para departamento",
+    state: "AVAILABLE",
+    foundationId: "fundacion-demo",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
 ];
 
-function sleep(ms: number) {
-  return new Promise((r) => setTimeout(r, ms));
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * =======================
+ * Adaptadores/Helpers
+ * =======================
+ */
+
+// El backend devuelve _id; en el front preferimos id.
+// Esta función NO cambia el resto de la estructura.
+function mapAnimal(dto: any): Animal {
+  return {
+    ...dto,
+    id: dto.id ?? dto._id, // preferimos id si ya viene, si no, usamos _id
+  };
 }
 
-// 3) Cliente con fallback a mock
+/**
+ * request<T> — devuelve siempre T “plano”
+ * Lanza Error si la respuesta no es OK.
+ */
+async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  const token = JSON.parse(localStorage.getItem("auth-storage") || "{}")?.state?.token;
+
+  const res = await fetch(`${API_BASE}${endpoint}`, {
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...options.headers,
+    },
+    ...options,
+  });
+
+  let data: any = null;
+  try {
+    data = await res.json();
+  } catch {
+    // podría ser 204 No Content; lo dejamos como null
+  }
+
+  if (!res.ok) {
+    const msg = (data && (data.error || data.message)) || "Request failed";
+    throw new Error(msg);
+  }
+
+  return data as T;
+}
+
+/**
+ * =======================
+ * ApiClient
+ * =======================
+ */
 class ApiClient {
-  private getAuthHeaders() {
-    const token = JSON.parse(localStorage.getItem("auth-storage") || "{}")?.state
-      ?.token;
-    return token ? { Authorization: `Bearer ${token}` } : {};
-  }
-
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<ApiResponse<T>> {
-    try {
-      const res = await fetch(`${API_BASE}${endpoint}`, {
-        headers: {
-          "Content-Type": "application/json",
-          ...this.getAuthHeaders(),
-          ...options.headers,
-        },
-        ...options,
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data?.error || "Request failed");
-      }
-      return data;
-    } catch (err) {
-      return {
-        error:
-          err instanceof Error ? err.message : "Unknown error calling API endpoint",
-      };
-    }
-  }
-
   // ===== Auth =====
   async login(email: string, password: string) {
-    return this.request<{ user: User; token: string }>("/auth/login", {
+    return request<{ user: User; token: string }>("/auth/login", {
       method: "POST",
       body: JSON.stringify({ email, password }),
     });
   }
 
-  async register(data: {
-    email: string;
-    password: string;
-    role: string;
-    profile: any;
-  }) {
-    return this.request<{ user: User }>("/auth/register", {
+  async register(data: { email: string; password: string; role: string; profile: any }) {
+    return request<{ user: User }>("/auth/register", {
       method: "POST",
       body: JSON.stringify(data),
     });
   }
 
   async getProfile() {
-    return this.request<User>("/users/me");
+    return request<User>("/users/me");
   }
 
   async updateProfile(profile: Partial<User["profile"]>) {
-    return this.request<User>("/users/me", {
+    return request<User>("/users/me", {
       method: "PATCH",
       body: JSON.stringify({ profile }),
     });
@@ -165,104 +174,99 @@ class ApiClient {
 
   // ===== Animals =====
   async getAnimals(filters?: FilterOptions) {
-    // Modo MOCK
     if (USE_MOCK) {
       await sleep(250);
+      // filtrado muy básico opcional
       let list = [...MOCK_ANIMALS];
-
       if (filters) {
-        const { size, energy, status, q } = filters as any;
-        if (size) list = list.filter((a) => a.size === size);
-        if (energy) list = list.filter((a) => a.energy === energy);
-        if (status) list = list.filter((a) => a.status === status);
-        if (q) {
-          const s = String(q).toLowerCase();
+        if (filters.size?.length) {
+          list = list.filter((a) => (filters.size as string[]).includes(a.attributes.size));
+        }
+        if (filters.energy?.length) {
+          list = list.filter((a) => (filters.energy as string[]).includes(a.attributes.energy));
+        }
+        if ((filters as any).q) {
+          const q = String((filters as any).q).toLowerCase();
           list = list.filter(
             (a) =>
-              a.name.toLowerCase().includes(s) ||
-              a.breed.toLowerCase().includes(s)
+              a.name.toLowerCase().includes(q) ||
+              a.attributes.breed.toLowerCase().includes(q)
           );
         }
       }
-
-      return {
-        animals: list,
-        total: list.length,
-      } as unknown as ApiResponse<{ animals: Animal[]; total: number }>;
+      return { animals: list, total: list.length };
     }
 
-    // API real
     const params = new URLSearchParams();
     if (filters) {
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value === undefined || value === null || value === "") return;
-        if (Array.isArray(value)) {
-          value.forEach((v) => params.append(key, String(v)));
-        } else {
-          params.set(key, String(value));
-        }
+      Object.entries(filters).forEach(([k, v]) => {
+        if (v === undefined || v === null || v === "") return;
+        if (Array.isArray(v)) v.forEach((x) => params.append(k, String(x)));
+        else params.set(k, String(v));
       });
     }
     const qs = params.toString();
-    return this.request<{ animals: Animal[]; total: number }>(
+    const data = await request<{ animals: any[]; total: number }>(
       `/animals${qs ? `?${qs}` : ""}`
     );
+    return {
+      animals: data.animals.map(mapAnimal),
+      total: data.total,
+    } as { animals: Animal[]; total: number };
   }
 
   async getAnimal(id: string) {
     if (USE_MOCK) {
-      await sleep(200);
-      const found = MOCK_ANIMALS.find((a) => a.id === id);
-      if (!found)
-        return { error: "Animal not found" } as ApiResponse<Animal>;
-      return found as unknown as ApiResponse<Animal>;
+      await sleep(150);
+      const found = MOCK_ANIMALS.find((a) => (a.id ?? a._id) === id);
+      if (!found) throw new Error("Animal no encontrado");
+      return found;
     }
-    return this.request<Animal>(`/animals/${id}`);
+    const dto = await request<any>(`/animals/${id}`);
+    return mapAnimal(dto);
   }
 
-  // Helpers locales que usamos en la UI
-  getAnimalByIdLocal(id: string) {
-    return MOCK_ANIMALS.find((a) => a.id === id);
-  }
-  getAnimalsLocal() {
-    return MOCK_ANIMALS;
-  }
-
-  async createAnimal(data: Partial<Animal>) {
-    return this.request<Animal>("/animals", {
+  async createAnimal(payload: Partial<Animal>) {
+    const dto = await request<any>("/animals", {
       method: "POST",
-      body: JSON.stringify(data),
+      body: JSON.stringify(payload),
     });
+    return mapAnimal(dto);
   }
 
-  async updateAnimal(id: string, data: Partial<Animal>) {
-    return this.request<Animal>(`/animals/${id}`, {
+  async updateAnimal(id: string, payload: Partial<Animal>) {
+    const dto = await request<any>(`/animals/${id}`, {
       method: "PATCH",
-      body: JSON.stringify(data),
+      body: JSON.stringify(payload),
     });
+    return mapAnimal(dto);
+  }
+
+  async deleteAnimal(id: string) {
+    await request<void>(`/animals/${id}`, { method: "DELETE" });
   }
 
   // ===== Applications =====
   async createApplication(data: { animalId: string; form: any }) {
-    return this.request<Application>("/applications", {
+    return request<Application>("/applications", {
       method: "POST",
       body: JSON.stringify(data),
     });
   }
 
   async getMyApplications() {
-    return this.request<Application[]>("/applications/mine");
+    return request<Application[]>("/applications/mine");
   }
 
   async getApplications(status?: string) {
     const params = status ? `?status=${status}` : "";
-    return this.request<{ applications: Application[]; total: number }>(
+    return request<{ applications: Application[]; total: number }>(
       `/applications${params}`
     );
   }
 
   async updateApplicationStatus(id: string, status: string, notes?: string) {
-    return this.request<Application>(`/applications/${id}`, {
+    return request<Application>(`/applications/${id}`, {
       method: "PATCH",
       body: JSON.stringify({ status, notes }),
     });
@@ -270,30 +274,34 @@ class ApiClient {
 
   // ===== Clinical =====
   async getClinicalRecord(animalId: string) {
-    // En mock devolvemos un record vacíllo decente
     if (USE_MOCK) {
-      await sleep(150);
+      await sleep(120);
       return {
+        id: "mock",
         animalId,
-        vaccinated: true,
+        vaccinations: [{ name: "Rabia", date: "2025-05-12" }],
         sterilized: true,
-        dewormed: true,
-        lastCheckup: "2025-05-12",
-        notes: "Chequeo general OK",
-      } as unknown as ApiResponse<ClinicalRecord>;
+        dewormings: [{ type: "General", date: "2025-03-01" }],
+        diagnoses: [],
+        treatments: [],
+        vetNotes: "Chequeo general OK",
+        clinicUserId: "clinica-demo",
+        approved: true,
+        updatedAt: new Date().toISOString(),
+      } as ClinicalRecord;
     }
-    return this.request<ClinicalRecord>(`/clinical/${animalId}`);
+    return request<ClinicalRecord>(`/clinical/${animalId}`);
   }
 
   async updateClinicalRecord(animalId: string, data: Partial<ClinicalRecord>) {
-    return this.request<ClinicalRecord>(`/clinical/${animalId}`, {
+    return request<ClinicalRecord>(`/clinical/${animalId}`, {
       method: "POST",
       body: JSON.stringify(data),
     });
   }
 
   async approveClinical(animalId: string, approved: boolean) {
-    return this.request<ClinicalRecord>(`/clinical/${animalId}/approval`, {
+    return request<ClinicalRecord>(`/clinical/${animalId}/approval`, {
       method: "POST",
       body: JSON.stringify({ approved }),
     });
@@ -302,7 +310,7 @@ class ApiClient {
   // ===== Analytics =====
   async getAnalytics(range?: string) {
     if (USE_MOCK) {
-      await sleep(200);
+      await sleep(120);
       return {
         totalApplications: 42,
         completed: 17,
@@ -313,15 +321,11 @@ class ApiClient {
           { stage: "Visita", count: 5 },
           { stage: "Aprobada", count: 17 },
         ],
-      } as unknown as ApiResponse<any>;
+      };
     }
     const params = range ? `?range=${range}` : "";
-    return this.request<any>(`/analytics/overview${params}`);
+    return request<any>(`/analytics/overview${params}`);
   }
 }
 
 export const apiClient = new ApiClient();
-
-// Exposición de helpers mock para páginas que lo requieran de forma directa
-export const getAnimals = () => apiClient.getAnimalsLocal();
-export const getAnimalById = (id: string) => apiClient.getAnimalByIdLocal(id);

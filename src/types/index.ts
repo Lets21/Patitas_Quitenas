@@ -1,11 +1,12 @@
-export type UserRole = 'ADOPTANTE' | 'FUNDACION' | 'CLINICA' | 'ADMIN';
+// ---------- Roles / Usuarios ----------
+export type UserRole = "ADOPTANTE" | "FUNDACION" | "CLINICA" | "ADMIN";
 
 export interface User {
   id: string;
   email: string;
   role: UserRole;
   profile: UserProfile;
-  status: 'ACTIVE' | 'INACTIVE' | 'PENDING_VERIFICATION';
+  status: "ACTIVE" | "INACTIVE" | "PENDING_VERIFICATION";
   createdAt: string;
   updatedAt: string;
 }
@@ -17,22 +18,27 @@ export interface UserProfile {
   address?: string;
   document?: string;
   experience?: string;
-  livingSpace?: 'APARTMENT' | 'HOUSE' | 'FARM';
+  livingSpace?: "APARTMENT" | "HOUSE" | "FARM";
   hasYard?: boolean;
   hasChildren?: boolean;
   hasOtherPets?: boolean;
 }
 
+// ---------- Animales ----------
+export type AnimalState = "RESCUED" | "QUARANTINE" | "AVAILABLE" | "RESERVED" | "ADOPTED";
+
 export interface Animal {
+  // En frontend trabajamos con `id`. Si viene `_id` del backend, lo puedes mapear.
   id: string;
+  _id?: string; // opcional: útil cuando consumes directamente la respuesta de Mongo
   name: string;
   photos: string[];
   attributes: {
     age: number;
-    size: 'SMALL' | 'MEDIUM' | 'LARGE';
+    size: "SMALL" | "MEDIUM" | "LARGE";
     breed: string;
-    gender: 'MALE' | 'FEMALE';
-    energy: 'LOW' | 'MEDIUM' | 'HIGH';
+    gender: "MALE" | "FEMALE";
+    energy: "LOW" | "MEDIUM" | "HIGH";
     coexistence: {
       children: boolean;
       cats: boolean;
@@ -40,12 +46,30 @@ export interface Animal {
     };
   };
   clinicalSummary: string;
-  state: 'RESCUED' | 'QUARANTINE' | 'AVAILABLE' | 'RESERVED' | 'ADOPTED';
+  state: AnimalState;
   foundationId: string;
   createdAt: string;
   updatedAt: string;
 }
 
+// Filtros del catálogo. Mantén arrays para size/energy (multi-selección).
+export interface FilterOptions {
+  age?: string;                 // ej. "PUPPY|YOUNG|ADULT|SENIOR" o rango que definas
+  size?: Array<"SMALL" | "MEDIUM" | "LARGE">;
+  energy?: Array<"LOW" | "MEDIUM" | "HIGH">;
+  breed?: string;
+  coexistence?: Array<"children" | "cats" | "dogs">;
+}
+
+// Listado paginado genérico para animales
+export interface ApiList<T> {
+  animals: T[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+// ---------- Solicitudes / Clínica / Seguimiento ----------
 export interface Application {
   id: string;
   adoptantId: string;
@@ -59,7 +83,7 @@ export interface Application {
     compatibility: Record<string, any>;
     attachments: Attachment[];
   };
-  status: 'PENDING' | 'PRE_APPROVED' | 'REJECTED' | 'APPROVED' | 'DELIVERED';
+  status: "PENDING" | "PRE_APPROVED" | "REJECTED" | "APPROVED" | "DELIVERED";
   timeline: TimelineEvent[];
   foundationNotes?: string;
   clinicApproval?: boolean;
@@ -71,7 +95,7 @@ export interface Application {
 
 export interface TimelineEvent {
   id: string;
-  status: Application['status'];
+  status: Application["status"];
   date: string;
   notes?: string;
   userId: string;
@@ -107,7 +131,7 @@ export interface Visit {
   id: string;
   applicationId: string;
   scheduledAt: string;
-  result?: 'APPROVED' | 'REJECTED';
+  result?: "APPROVED" | "REJECTED";
   notes?: string;
   evidence: string[];
   createdAt: string;
@@ -116,9 +140,9 @@ export interface Visit {
 export interface Followup {
   id: string;
   applicationId: string;
-  type: '30D' | '90D';
+  type: "30D" | "90D";
   dueAt: string;
-  status: 'PENDING' | 'COMPLETED' | 'OVERDUE';
+  status: "PENDING" | "COMPLETED" | "OVERDUE";
   evidence: Attachment[];
   notes?: string;
   createdAt: string;
@@ -133,16 +157,9 @@ export interface Attachment {
   uploadedAt: string;
 }
 
+// Respuesta genérica para endpoints que devuelven un objeto/colección simple
 export interface ApiResponse<T> {
   data?: T;
   error?: string;
   message?: string;
-}
-
-export interface FilterOptions {
-  age?: string;
-  size?: string[];
-  energy?: string[];
-  breed?: string;
-  coexistence?: string[];
 }

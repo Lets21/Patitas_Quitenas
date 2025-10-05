@@ -5,29 +5,33 @@ import { createBrowserRouter } from "react-router-dom";
 import MainLayout from "@/layouts/MainLayout";
 import DashboardLayout from "@/layouts/DashboardLayout";
 
-// Guards
-import RequireAuth from "@/app/guards/RequireAuth";
-import RequireRole from "@/app/guards/RequireRole";
-
-// Páginas públicas
+// Público
 import HomePage from "@/pages/HomePage";
 import CatalogPage from "@/pages/CatalogPage";
+import AnimalDetailPage from "@/features/animals/AnimalDetailPage";
 import LoginPage from "@/pages/LoginPage";
 import RegisterPage from "@/pages/RegisterPage";
+import AboutPage from "@/pages/AboutPage";
 
-// Detalle (si aún no existe, comenta import y ruta)
-import AnimalDetailPage from "@/features/animals/AnimalDetailPage";
-
-// Dashboards
+// Dashboards / features
 import FoundationDashboard from "@/features/foundation/FoundationDashboard";
+import AnimalsCrud from "@/features/foundation/AnimalsCrud";
+
 import ClinicDashboard from "@/features/clinic/ClinicDashboard";
 
-// Errores
+import AnalyticsDashboard from "@/features/analytics/AnalyticsDashboard";
+import AdminDashboard from "@/features/admin/AdminDashboard";
+import NotificationsPage from "@/features/notifications/NotificationsPage";
+
 import NotFoundPage from "@/features/errors/NotFoundPage";
-import ForbiddenPage from "@/features/errors/ForbiddenPage"; // crea un stub si no existe
+
+
+// Protecciones
+import { ProtectedRoute } from "./ProtectedRoute";
+
 
 export const router = createBrowserRouter([
-  // PÚBLICO
+  // Rutas públicas
   {
     element: <MainLayout />,
     children: [
@@ -37,62 +41,66 @@ export const router = createBrowserRouter([
       { path: "/adoptar/:animalId", element: <AnimalDetailPage /> },
       { path: "/login", element: <LoginPage /> },
       { path: "/register", element: <RegisterPage /> },
-      { path: "/403", element: <ForbiddenPage /> }, // útil para redirecciones del guard
+      { path: "/sobre-nosotros", element: <AboutPage /> },
+      { path: "/about", element: <AboutPage /> },   // <— alias
+      // NADA de /fundacion/animales aquí. Eso es privado.
     ],
   },
 
-  // PRIVADO (requiere sesión)
+  // Área Fundación (sidebar de dashboard)
   {
-    element: <RequireAuth />, // si no hay user -> /login
+    element: (
+      <ProtectedRoute allowed={["FUNDACION"]}>
+        <DashboardLayout />
+      </ProtectedRoute>
+    ),
     children: [
-      {
-        element: <DashboardLayout />, // tu layout con sidebar
-        children: [
-          // CLÍNICA (solo rol CLINICA)
-          {
-            element: <RequireRole allowed={["CLINICA"]} />,
-            children: [
-              { path: "/clinica", element: <ClinicDashboard /> },
-              // cuando tengas más vistas de clínica, agrégalas aquí
-              // { path: "/clinica/pendientes", element: <ClinicalList /> },
-              // { path: "/clinica/:animalId", element: <ClinicalDetail /> },
-            ],
-          },
-
-          // FUNDACIÓN (solo rol FUNDACION)
-          {
-            element: <RequireRole allowed={["FUNDACION"]} />,
-            children: [
-              { path: "/fundacion", element: <FoundationDashboard /> },
-              // { path: "/fundacion/animales", element: <AnimalsCrud /> },
-              // { path: "/fundacion/solicitudes", element: <RequestsKanban /> },
-              // { path: "/fundacion/visitas", element: <VisitsCalendar /> },
-              // { path: "/fundacion/seguimientos", element: <FollowUps /> },
-            ],
-          },
-
-          // ADMIN (cuando lo actives)
-          // {
-          //   element: <RequireRole allowed={["ADMIN"]} />,
-          //   children: [
-          //     { path: "/admin", element: <AdminDashboard /> },
-          //     ...
-          //   ],
-          // },
-
-          // ANALÍTICA (decide quién entra)
-          // {
-          //   element: <RequireRole allowed={["ADMIN","FUNDACION","CLINICA"]} />,
-          //   children: [{ path: "/analitica", element: <AnalyticsDashboard /> }],
-          // },
-
-          // NOTIFICACIONES (si es común a cualquier usuario logueado, puedes ponerla sin RequireRole)
-          // { path: "/notificaciones", element: <NotificationsCenter /> },
-        ],
-      },
+      { path: "/fundacion", element: <FoundationDashboard /> },
+      { path: "/fundacion/animales", element: <AnimalsCrud /> },
+      // más rutas privadas de fundación aquí...
     ],
   },
 
-  // 404
+  // Clínica (cada dashboard ya pinta su propio layout, así que sin DashboardLayout)
+  {
+    path: "/clinica",
+    element: (
+      <ProtectedRoute allowed={["CLINICA"]}>
+        <ClinicDashboard />
+      </ProtectedRoute>
+    ),
+  },
+
+  // Analítica (ajusta allowed según política; aquí solo ADMIN para no llorar luego)
+  {
+    path: "/analitica",
+    element: (
+      <ProtectedRoute allowed={["ADMIN"]}>
+        <AnalyticsDashboard />
+      </ProtectedRoute>
+    ),
+  },
+
+  // Admin
+  {
+    path: "/admin",
+    element: (
+      <ProtectedRoute allowed={["ADMIN"]}>
+        <AdminDashboard />
+      </ProtectedRoute>
+    ),
+  },
+
+  // Notificaciones: si es global, protégelo al menos para usuarios logeados;
+  // si es solo para rol X, cámbialo en allowed
+  {
+    path: "/notificaciones",
+    element: (
+      <ProtectedRoute allowed={["ADOPTANTE", "FUNDACION", "CLINICA", "ADMIN"]}>
+        <NotificationsPage />
+      </ProtectedRoute>
+    ),
+  },
+
   { path: "*", element: <NotFoundPage /> },
 ]);
