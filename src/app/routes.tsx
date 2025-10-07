@@ -25,15 +25,17 @@ import NotificationsPage from "@/features/notifications/NotificationsPage";
 
 import NotFoundPage from "@/features/errors/NotFoundPage";
 
-
 // Protecciones
-import { ProtectedRoute } from "./ProtectedRoute";
+import { ProtectedRoute } from "@/app/ProtectedRoute";
 
+// Error Element simple (usa el tuyo si ya tienes uno)
+const ErrorStub = () => <div style={{ padding: 24 }}>Ocurrió un error 😿</div>;
 
 export const router = createBrowserRouter([
   // Rutas públicas
   {
     element: <MainLayout />,
+    errorElement: <ErrorStub />,
     children: [
       { path: "/", element: <HomePage /> },
       { path: "/catalog", element: <CatalogPage /> },
@@ -42,8 +44,7 @@ export const router = createBrowserRouter([
       { path: "/login", element: <LoginPage /> },
       { path: "/register", element: <RegisterPage /> },
       { path: "/sobre-nosotros", element: <AboutPage /> },
-      { path: "/about", element: <AboutPage /> },   // <— alias
-      // NADA de /fundacion/animales aquí. Eso es privado.
+      { path: "/about", element: <AboutPage /> }, // alias
     ],
   },
 
@@ -54,16 +55,18 @@ export const router = createBrowserRouter([
         <DashboardLayout />
       </ProtectedRoute>
     ),
+    errorElement: <ErrorStub />,
     children: [
       { path: "/fundacion", element: <FoundationDashboard /> },
       { path: "/fundacion/animales", element: <AnimalsCrud /> },
-      // más rutas privadas de fundación aquí...
+      // más rutas privadas de fundación aquí…
     ],
   },
 
-  // Clínica (cada dashboard ya pinta su propio layout, así que sin DashboardLayout)
+  // Clínica (cada dashboard pinta su propio layout)
   {
     path: "/clinica",
+    errorElement: <ErrorStub />,
     element: (
       <ProtectedRoute allowed={["CLINICA"]}>
         <ClinicDashboard />
@@ -71,9 +74,10 @@ export const router = createBrowserRouter([
     ),
   },
 
-  // Analítica (ajusta allowed según política; aquí solo ADMIN para no llorar luego)
+  // Analítica (ajusta allowed según tu política)
   {
     path: "/analitica",
+    errorElement: <ErrorStub />,
     element: (
       <ProtectedRoute allowed={["ADMIN"]}>
         <AnalyticsDashboard />
@@ -84,6 +88,7 @@ export const router = createBrowserRouter([
   // Admin
   {
     path: "/admin",
+    errorElement: <ErrorStub />,
     element: (
       <ProtectedRoute allowed={["ADMIN"]}>
         <AdminDashboard />
@@ -91,10 +96,10 @@ export const router = createBrowserRouter([
     ),
   },
 
-  // Notificaciones: si es global, protégelo al menos para usuarios logeados;
-  // si es solo para rol X, cámbialo en allowed
+  // Notificaciones (logueado en cualquier rol)
   {
     path: "/notificaciones",
+    errorElement: <ErrorStub />,
     element: (
       <ProtectedRoute allowed={["ADOPTANTE", "FUNDACION", "CLINICA", "ADMIN"]}>
         <NotificationsPage />

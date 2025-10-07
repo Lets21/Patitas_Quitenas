@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Input } from "@/components/ui/Input";
 import { apiClient } from "@/lib/api";
+import { urlFromBackend } from "@/lib/api";
 
 // ========= Tipos “seguros para UI” =========
 type Size = "SMALL" | "MEDIUM" | "LARGE";
@@ -323,12 +324,12 @@ const CatalogPage: React.FC = () => {
                   className="overflow-hidden hover:shadow-lg transition-shadow duration-300"
                 >
                   <div className="aspect-video overflow-hidden rounded-t-2xl">
-                    <img
-                      src={animal.photos[0]}
-                      alt={`Foto de ${animal.name}`}
-                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                      loading="lazy"
-                    />
+                  <img
+                    src={urlFromBackend(animal.photos?.[0] || "")}
+                    alt={`Foto de ${animal.name}`}
+                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                  />
+
                   </div>
 
                   <div className="p-6">

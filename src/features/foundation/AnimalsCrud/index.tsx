@@ -1,375 +1,317 @@
 // src/features/foundation/AnimalsCrud/index.tsx
 import React, { useEffect, useMemo, useState } from "react";
-import { Plus, Search, Edit, Trash2, Dog } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Badge } from "@/components/ui/Badge";
 import { Input } from "@/components/ui/Input";
-import { apiClient } from "@/lib/api";
+import { Badge } from "@/components/ui/Badge";
+import { Plus, Trash2, Edit, Upload, Search } from "lucide-react";
+import { apiClient, urlFromBackend } from "@/lib/api";
 import type { Animal } from "@/types";
 
-type FormState = {
-  _id?: string;
+type Draft = {
+  id?: string;
   name: string;
+  age: number;
+  size: "SMALL" | "MEDIUM" | "LARGE";
+  breed: string;
+  gender: "MALE" | "FEMALE";
+  energy: "LOW" | "MEDIUM" | "HIGH";
+  coexistence: { children: boolean; cats: boolean; dogs: boolean };
   clinicalSummary: string;
-  photo: string;
-  attributes: {
-    age: number | string;
-    size: "SMALL" | "MEDIUM" | "LARGE";
-    breed: string;
-    gender: "MALE" | "FEMALE";
-    energy: "LOW" | "MEDIUM" | "HIGH";
-    coexistence: { children: boolean; cats: boolean; dogs: boolean };
-  };
-  state: "AVAILABLE" | "RESERVED" | "ADOPTED" | "RESCUED" | "QUARANTINE";
+  state: "AVAILABLE" | "RESERVED" | "ADOPTED";
+  photos: File[];          // nuevas fotos a subir
+  existingPhoto?: string;  // url ya guardada (para editar)
 };
 
-const toForm = (a?: Animal): FormState =>
-  a
-    ? {
-        _id: (a as any)._id || (a as any).id,
-        name: a.name,
-        clinicalSummary: a.clinicalSummary || "",
-        photo: a.photos?.[0] || "",
-        attributes: {
-          age: a.attributes.age,
-          size: a.attributes.size,
-          breed: a.attributes.breed,
-          gender: a.attributes.gender,
-          energy: a.attributes.energy,
-          coexistence: {
-            children: a.attributes.coexistence.children,
-            cats: a.attributes.coexistence.cats,
-            dogs: a.attributes.coexistence.dogs,
-          },
-        },
-        state: a.state,
-      }
-    : {
-        name: "",
-        clinicalSummary: "",
-        photo: "",
-        attributes: {
-          age: "",
-          size: "MEDIUM",
-          breed: "",
-          gender: "MALE",
-          energy: "MEDIUM",
-          coexistence: { children: false, cats: false, dogs: false },
-        },
-        state: "AVAILABLE",
-      };
-
-const sizeLabel = (s: Animal["attributes"]["size"]) =>
-  s === "SMALL" ? "Pequeño" : s === "MEDIUM" ? "Mediano" : "Grande";
-
-const energyLabel = (e: Animal["attributes"]["energy"]) =>
-  e === "LOW" ? "Tranquilo" : e === "MEDIUM" ? "Moderado" : "Activo";
-
-const stateBadge = (s: Animal["state"]) => {
-  switch (s) {
-    case "AVAILABLE":
-      return { label: "Disponible", variant: "success" as const };
-    case "RESERVED":
-      return { label: "Reservado", variant: "warning" as const };
-    case "ADOPTED":
-      return { label: "Adoptado", variant: "neutral" as const };
-    case "RESCUED":
-      return { label: "Rescatado", variant: "secondary" as const };
-    case "QUARANTINE":
-      return { label: "Cuarentena", variant: "error" as const };
-    default:
-      return { label: s, variant: "neutral" as const };
-  }
+const emptyDraft: Draft = {
+  name: "",
+  age: 1,
+  size: "MEDIUM",
+  breed: "",
+  gender: "FEMALE",
+  energy: "MEDIUM",
+  coexistence: { children: true, cats: false, dogs: true },
+  clinicalSummary: "",
+  state: "AVAILABLE",
+  photos: [],
+  existingPhoto: undefined,
 };
+
+// Normaliza id para documentos que vienen con id o _id
+function normId(a: any): string | undefined {
+  return (a && (a.id || a._id)) ?? undefined;
+}
 
 export default function AnimalsCrud() {
-  const [loading, setLoading] = useState(false);
-  const [animals, setAnimals] = useState<Animal[]>([]);
-  const [q, setQ] = useState("");
-  const [showModal, setShowModal] = useState(false);
+  const [items, setItems] = useState<Animal[]>([]);
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState<FormState>(toForm());
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  // Cargar animales
-  const load = async () => {
-    setLoading(true);
-    const res = await apiClient.getAnimals();
-    // Respuesta esperada: { animals, total }
-    const data = (res as any)?.animals || [];
-    setAnimals(data);
-    setLoading(false);
-  };
+  const [query, setQuery] = useState("");
+  const [showForm, setShowForm] = useState(false);
+  const [draft, setDraft] = useState<Draft>({ ...emptyDraft });
+
+  async function load() {
+    try {
+      setLoading(true);
+      const res = await apiClient.foundationListAnimals(); // { animals, total }
+      setItems(((res as any)?.animals ?? []) as Animal[]);
+    } catch (err: any) {
+      alert(err?.message || "Error cargando animales");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
     load();
   }, []);
 
   const filtered = useMemo(() => {
-    if (!q.trim()) return animals;
-    const s = q.toLowerCase();
-    return animals.filter(
-      a =>
-        a.name.toLowerCase().includes(s) ||
-        a.attributes.breed.toLowerCase().includes(s)
-    );
-  }, [animals, q]);
+    if (!query.trim()) return items;
+    const q = query.toLowerCase();
+    return items.filter((a: any) => {
+      const name = String(a?.name || "").toLowerCase();
+      const breed = String(a?.attributes?.breed || "").toLowerCase();
+      return name.includes(q) || breed.includes(q);
+    });
+  }, [items, query]);
 
-  const openCreate = () => {
-    setForm(toForm());
-    setShowModal(true);
-  };
+  function openNew() {
+    setDraft({ ...emptyDraft });
+    setShowForm(true);
+  }
 
-  const openEdit = (a: Animal) => {
-    setForm(toForm(a));
-    setShowModal(true);
-  };
+  function openEdit(a: any) {
+    const id = normId(a);
+    setDraft({
+      id,
+      name: a?.name ?? "",
+      age: a?.attributes?.age ?? 1,
+      size: a?.attributes?.size ?? "MEDIUM",
+      breed: a?.attributes?.breed ?? "",
+      gender: a?.attributes?.gender ?? "FEMALE",
+      energy: a?.attributes?.energy ?? "MEDIUM",
+      coexistence: a?.attributes?.coexistence ?? {
+        children: true,
+        cats: false,
+        dogs: true,
+      },
+      clinicalSummary: a?.clinicalSummary ?? "",
+      state: a?.state ?? "AVAILABLE",
+      photos: [],
+      existingPhoto: a?.photos?.[0],
+    });
+    setShowForm(true);
+  }
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
+  async function onDelete(id?: string) {
+    if (!id) return alert("No se pudo determinar el id del registro.");
+    if (!confirm("¿Eliminar este registro?")) return;
     try {
-      const payload: Partial<Animal> = {
-        name: form.name.trim(),
-        photos: form.photo ? [form.photo.trim()] : [],
-        clinicalSummary: form.clinicalSummary.trim(),
-        attributes: {
-          age: Number(form.attributes.age) || 0,
-          size: form.attributes.size,
-          breed: form.attributes.breed.trim(),
-          gender: form.attributes.gender,
-          energy: form.attributes.energy,
-          coexistence: { ...form.attributes.coexistence },
-        },
-        state: form.state,
-      } as any;
-
-      if (form._id) {
-        await apiClient.updateAnimal(form._id, payload);
-      } else {
-        await apiClient.createAnimal(payload);
-      }
-      setShowModal(false);
+      setDeletingId(id);
+      await apiClient.foundationDeleteAnimal(id); // no dependemos del body
       await load();
+    } catch (err: any) {
+      alert(err?.message || "Error eliminando");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    try {
+      setSaving(true);
+
+      const fd = new FormData();
+      fd.append("name", draft.name.trim());
+      fd.append("clinicalSummary", draft.clinicalSummary.trim());
+      fd.append("state", draft.state);
+      fd.append(
+        "attributes",
+        JSON.stringify({
+          age: Number(draft.age) || 0,
+          size: draft.size,
+          breed: draft.breed.trim(),
+          gender: draft.gender,
+          energy: draft.energy,
+          coexistence: draft.coexistence,
+        })
+      );
+
+      if (draft.photos.length) {
+        draft.photos.forEach((f) => fd.append("photos", f));
+      } else if (draft.id && draft.existingPhoto) {
+        // si no subimos nuevas, pedimos conservar las actuales (si tu backend lo usa)
+        fd.append("keepPhotos", JSON.stringify([draft.existingPhoto]));
+      }
+
+      // 🔒 No usamos el valor devuelto: evitamos leer id de undefined si el
+      // servidor responde 201 sin body o con otra forma.
+      if (draft.id) await apiClient.foundationUpdateAnimal(draft.id, fd);
+      else await apiClient.foundationCreateAnimal(fd);
+
+      setShowForm(false);
+      setDraft({ ...emptyDraft });
+      await load();
+    } catch (err: any) {
+      alert(err?.message || "Error guardando");
     } finally {
       setSaving(false);
     }
-  };
+  }
 
-  // Nota: eliminar requiere endpoint DELETE /animals/:id (cuando lo tengas).
-  const onDelete = async (a: Animal) => {
-    // Placeholder hasta que implementes DELETE en backend.
-    // Puedes reemplazar con confirm + llamada real.
-    console.warn("Implementa DELETE /animals/:id en el backend antes de usar esto.", a);
-    alert("Eliminar aún no está implementado en el backend.");
-  };
+  // Previews de nuevas fotos
+  const photoPreviews = useMemo(
+    () => draft.photos.map((f) => URL.createObjectURL(f)),
+    [draft.photos]
+  );
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-3">
-              <div className="bg-green-600 p-2 rounded-xl">
-                <Dog className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">Fundación · Animales</h1>
-                <p className="text-sm text-gray-600">Gestión de perros publicados</p>
-              </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-bold">Perros de la fundación</h1>
+          <div className="flex gap-3">
+            <div className="relative">
+              <input
+                className="pl-9 pr-3 py-2 border rounded-lg w-64"
+                placeholder="Buscar por nombre o raza…"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+              <Search className="w-4 h-4 text-gray-400 absolute left-3 top-2.5" />
             </div>
-            <div className="flex items-center gap-3">
-              <Button onClick={openCreate} className="bg-green-600 hover:bg-green-700">
-                <Plus className="h-4 w-4 mr-2" />
-                Nuevo perro
-              </Button>
-            </div>
+            <Button onClick={openNew}>
+              <Plus className="w-4 h-4 mr-2" /> Nuevo
+            </Button>
           </div>
         </div>
-      </div>
 
-      {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Card className="p-6">
-          {/* Search */}
-          <div className="flex flex-col sm:flex-row gap-4 mb-6">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="Buscar por nombre o raza…"
-                  value={q}
-                  onChange={e => setQ(e.target.value)}
-                  className="pl-10"
-                />
+        {loading ? (
+          <Card className="p-6">Cargando…</Card>
+        ) : filtered.length === 0 ? (
+          <Card className="p-6">No hay registros</Card>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filtered.map((a: any) => {
+              const id = normId(a);
+              return (
+                <Card key={id ?? Math.random()} className="p-4">
+                  <div className="aspect-video rounded-xl overflow-hidden mb-3 bg-gray-100">
+                    {a?.photos?.[0] ? (
+                      <img
+                        src={urlFromBackend(a.photos[0])}
+                        alt={a?.name || "Foto"}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-400">
+                        Sin foto
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="font-semibold">{a?.name}</div>
+                  <div className="text-sm text-gray-600">{a?.attributes?.breed}</div>
+                  <div className="text-sm text-gray-600">
+                    {a?.attributes?.age} años • {a?.attributes?.size}
+                  </div>
+
+                  <div className="my-2">
+                    <Badge
+                      variant={
+                        a?.state === "AVAILABLE"
+                          ? "success"
+                          : a?.state === "RESERVED"
+                          ? "warning"
+                          : "neutral"
+                      }
+                    >
+                      {a?.state === "AVAILABLE"
+                        ? "Disponible"
+                        : a?.state === "RESERVED"
+                        ? "Reservado"
+                        : "Adoptado"}
+                    </Badge>
+                  </div>
+
+                  <div className="flex gap-2 mt-3">
+                    <Button variant="outline" onClick={() => openEdit(a)}>
+                      <Edit className="w-4 h-4 mr-1" />
+                      Editar
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => onDelete(id)}
+                      disabled={!!deletingId && deletingId === id}
+                    >
+                      <Trash2 className="w-4 h-4 mr-1" />
+                      {deletingId === id ? "Eliminando…" : "Borrar"}
+                    </Button>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+
+        {showForm && (
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
+            <Card className="w-full max-w-2xl p-6">
+              <div className="text-lg font-semibold mb-4">
+                {draft.id ? "Editar perro" : "Nuevo perro"}
               </div>
-            </div>
-          </div>
 
-          {/* Table */}
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <Th>Perro</Th>
-                  <Th>Edad</Th>
-                  <Th>Raza / Tamaño</Th>
-                  <Th>Convivencia</Th>
-                  <Th>Estado</Th>
-                  <Th>Acciones</Th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-100">
-                {loading ? (
-                  <tr>
-                    <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
-                      Cargando…
-                    </td>
-                  </tr>
-                ) : filtered.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
-                      Sin resultados
-                    </td>
-                  </tr>
-                ) : (
-                  filtered.map(a => {
-                    const badge = stateBadge(a.state);
-                    return (
-                      <tr key={(a as any)._id || (a as any).id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="w-10 h-10 bg-gray-100 rounded-lg overflow-hidden mr-3">
-                              {a.photos?.[0] ? (
-                                <img className="w-10 h-10 object-cover" src={a.photos[0]} alt={a.name} />
-                              ) : (
-                                <div className="w-10 h-10 flex items-center justify-center text-gray-400">🐶</div>
-                              )}
-                            </div>
-                            <div>
-                              <div className="text-sm font-medium text-gray-900">{a.name}</div>
-                              <div className="text-xs text-gray-500">{a.clinicalSummary || "—"}</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {a.attributes.age} {a.attributes.age === 1 ? "año" : "años"}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {a.attributes.breed} / {sizeLabel(a.attributes.size)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex gap-1">
-                            {a.attributes.coexistence.children && <Badge size="sm">Niños</Badge>}
-                            {a.attributes.coexistence.dogs && <Badge size="sm">Perros</Badge>}
-                            {a.attributes.coexistence.cats && <Badge size="sm">Gatos</Badge>}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <Badge variant={badge.variant as any} size="sm">
-                            {badge.label}
-                          </Badge>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <div className="flex gap-2">
-                            <button
-                              className="text-green-600 hover:text-green-800"
-                              onClick={() => openEdit(a)}
-                              title="Editar"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </button>
-                            <button
-                              className="text-red-600 hover:text-red-800"
-                              onClick={() => onDelete(a)}
-                              title="Eliminar"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-        </Card>
-      </div>
-
-      {/* Modal Create/Edit */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-2xl rounded-2xl overflow-hidden">
-            <div className="p-5 border-b">
-              <h3 className="text-lg font-semibold">
-                {form._id ? "Editar perro" : "Nuevo perro"}
-              </h3>
-            </div>
-            <form onSubmit={submit}>
-              <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Input
-                  label="Nombre"
-                  value={form.name}
-                  onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                  required
-                />
-                <Input
-                  label="Raza"
-                  value={form.attributes.breed}
-                  onChange={e =>
-                    setForm(f => ({ ...f, attributes: { ...f.attributes, breed: e.target.value } }))
-                  }
-                  required
-                />
-                <Input
-                  type="number"
-                  label="Edad (años)"
-                  value={String(form.attributes.age)}
-                  onChange={e =>
-                    setForm(f => ({ ...f, attributes: { ...f.attributes, age: e.target.value } }))
-                  }
-                  min={0}
-                  required
-                />
-                <Input
-                  label="Foto (URL)"
-                  value={form.photo}
-                  onChange={e => setForm(f => ({ ...f, photo: e.target.value }))}
-                  placeholder="https://…"
-                />
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Tamaño</label>
-                  <select
-                    className="w-full border rounded-lg px-3 py-2"
-                    value={form.attributes.size}
-                    onChange={e =>
-                      setForm(f => ({
-                        ...f,
-                        attributes: { ...f.attributes, size: e.target.value as any },
-                      }))
+              <form onSubmit={onSubmit} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Input
+                    label="Nombre"
+                    value={draft.name}
+                    onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+                  />
+                  <Input
+                    label="Raza"
+                    value={draft.breed}
+                    onChange={(e) => setDraft({ ...draft, breed: e.target.value })}
+                  />
+                  <Input
+                    label="Edad (años)"
+                    type="number"
+                    value={draft.age}
+                    onChange={(e) =>
+                      setDraft({ ...draft, age: Number(e.target.value) || 0 })
                     }
+                  />
+                  <select
+                    value={draft.size}
+                    onChange={(e) =>
+                      setDraft({ ...draft, size: e.target.value as Draft["size"] })
+                    }
+                    className="px-3 py-2 border rounded-lg"
                   >
                     <option value="SMALL">Pequeño</option>
                     <option value="MEDIUM">Mediano</option>
                     <option value="LARGE">Grande</option>
                   </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Energía</label>
                   <select
-                    className="w-full border rounded-lg px-3 py-2"
-                    value={form.attributes.energy}
-                    onChange={e =>
-                      setForm(f => ({
-                        ...f,
-                        attributes: { ...f.attributes, energy: e.target.value as any },
-                      }))
+                    value={draft.gender}
+                    onChange={(e) =>
+                      setDraft({ ...draft, gender: e.target.value as Draft["gender"] })
                     }
+                    className="px-3 py-2 border rounded-lg"
+                  >
+                    <option value="FEMALE">Hembra</option>
+                    <option value="MALE">Macho</option>
+                  </select>
+                  <select
+                    value={draft.energy}
+                    onChange={(e) =>
+                      setDraft({ ...draft, energy: e.target.value as Draft["energy"] })
+                    }
+                    className="px-3 py-2 border rounded-lg"
                   >
                     <option value="LOW">Tranquilo</option>
                     <option value="MEDIUM">Moderado</option>
@@ -377,101 +319,127 @@ export default function AnimalsCrud() {
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Género</label>
-                  <select
-                    className="w-full border rounded-lg px-3 py-2"
-                    value={form.attributes.gender}
-                    onChange={e =>
-                      setForm(f => ({
-                        ...f,
-                        attributes: { ...f.attributes, gender: e.target.value as any },
-                      }))
-                    }
-                  >
-                    <option value="MALE">Macho</option>
-                    <option value="FEMALE">Hembra</option>
-                  </select>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={draft.coexistence.children}
+                      onChange={(e) =>
+                        setDraft({
+                          ...draft,
+                          coexistence: {
+                            ...draft.coexistence,
+                            children: e.target.checked,
+                          },
+                        })
+                      }
+                    />
+                    Con niños
+                  </label>
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={draft.coexistence.cats}
+                      onChange={(e) =>
+                        setDraft({
+                          ...draft,
+                          coexistence: { ...draft.coexistence, cats: e.target.checked },
+                        })
+                      }
+                    />
+                    Con gatos
+                  </label>
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={draft.coexistence.dogs}
+                      onChange={(e) =>
+                        setDraft({
+                          ...draft,
+                          coexistence: { ...draft.coexistence, dogs: e.target.checked },
+                        })
+                      }
+                    />
+                    Con perros
+                  </label>
                 </div>
 
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Convivencia
-                  </label>
-                  <div className="flex flex-wrap gap-4">
-                    {(["children", "dogs", "cats"] as const).map(key => (
-                      <label key={key} className="inline-flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={form.attributes.coexistence[key]}
-                          onChange={e =>
-                            setForm(f => ({
-                              ...f,
-                              attributes: {
-                                ...f.attributes,
-                                coexistence: {
-                                  ...f.attributes.coexistence,
-                                  [key]: e.target.checked,
-                                },
-                              },
-                            }))
-                          }
-                        />
-                        <span className="text-sm">
-                          {key === "children" ? "Niños" : key === "dogs" ? "Perros" : "Gatos"}
-                        </span>
-                      </label>
-                    ))}
+                <textarea
+                  className="w-full border rounded-lg px-3 py-2"
+                  placeholder="Resumen clínico"
+                  value={draft.clinicalSummary}
+                  onChange={(e) =>
+                    setDraft({ ...draft, clinicalSummary: e.target.value })
+                  }
+                  rows={3}
+                />
+
+                <div className="space-y-2">
+                  <div className="flex items-center gap-3">
+                    <label className="inline-flex items-center gap-2 px-3 py-2 border rounded-lg cursor-pointer">
+                      <Upload className="w-4 h-4" />
+                      Subir fotos
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        hidden
+                        onChange={(e) =>
+                          setDraft({
+                            ...draft,
+                            photos: Array.from(e.target.files || []),
+                          })
+                        }
+                      />
+                    </label>
+                    <span className="text-sm text-gray-600">
+                      {draft.photos.length
+                        ? `${draft.photos.length} seleccionada(s)`
+                        : "Sin archivos"}
+                    </span>
                   </div>
+
+                  {photoPreviews.length > 0 && (
+                    <div className="flex gap-2 flex-wrap">
+                      {photoPreviews.map((src, i) => (
+                        <img
+                          key={i}
+                          src={src}
+                          className="h-16 w-16 object-cover rounded border"
+                        />
+                      ))}
+                    </div>
+                  )}
+
+                  {draft.id && draft.existingPhoto && draft.photos.length === 0 && (
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <span>Foto actual:</span>
+                      <img
+                        src={urlFromBackend(draft.existingPhoto)}
+                        className="h-16 w-16 object-cover rounded border"
+                      />
+                    </div>
+                  )}
                 </div>
 
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Estado</label>
-                  <select
-                    className="w-full border rounded-lg px-3 py-2"
-                    value={form.state}
-                    onChange={e => setForm(f => ({ ...f, state: e.target.value as any }))}
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowForm(false)}
+                    type="button"
+                    disabled={saving}
                   >
-                    <option value="AVAILABLE">Disponible</option>
-                    <option value="RESERVED">Reservado</option>
-                    <option value="ADOPTED">Adoptado</option>
-                    <option value="RESCUED">Rescatado</option>
-                    <option value="QUARANTINE">Cuarentena</option>
-                  </select>
+                    Cancelar
+                  </Button>
+                  <Button type="submit" disabled={saving}>
+                    {saving ? "Guardando…" : draft.id ? "Guardar" : "Crear"}
+                  </Button>
                 </div>
-
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Resumen clínico
-                  </label>
-                  <textarea
-                    className="w-full border rounded-lg px-3 py-2 min-h-[80px]"
-                    value={form.clinicalSummary}
-                    onChange={e => setForm(f => ({ ...f, clinicalSummary: e.target.value }))}
-                  />
-                </div>
-              </div>
-
-              <div className="p-5 border-t flex justify-end gap-2">
-                <Button variant="outline" type="button" onClick={() => setShowModal(false)}>
-                  Cancelar
-                </Button>
-                <Button type="submit" loading={saving}>
-                  {form._id ? "Guardar cambios" : "Crear"}
-                </Button>
-              </div>
-            </form>
+              </form>
+            </Card>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
-  );
-}
-
-function Th({ children }: { children: React.ReactNode }) {
-  return (
-    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-      {children}
-    </th>
   );
 }

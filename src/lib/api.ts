@@ -20,14 +20,41 @@ const USE_MOCK = String((import.meta as any).env?.VITE_USE_MOCK) === "true";
 
 /**
  * =======================
+ * Helper para URLs de archivos servidos por el backend (/uploads/..)
+ * Si el valor ya es absoluto (http...), lo deja igual.
+ * =======================
+ */
+export const urlFromBackend = (relOrAbs: string) => {
+  if (!relOrAbs) return relOrAbs;
+  if (relOrAbs.startsWith("http")) return relOrAbs;
+
+  // API_BASE apunta a /api/v1. Quitamos /api/v1 para obtener el origin.
+  const base = API_BASE.replace(/\/$/, "");
+  const origin = base.replace(/\/api\/v1$/, "");
+  return `${origin}${relOrAbs.startsWith("/") ? "" : "/"}${relOrAbs}`;
+};
+
+export async function uploadAnimalPhoto(file: File): Promise<string> {
+  const token = JSON.parse(localStorage.getItem("auth-storage") || "{}")?.state?.token;
+  const fd = new FormData();
+  fd.append("photo", file);
+  const res = await fetch(`${API_BASE}/foundation/animals/upload`, {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    body: fd,
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data?.error || "Error al subir imagen");
+  return data.url as string; // p.ej. "/uploads/17123-foo.jpg"
+}
+
+/**
+ * =======================
  * Mocks compatibles (opcionales)
  * =======================
  */
 const MOCK_ANIMALS: Animal[] = [
   {
-    // si tu tipo Animal tiene _id en vez de id, puedes poner _id: "1"
-    // yo incluyo ambos para que no truene en ningún sitio
-    // y abajo el adaptador prioriza id.
     _id: "a1",
     id: "a1",
     name: "Luna",
@@ -141,6 +168,40 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 }
 
 /**
+ * requestForm<T> — para multipart/form-data (NO setear Content-Type)
+ */
+async function requestForm<T>(
+  endpoint: string,
+  fd: FormData,
+  method: "POST" | "PATCH" = "POST"
+): Promise<T> {
+  const token = JSON.parse(localStorage.getItem("auth-storage") || "{}")?.state?.token;
+
+  const res = await fetch(`${API_BASE}${endpoint}`, {
+    method,
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      // NO pongas Content-Type aquí: el browser calcula el boundary
+    },
+    body: fd,
+  });
+
+  let data: any = null;
+  try {
+    data = await res.json();
+  } catch {
+    // 204 No Content posible
+  }
+
+  if (!res.ok) {
+    const msg = (data && (data.error || data.message)) || "Request failed";
+    throw new Error(msg);
+  }
+
+  return data as T;
+}
+
+/**
  * =======================
  * ApiClient
  * =======================
@@ -172,11 +233,11 @@ class ApiClient {
     });
   }
 
-  // ===== Animals =====
+  // ===== Animals (Catálogo público) =====
   async getAnimals(filters?: FilterOptions) {
     if (USE_MOCK) {
       await sleep(250);
-      // filtrado muy básico opcional
+      // filtrado básico opcional
       let list = [...MOCK_ANIMALS];
       if (filters) {
         if (filters.size?.length) {
@@ -246,6 +307,41 @@ class ApiClient {
     await request<void>(`/animals/${id}`, { method: "DELETE" });
   }
 
+  // ===== Fundación – CRUD con fotos =====
+  async foundationListAnimals() {
+    // { animals, total }
+    const data = await request<{ animals: any[]; total: number }>(`/foundation/animals`);
+    return { animals: data.animals.map(mapAnimal), total: data.total };
+  }
+
+  async foundationCreateAnimal(fd: FormData) {
+    // responde { data: Animal }
+    const res = await requestForm<{ data: any }>(`/foundation/animals`, fd, "POST");
+    return mapAnimal(res.data);
+  }
+
+  async foundationUpdateAnimal(id: string, fd: FormData) {
+    // responde { data: Animal }
+    const res = await requestForm<{ data: any }>(`/foundation/animals/${id}`, fd, "PATCH");
+    return mapAnimal(res.data);
+  }
+
+  async foundationDeleteAnimal(id: string) {
+    return request<{ ok: boolean }>(`/foundation/animals/${id}`, { method: "DELETE" });
+  }
+
+  async foundationUpdateClinical(id: string, record: any, evidence?: File[]) {
+    const fd = new FormData();
+    fd.append("record", JSON.stringify(record));
+    (evidence || []).forEach((f) => fd.append("evidence", f));
+    // responde { data: ClinicalRecord }
+    return requestForm<{ data: ClinicalRecord }>(
+      `/foundation/animals/${id}/clinical`,
+      fd,
+      "POST"
+    );
+  }
+
   // ===== Applications =====
   async createApplication(data: { animalId: string; form: any }) {
     return request<Application>("/applications", {
@@ -272,7 +368,7 @@ class ApiClient {
     });
   }
 
-  // ===== Clinical =====
+  // ===== Clinical (público/clinica) =====
   async getClinicalRecord(animalId: string) {
     if (USE_MOCK) {
       await sleep(120);
