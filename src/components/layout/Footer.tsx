@@ -39,6 +39,7 @@ export const Footer: React.FC = () => {
           </div>
 
           
+          <div>
             <h3 className="text-lg font-semibold mb-4">Contacto</h3>
             <ul className="space-y-3 text-primary-200">
               <li className="flex items-center space-x-2">
