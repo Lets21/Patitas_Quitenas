@@ -79,7 +79,7 @@ export const HomePage: React.FC = () => {
                   className="rounded-2xl shadow-lg w-full h-96 object-cover"
                 />
                 <div className="absolute -bottom-4 -left-4 bg-accent-500 text-white px-6 py-3 rounded-2xl shadow-lg">
-                  <div className="text-2xl font-bold">500+</div>
+                  <div className="text-2xl font-bold">10+</div>
                   <div className="text-sm">Adopciones exitosas</div>
                 </div>
               </div>

@@ -9,16 +9,15 @@ import DashboardLayout from "@/layouts/DashboardLayout";
 import HomePage from "@/pages/HomePage";
 import CatalogPage from "@/pages/CatalogPage";
 import AnimalDetailPage from "@/features/animals/AnimalDetailPage";
-import LoginPage from "@/pages/LoginPage";
+import LoginPublicPage from "@/pages/LoginPublic";   // ⬅️ nuevo
+import LoginAdminPage from "@/pages/LoginAdmin";     // ⬅️ nuevo
 import RegisterPage from "@/pages/RegisterPage";
 import AboutPage from "@/pages/AboutPage";
 
 // Dashboards / features
 import FoundationDashboard from "@/features/foundation/FoundationDashboard";
 import AnimalsCrud from "@/features/foundation/AnimalsCrud";
-
 import ClinicDashboard from "@/features/clinic/ClinicDashboard";
-
 import AnalyticsDashboard from "@/features/analytics/AnalyticsDashboard";
 import AdminDashboard from "@/features/admin/AdminDashboard";
 import NotificationsPage from "@/features/notifications/NotificationsPage";
@@ -41,7 +40,11 @@ export const router = createBrowserRouter([
       { path: "/catalog", element: <CatalogPage /> },
       { path: "/adoptar", element: <CatalogPage /> },
       { path: "/adoptar/:animalId", element: <AnimalDetailPage /> },
-      { path: "/login", element: <LoginPage /> },
+
+      // ⬇️ Logins separados
+      { path: "/login", element: <LoginPublicPage /> },  // Adoptantes
+      { path: "/admin/login", element: <LoginAdminPage /> }, // Fundación / Clínica / Admin
+
       { path: "/register", element: <RegisterPage /> },
       { path: "/sobre-nosotros", element: <AboutPage /> },
       { path: "/about", element: <AboutPage /> }, // alias
@@ -59,7 +62,6 @@ export const router = createBrowserRouter([
     children: [
       { path: "/fundacion", element: <FoundationDashboard /> },
       { path: "/fundacion/animales", element: <AnimalsCrud /> },
-      // más rutas privadas de fundación aquí…
     ],
   },
 
@@ -74,7 +76,7 @@ export const router = createBrowserRouter([
     ),
   },
 
-  // Analítica (ajusta allowed según tu política)
+  // Analítica (ADMIN)
   {
     path: "/analitica",
     errorElement: <ErrorStub />,
