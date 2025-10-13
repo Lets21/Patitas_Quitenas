@@ -24,15 +24,24 @@ const USE_MOCK = String((import.meta as any).env?.VITE_USE_MOCK) === "true";
  * Si el valor ya es absoluto (http...), lo deja igual.
  * =======================
  */
+// src/lib/api.ts
 export const urlFromBackend = (relOrAbs: string) => {
   if (!relOrAbs) return relOrAbs;
   if (relOrAbs.startsWith("http")) return relOrAbs;
 
-  // API_BASE apunta a /api/v1. Quitamos /api/v1 para obtener el origin.
-  const base = API_BASE.replace(/\/$/, "");
-  const origin = base.replace(/\/api\/v1$/, "");
-  return `${origin}${relOrAbs.startsWith("/") ? "" : "/"}${relOrAbs}`;
+  // 👇 Sólo las rutas de archivos subidos por el backend ( /uploads/... )
+  // deben apuntar al origin del backend (http://localhost:4000).
+  if (relOrAbs.startsWith("/uploads/")) {
+    const base = API_BASE.replace(/\/$/, "");
+    const origin = base.replace(/\/api\/v1$/, "");
+    return `${origin}${relOrAbs}`;
+  }
+
+  // 👇 Cualquier otra ruta relativa (p. ej. /images/...) déjala tal cual
+  // para que la sirva el FRONT (Vite) en http://localhost:5173
+  return relOrAbs;
 };
+
 
 export async function uploadAnimalPhoto(file: File): Promise<string> {
   const token = JSON.parse(localStorage.getItem("auth-storage") || "{}")?.state?.token;
