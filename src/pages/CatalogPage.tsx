@@ -6,14 +6,7 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Input } from "@/components/ui/Input";
-import { apiClient } from "@/lib/api";
-import { urlFromBackend } from "@/lib/api";
-import { http } from "@/lib/http";
-
-export async function fetchAnimals() {
-  const { data } = await http.get("/api/v1/animals");
-  return data;
-}
+import { apiClient, urlFromBackend } from "@/lib/api";
 
 // ========= Tipos “seguros para UI” =========
 type Size = "SMALL" | "MEDIUM" | "LARGE";
@@ -63,21 +56,17 @@ const stateBadge = (state: AState) => {
   }
 };
 
-// ========= Normalizador (clave para tu error) =========
+// ========= Normalizador para UI =========
 const PLACEHOLDER =
   "https://images.unsplash.com/photo-1517849845537-4d257902454a?w=1200";
 
 function normalizeAnimal(raw: any): DisplayAnimal | null {
-  // Acepta estructuras viejas: { age, size, breed } o { attributes:{...} }
   const attrs = raw?.attributes ?? {};
+  const ageNumber = Number(attrs?.age ?? raw?.age ?? (raw?.health?.age as any) ?? 0);
+  if (!Number.isFinite(ageNumber) || ageNumber < 0) return null;
 
-  // Edad: intenta múltiples ubicaciones y convierte a número
-  const ageNumber = Number(
-    attrs?.age ?? raw?.age ?? (raw?.health?.age as any) ?? 0
-  );
-  if (!Number.isFinite(ageNumber) || ageNumber < 0) return null; // sin edad válida -> omitir
-
-  const photos: string[] = Array.isArray(raw?.photos) && raw.photos.length ? raw.photos : [PLACEHOLDER];
+  const photos: string[] =
+    Array.isArray(raw?.photos) && raw.photos.length ? raw.photos : [PLACEHOLDER];
 
   return {
     id: String(raw?.id ?? raw?._id ?? crypto.randomUUID()),
@@ -108,9 +97,9 @@ const CatalogPage: React.FC = () => {
   const [animals, setAnimals] = useState<DisplayAnimal[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [skipped, setSkipped] = useState(0); // cuántos documentos omitimos por estar mal formados
+  const [skipped, setSkipped] = useState(0);
 
-  // Carga desde API
+  // Carga desde API (usa apiClient, que ya lee VITE_API_URL)
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -118,7 +107,7 @@ const CatalogPage: React.FC = () => {
         setLoading(true);
         setError(null);
 
-        const res = await apiClient.getAnimals(); // puede devolver ApiResponse o lista directa según tu cliente
+        const res = await apiClient.getAnimals();
         const list = (res as any)?.animals ?? (res as any)?.data?.animals ?? res;
 
         if (!Array.isArray(list)) {
@@ -149,7 +138,7 @@ const CatalogPage: React.FC = () => {
     };
   }, []);
 
-  // Filtro en memoria para UI inmediata
+  // Filtro en memoria
   const filteredAnimals = useMemo(() => {
     let list = [...animals];
 
@@ -330,12 +319,11 @@ const CatalogPage: React.FC = () => {
                   className="overflow-hidden hover:shadow-lg transition-shadow duration-300"
                 >
                   <div className="aspect-video overflow-hidden rounded-t-2xl">
-                  <img
-                    src={urlFromBackend(animal.photos?.[0] || "")}
-                    alt={`Foto de ${animal.name}`}
-                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                  />
-
+                    <img
+                      src={urlFromBackend(animal.photos?.[0] || "")}
+                      alt={`Foto de ${animal.name}`}
+                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                    />
                   </div>
 
                   <div className="p-6">

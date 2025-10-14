@@ -7,42 +7,36 @@ import type {
   FilterOptions,
 } from "../types";
 
-/**
- * =======================
- * Config
- * =======================
- */
-const API_BASE =
-  import.meta.env.VITE_API_BASE_URL?.trim() || "http://localhost:4000/api/v1";
+/* =========================================================================
+   CONFIG
+   Lee VITE_API_URL (origin del backend). Normaliza para que termine en /api/v1
+   Ejemplos válidos:
+     VITE_API_URL=https://patitas-quitenas-backend.onrender.com
+     VITE_API_URL=http://localhost:4000
+   ========================================================================= */
 
-// Entra a mocks sólo si lo fuerzas con VITE_USE_MOCK=true
+const RAW_URL = (import.meta as any).env?.VITE_API_URL?.trim() ?? "";
+const ORIGIN = (RAW_URL || "http://localhost:4000").replace(/\/+$/, "");
+const API_BASE = ORIGIN.endsWith("/api/v1") ? ORIGIN : `${ORIGIN}/api/v1`;
+
+// Modo mock opcional
 const USE_MOCK = String((import.meta as any).env?.VITE_USE_MOCK) === "true";
 
-/**
- * =======================
- * Helper para URLs de archivos servidos por el backend (/uploads/..)
- * Si el valor ya es absoluto (http...), lo deja igual.
- * =======================
- */
-// src/lib/api.ts
+/* =========================================================================
+   Helper de URLs de archivos servidos por el backend (/uploads/...)
+   Si ya es absoluta, la deja igual. Si es relativa /uploads/..., la hace absoluta
+   con el ORIGIN (no con /api/v1).
+   ========================================================================= */
 export const urlFromBackend = (relOrAbs: string) => {
   if (!relOrAbs) return relOrAbs;
-  if (relOrAbs.startsWith("http")) return relOrAbs;
-
-  // 👇 Sólo las rutas de archivos subidos por el backend ( /uploads/... )
-  // deben apuntar al origin del backend (http://localhost:4000).
-  if (relOrAbs.startsWith("/uploads/")) {
-    const base = API_BASE.replace(/\/$/, "");
-    const origin = base.replace(/\/api\/v1$/, "");
-    return `${origin}${relOrAbs}`;
-  }
-
-  // 👇 Cualquier otra ruta relativa (p. ej. /images/...) déjala tal cual
-  // para que la sirva el FRONT (Vite) en http://localhost:5173
+  if (/^https?:\/\//i.test(relOrAbs)) return relOrAbs;
+  if (relOrAbs.startsWith("/uploads/")) return `${ORIGIN}${relOrAbs}`;
   return relOrAbs;
 };
 
-
+/* =========================================================================
+   Subida simple de foto (multipart) para Fundación
+   ========================================================================= */
 export async function uploadAnimalPhoto(file: File): Promise<string> {
   const token = JSON.parse(localStorage.getItem("auth-storage") || "{}")?.state?.token;
   const fd = new FormData();
@@ -51,17 +45,16 @@ export async function uploadAnimalPhoto(file: File): Promise<string> {
     method: "POST",
     headers: token ? { Authorization: `Bearer ${token}` } : undefined,
     body: fd,
+    credentials: "include",
   });
-  const data = await res.json();
+  const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data?.error || "Error al subir imagen");
   return data.url as string; // p.ej. "/uploads/17123-foo.jpg"
 }
 
-/**
- * =======================
- * Mocks compatibles (opcionales)
- * =======================
- */
+/* =========================================================================
+   MOCKS (opcionales)
+   ========================================================================= */
 const MOCK_ANIMALS: Animal[] = [
   {
     _id: "a1",
@@ -130,25 +123,13 @@ const MOCK_ANIMALS: Animal[] = [
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-/**
- * =======================
- * Adaptadores/Helpers
- * =======================
- */
-
-// El backend devuelve _id; en el front preferimos id.
-// Esta función NO cambia el resto de la estructura.
+/* =========================================================================
+   Adaptadores / Helpers
+   ========================================================================= */
 function mapAnimal(dto: any): Animal {
-  return {
-    ...dto,
-    id: dto.id ?? dto._id, // preferimos id si ya viene, si no, usamos _id
-  };
+  return { ...dto, id: dto.id ?? dto._id };
 }
 
-/**
- * request<T> — devuelve siempre T “plano”
- * Lanza Error si la respuesta no es OK.
- */
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const token = JSON.parse(localStorage.getItem("auth-storage") || "{}")?.state?.token;
 
@@ -158,41 +139,8 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options.headers,
     },
+    credentials: "include",
     ...options,
-  });
-
-  let data: any = null;
-  try {
-    data = await res.json();
-  } catch {
-    // podría ser 204 No Content; lo dejamos como null
-  }
-
-  if (!res.ok) {
-    const msg = (data && (data.error || data.message)) || "Request failed";
-    throw new Error(msg);
-  }
-
-  return data as T;
-}
-
-/**
- * requestForm<T> — para multipart/form-data (NO setear Content-Type)
- */
-async function requestForm<T>(
-  endpoint: string,
-  fd: FormData,
-  method: "POST" | "PATCH" = "POST"
-): Promise<T> {
-  const token = JSON.parse(localStorage.getItem("auth-storage") || "{}")?.state?.token;
-
-  const res = await fetch(`${API_BASE}${endpoint}`, {
-    method,
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      // NO pongas Content-Type aquí: el browser calcula el boundary
-    },
-    body: fd,
   });
 
   let data: any = null;
@@ -210,11 +158,39 @@ async function requestForm<T>(
   return data as T;
 }
 
-/**
- * =======================
- * ApiClient
- * =======================
- */
+async function requestForm<T>(
+  endpoint: string,
+  fd: FormData,
+  method: "POST" | "PATCH" = "POST"
+): Promise<T> {
+  const token = JSON.parse(localStorage.getItem("auth-storage") || "{}")?.state?.token;
+
+  const res = await fetch(`${API_BASE}${endpoint}`, {
+    method,
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      // no setear Content-Type: el navegador pone el boundary correcto
+    },
+    credentials: "include",
+    body: fd,
+  });
+
+  let data: any = null;
+  try {
+    data = await res.json();
+  } catch {}
+
+  if (!res.ok) {
+    const msg = (data && (data.error || data.message)) || "Request failed";
+    throw new Error(msg);
+  }
+
+  return data as T;
+}
+
+/* =========================================================================
+   ApiClient
+   ========================================================================= */
 class ApiClient {
   // ===== Auth =====
   async login(email: string, password: string) {
@@ -246,7 +222,6 @@ class ApiClient {
   async getAnimals(filters?: FilterOptions) {
     if (USE_MOCK) {
       await sleep(250);
-      // filtrado básico opcional
       let list = [...MOCK_ANIMALS];
       if (filters) {
         if (filters.size?.length) {
@@ -318,19 +293,16 @@ class ApiClient {
 
   // ===== Fundación – CRUD con fotos =====
   async foundationListAnimals() {
-    // { animals, total }
     const data = await request<{ animals: any[]; total: number }>(`/foundation/animals`);
     return { animals: data.animals.map(mapAnimal), total: data.total };
   }
 
   async foundationCreateAnimal(fd: FormData) {
-    // responde { data: Animal }
     const res = await requestForm<{ data: any }>(`/foundation/animals`, fd, "POST");
     return mapAnimal(res.data);
   }
 
   async foundationUpdateAnimal(id: string, fd: FormData) {
-    // responde { data: Animal }
     const res = await requestForm<{ data: any }>(`/foundation/animals/${id}`, fd, "PATCH");
     return mapAnimal(res.data);
   }
@@ -343,7 +315,6 @@ class ApiClient {
     const fd = new FormData();
     fd.append("record", JSON.stringify(record));
     (evidence || []).forEach((f) => fd.append("evidence", f));
-    // responde { data: ClinicalRecord }
     return requestForm<{ data: ClinicalRecord }>(
       `/foundation/animals/${id}/clinical`,
       fd,
@@ -377,7 +348,7 @@ class ApiClient {
     });
   }
 
-  // ===== Clinical (público/clinica) =====
+  // ===== Clinical =====
   async getClinicalRecord(animalId: string) {
     if (USE_MOCK) {
       await sleep(120);
