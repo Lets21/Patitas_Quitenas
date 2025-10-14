@@ -8,6 +8,12 @@ import { Badge } from "@/components/ui/Badge";
 import { Input } from "@/components/ui/Input";
 import { apiClient } from "@/lib/api";
 import { urlFromBackend } from "@/lib/api";
+import { http } from "@/lib/http";
+
+export async function fetchAnimals() {
+  const { data } = await http.get("/api/v1/animals");
+  return data;
+}
 
 // ========= Tipos “seguros para UI” =========
 type Size = "SMALL" | "MEDIUM" | "LARGE";
