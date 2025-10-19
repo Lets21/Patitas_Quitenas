@@ -8,7 +8,7 @@ import DashboardLayout from "@/layouts/DashboardLayout";
 // Público
 import HomePage from "@/pages/HomePage";
 import CatalogPage from "@/pages/CatalogPage";
-import AnimalDetailPage from "@/features/animals/AnimalDetailPage";
+import AnimalDetailPage from "@/pages/AnimalDetailPage";
 import LoginPublicPage from "@/pages/LoginPublic";   // ⬅️ nuevo
 import LoginAdminPage from "@/pages/LoginAdmin";     // ⬅️ nuevo
 import RegisterPage from "@/pages/RegisterPage";
@@ -38,6 +38,7 @@ export const router = createBrowserRouter([
     children: [
       { path: "/", element: <HomePage /> },
       { path: "/catalog", element: <CatalogPage /> },
+      { path: "/catalogo", element: <CatalogPage /> },
       { path: "/adoptar", element: <CatalogPage /> },
       { path: "/adoptar/:animalId", element: <AnimalDetailPage /> },
 
