@@ -1,21 +1,18 @@
+// src/pages/AnimalDetailPage.tsx
 import React, { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { 
-  ArrowLeft, 
-  Heart, 
-  Calendar, 
-  User, 
+import {
+  ArrowLeft,
+  Heart,
+  Calendar,
+  User,
   Heart as HeartIcon,
-  MapPin,
-  Activity,
-  Shield,
   Users,
   Home,
   Syringe,
   Zap,
   CheckCircle,
-  Clock,
-  Stethoscope
+  Stethoscope,
 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -46,11 +43,9 @@ type DisplayAnimal = {
   updatedAt?: string;
 };
 
-// Utilidades
+// Utilidades UI
 const sizeLabel = (s: Size) => (s === "SMALL" ? "Pequeño" : s === "MEDIUM" ? "Mediano" : "Grande");
-const energyLabel = (e: Energy) => (e === "LOW" ? "Tranquilo" : e === "MEDIUM" ? "Moderado" : "Activo");
-const ageBucket = (years: number) => (years < 1 ? "Cachorro" : years < 3 ? "Joven" : years < 7 ? "Adulto" : "Senior");
-const genderLabel = (g: "MALE" | "FEMALE") => g === "MALE" ? "Macho" : "Hembra";
+const genderLabel = (g: "MALE" | "FEMALE") => (g === "MALE" ? "Macho" : "Hembra");
 
 const stateBadge = (state: AState) => {
   switch (state) {
@@ -65,129 +60,119 @@ const stateBadge = (state: AState) => {
   }
 };
 
-// Componente de barra de progreso
-const ProgressBar: React.FC<{ label: string; value: number; max?: number }> = ({ 
-  label, 
-  value, 
-  max = 5 
+const ProgressBar: React.FC<{ label: string; value: number; max?: number }> = ({
+  label,
+  value,
+  max = 5,
 }) => (
   <div className="flex items-center justify-between mb-2">
     <span className="text-sm font-medium text-gray-700">{label}</span>
     <div className="flex space-x-1">
       {Array.from({ length: max }, (_, i) => (
-        <div
-          key={i}
-          className={`w-3 h-3 rounded-full ${
-            i < value ? "bg-primary-500" : "bg-gray-200"
-          }`}
-        />
+        <div key={i} className={`w-3 h-3 rounded-full ${i < value ? "bg-primary-500" : "bg-gray-200"}`} />
       ))}
     </div>
   </div>
 );
 
-// Componente de compatibilidad
-const CompatibilityItem: React.FC<{ 
-  label: string; 
+const CompatibilityItem: React.FC<{
+  label: string;
   status: "excellent" | "good" | "moderate" | "poor";
   icon: React.ReactNode;
 }> = ({ label, status, icon }) => {
-  const statusConfig = {
-    excellent: { color: "text-green-600", bg: "bg-green-50", icon: "✓" },
-    good: { color: "text-green-600", bg: "bg-green-50", icon: "✓" },
-    moderate: { color: "text-orange-600", bg: "bg-orange-50", icon: "○" },
-    poor: { color: "text-red-600", bg: "bg-red-50", icon: "✗" }
-  };
-  
-  const config = statusConfig[status];
-  
+  const style =
+    status === "excellent" || status === "good"
+      ? { color: "text-green-600", bg: "bg-green-50", icon: "✓" }
+      : status === "moderate"
+      ? { color: "text-orange-600", bg: "bg-orange-50", icon: "○" }
+      : { color: "text-red-600", bg: "bg-red-50", icon: "✗" };
+
   return (
     <div className="flex items-center justify-between py-2">
-      <div className="flex items-center">
-        {icon}
-        <span className="ml-2 text-sm font-medium text-gray-700">{label}</span>
-      </div>
-      <div className={`px-3 py-1 rounded-full text-xs font-medium ${config.bg} ${config.color}`}>
-        {config.icon} {status === "excellent" ? "Excelente" : 
-                      status === "good" ? "Buena" : 
-                      status === "moderate" ? "Moderada" : "Baja"}
+      <div className="flex items-center">{icon}<span className="ml-2 text-sm font-medium text-gray-700">{label}</span></div>
+      <div className={`px-3 py-1 rounded-full text-xs font-medium ${style.bg} ${style.color}`}>
+        {style.icon}{" "}
+        {status === "excellent" ? "Excelente" : status === "good" ? "Buena" : status === "moderate" ? "Moderada" : "Baja"}
       </div>
     </div>
   );
 };
 
 const AnimalDetailPage: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
+  // 🟢 MUY IMPORTANTE: el param se llama animalId (como en tu router)
+  const { animalId } = useParams<{ animalId: string }>();
   const navigate = useNavigate();
+
   const [animal, setAnimal] = useState<DisplayAnimal | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!id) {
+    if (!animalId) {
       setError("ID de animal no válido");
       setLoading(false);
       return;
     }
 
-    const fetchAnimal = async () => {
+    const run = async () => {
       try {
         setLoading(true);
         setError(null);
-        
-        // Llamar a la API real
-        const animalData = await apiClient.getAnimal(id);
-        
-        // Convertir los datos de la API al formato que espera la página
-        const displayAnimal: DisplayAnimal = {
-          id: animalData.id || animalData._id,
-          name: animalData.name || "Sin nombre",
-          photos: animalData.photos || [],
-          clinicalSummary: animalData.clinicalSummary || "",
-          state: animalData.state || "AVAILABLE",
+
+        const dto: any = await apiClient.getAnimal(animalId); // GET /animals/:id
+
+        // mapeo seguro id/_id y defaults
+        const mapped: DisplayAnimal = {
+          id: dto.id ?? dto._id,
+          name: dto.name ?? "Sin nombre",
+          photos: Array.isArray(dto.photos) ? dto.photos : [],
+          clinicalSummary: dto.clinicalSummary ?? "",
+          state: (dto.state as AState) ?? "AVAILABLE",
           attributes: {
-            age: animalData.attributes?.age || 0,
-            size: animalData.attributes?.size || "MEDIUM",
-            breed: animalData.attributes?.breed || "Mestizo",
-            gender: animalData.attributes?.gender || "FEMALE",
-            energy: animalData.attributes?.energy || "MEDIUM",
+            age: Number(dto.attributes?.age ?? 0),
+            size: (dto.attributes?.size as Size) ?? "MEDIUM",
+            breed: dto.attributes?.breed ?? "Mestizo",
+            gender: dto.attributes?.gender ?? "FEMALE",
+            energy: (dto.attributes?.energy as Energy) ?? "MEDIUM",
             coexistence: {
-              children: animalData.attributes?.coexistence?.children || false,
-              cats: animalData.attributes?.coexistence?.cats || false,
-              dogs: animalData.attributes?.coexistence?.dogs || false
-            }
+              children: !!dto.attributes?.coexistence?.children,
+              cats: !!dto.attributes?.coexistence?.cats,
+              dogs: !!dto.attributes?.coexistence?.dogs,
+            },
           },
-          foundationId: animalData.foundationId,
-          createdAt: animalData.createdAt,
-          updatedAt: animalData.updatedAt
+          foundationId: dto.foundationId,
+          createdAt: dto.createdAt,
+          updatedAt: dto.updatedAt,
         };
 
-        setAnimal(displayAnimal);
-      } catch (err: any) {
-        setError(err?.message || "Error cargando el animal");
+        setAnimal(mapped);
+      } catch (e: any) {
+        setError(e?.message || "Error cargando el animal");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchAnimal();
-  }, [id]);
+    run();
+  }, [animalId]);
 
+  // Loading
   if (loading) {
     return (
       <div className="min-h-screen bg-surface-50 flex items-center justify-center">
-        <div className="text-gray-500">Cargando detalles del animal...</div>
+        <div className="text-gray-500">Cargando detalles del animal…</div>
       </div>
     );
   }
 
+  // Error
   if (error || !animal) {
     return (
       <div className="min-h-screen bg-surface-50 flex items-center justify-center">
         <Card className="p-8 text-center max-w-md">
           <p className="text-red-600 font-medium mb-2">No se pudo cargar el animal</p>
           <p className="text-gray-600 mb-4">{error || "Animal no encontrado"}</p>
-          <Button onClick={() => navigate("/catalogo")}>
+          <Button onClick={() => navigate("/catalog")}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Volver al catálogo
           </Button>
@@ -198,47 +183,48 @@ const AnimalDetailPage: React.FC = () => {
 
   const { attributes } = animal;
   const stateInfo = stateBadge(animal.state);
+  const mainPhoto = animal.photos[0] ? urlFromBackend(animal.photos[0]) : undefined;
 
   return (
     <div className="min-h-screen bg-surface-50">
-      {/* Navegación superior */}
+      {/* Top bar */}
       <div className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
-            <Link to="/catalogo" className="flex items-center text-gray-600 hover:text-gray-900">
+            <Link to="/catalog" className="flex items-center text-gray-600 hover:text-gray-900">
               <ArrowLeft className="h-5 w-5 mr-2" />
               Volver al catálogo
             </Link>
-            <div className="flex items-center space-x-4">
-              <span className="text-gray-600">Inicio</span>
-              <span className="text-gray-600">Catálogo</span>
-              <span className="text-gray-600">Sobre Nosotros</span>
-              <span className="text-gray-600">Contacto</span>
+            <div className="flex items-center space-x-4 text-sm text-gray-600">
+              <span>Inicio</span>
+              <span>Catálogo</span>
+              <span>Sobre Nosotros</span>
             </div>
           </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Tarjeta principal del animal */}
+        {/* Tarjeta principal */}
         <Card className="overflow-hidden mb-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Imagen del animal */}
+            {/* Imagen */}
             <div className="relative">
               <div className="aspect-square rounded-2xl overflow-hidden bg-gray-100">
-                <img
-                  src={urlFromBackend(animal.photos[0])}
-                  alt={`Foto de ${animal.name}`}
-                  className="w-full h-full object-cover"
-                />
+                {mainPhoto ? (
+                  <img src={mainPhoto} alt={`Foto de ${animal.name}`} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-gray-400">
+                    Sin foto
+                  </div>
+                )}
               </div>
-              {/* Overlay "ADÓPTAME" */}
               <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full">
                 <span className="text-sm font-bold text-primary-600">ADÓPTAME</span>
               </div>
             </div>
 
-            {/* Información del animal */}
+            {/* Info */}
             <div className="p-8">
               <div className="flex items-start justify-between mb-6">
                 <div>
@@ -250,7 +236,7 @@ const AnimalDetailPage: React.FC = () => {
                     </div>
                     <div className="flex items-center">
                       <User className="h-4 w-4 mr-1" />
-                      {sizeLabel(attributes.size)}
+                      {sizeLabel(attributes.size)} • {genderLabel(attributes.gender)}
                     </div>
                     <div className="flex items-center">
                       <HeartIcon className="h-4 w-4 mr-1 text-purple-600" />
@@ -261,7 +247,7 @@ const AnimalDetailPage: React.FC = () => {
                 <Heart className="h-6 w-6 text-gray-400 hover:text-red-500 cursor-pointer" />
               </div>
 
-              {/* Estado de adopción */}
+              {/* Estado */}
               <div className="mb-6">
                 <Badge variant={stateInfo.variant} className="text-sm">
                   <CheckCircle className="h-4 w-4 mr-1" />
@@ -269,7 +255,7 @@ const AnimalDetailPage: React.FC = () => {
                 </Badge>
               </div>
 
-              {/* Detalles de salud */}
+              {/* Salud */}
               <div className="mb-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">Estado de salud</h3>
                 <div className="grid grid-cols-3 gap-4">
@@ -288,21 +274,21 @@ const AnimalDetailPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Fundación */}
+              {/* Fundación (placeholder si aún no se usa) */}
               <div className="mb-6">
                 <div className="flex items-center text-sm">
                   <div className="w-2 h-2 bg-red-500 rounded-full mr-2"></div>
-                  <span className="text-gray-700">Fundación Patitas Felices</span>
+                  <span className="text-gray-700">Fundación PAE</span>
                 </div>
               </div>
 
-              {/* Botones de acción */}
+              {/* CTA */}
               <div className="flex space-x-4">
                 <Button size="lg" className="flex-1">
                   <HeartIcon className="h-5 w-5 mr-2" />
                   Adoptar a {animal.name}
                 </Button>
-                <Button variant="outline" size="lg" onClick={() => navigate("/catalogo")}>
+                <Button variant="outline" size="lg" onClick={() => navigate("/catalog")}>
                   <ArrowLeft className="h-5 w-5 mr-2" />
                   Volver al catálogo
                 </Button>
@@ -311,9 +297,8 @@ const AnimalDetailPage: React.FC = () => {
           </div>
         </Card>
 
-        {/* Tarjetas de detalles adicionales */}
+        {/* Otras tarjetas */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Personalidad */}
           <Card className="p-6">
             <div className="flex items-center mb-4">
               <User className="h-5 w-5 mr-2 text-primary-600" />
@@ -327,59 +312,29 @@ const AnimalDetailPage: React.FC = () => {
             </div>
           </Card>
 
-          {/* Compatibilidad */}
           <Card className="p-6">
             <div className="flex items-center mb-4">
               <Users className="h-5 w-5 mr-2 text-primary-600" />
               <h3 className="text-lg font-semibold text-gray-900">Compatibilidad</h3>
             </div>
             <div className="space-y-2">
-              <CompatibilityItem
-                label="Niños"
-                status="excellent"
-                icon={<Users className="h-4 w-4 text-gray-500" />}
-              />
-              <CompatibilityItem
-                label="Otros perros"
-                status="excellent"
-                icon={<Users className="h-4 w-4 text-gray-500" />}
-              />
-              <CompatibilityItem
-                label="Gatos"
-                status="moderate"
-                icon={<Users className="h-4 w-4 text-gray-500" />}
-              />
-              <CompatibilityItem
-                label="Apartamento"
-                status="good"
-                icon={<Home className="h-4 w-4 text-gray-500" />}
-              />
+              <CompatibilityItem label="Niños" status="excellent" icon={<Users className="h-4 w-4 text-gray-500" />} />
+              <CompatibilityItem label="Otros perros" status="excellent" icon={<Users className="h-4 w-4 text-gray-500" />} />
+              <CompatibilityItem label="Gatos" status="moderate" icon={<Users className="h-4 w-4 text-gray-500" />} />
+              <CompatibilityItem label="Apartamento" status="good" icon={<Home className="h-4 w-4 text-gray-500" />} />
             </div>
           </Card>
 
-          {/* Historial clínico */}
           <Card className="p-6">
             <div className="flex items-center mb-4">
               <Stethoscope className="h-5 w-5 mr-2 text-primary-600" />
               <h3 className="text-lg font-semibold text-gray-900">Historial clínico</h3>
             </div>
-            <div className="space-y-3">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Fecha de rescate:</span>
-                <span className="text-gray-900">15/03/2023</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Última vacuna:</span>
-                <span className="text-gray-900">10/07/2023</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Esterilización:</span>
-                <span className="text-gray-900">Sí (05/04/2023)</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Condiciones:</span>
-                <span className="text-gray-900">Ninguna</span>
-              </div>
+            <div className="space-y-3 text-sm">
+              {/* Placeholder hasta conectar tu módulo clínico */}
+              <div className="flex justify-between"><span className="text-gray-600">Última vacunación:</span><span className="text-gray-900">—</span></div>
+              <div className="flex justify-between"><span className="text-gray-600">Esterilización:</span><span className="text-gray-900">—</span></div>
+              <div className="flex justify-between"><span className="text-gray-600">Condiciones:</span><span className="text-gray-900">—</span></div>
             </div>
           </Card>
         </div>
