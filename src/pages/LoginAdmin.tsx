@@ -133,15 +133,7 @@ export default function LoginAdminPage() {
             </p>
           </div>
 
-          {/* Demo creds opcionales */}
-          <div className="mt-6 rounded-xl bg-blue-50 p-4">
-            <p className="mb-2 text-sm font-medium text-blue-800">Credenciales de demostración</p>
-            <ul className="text-xs text-blue-700 space-y-1">
-              <li><strong>Fundación:</strong> fundacion@demo.com / demo123456</li>
-              <li><strong>Clínica:</strong> clinica@demo.com / demo123456</li>
-              <li><strong>Admin:</strong> admin@demo.com / demo123456</li>
-            </ul>
-          </div>
+          
         </Card>
       </div>
     </div>

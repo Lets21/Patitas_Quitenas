@@ -67,7 +67,7 @@ export const LoginPage: React.FC = () => {
               Iniciar Sesión
             </h1>
             <p className="text-gray-600 mt-2">
-              Bienvenido de vuelta a AdoptaQuito
+              Bienvenido de vuelta a Huellitas Quiteñas
             </p>
           </div>
 

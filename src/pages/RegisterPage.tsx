@@ -94,7 +94,7 @@ export const RegisterPage: React.FC = () => {
               <Heart className="h-8 w-8 text-white" />
             </div>
             <h1 className="text-2xl font-bold text-gray-900">Crear cuenta</h1>
-            <p className="mt-2 text-gray-600">Únete a la comunidad AdoptaQuito</p>
+            <p className="mt-2 text-gray-600">Únete a la comunidad Huellitas Quiteñas</p>
           </div>
 
           {/* Formulario adoptante */}

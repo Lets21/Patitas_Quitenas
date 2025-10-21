@@ -1,7 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Menu, X, Heart, User, LogOut, Settings, BarChart3 } from 'lucide-react';
-import { useState } from 'react';
+import { Menu, X, User, LogOut, Settings, BarChart3 } from 'lucide-react';
 import { useAuthStore } from '../../lib/auth';
 import { Button } from '../ui/Button';
 
@@ -22,7 +21,6 @@ export const Header: React.FC = () => {
 
   const getNavItemsByRole = () => {
     if (!user) return [];
-
     switch (user.role) {
       case 'ADOPTANTE':
         return [
@@ -57,16 +55,20 @@ export const Header: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2">
-            <div className="bg-primary-500 p-2 rounded-xl">
-              <Heart className="h-6 w-6 text-white fill-current" />
-            </div>
-            <span className="text-xl font-bold text-primary-500">AdoptaQuito</span>
+          <Link to="/" className="flex items-center space-x-2 select-none">
+            <img
+              src="/images/logo.png"
+              alt="Huellitas Quiteñas"
+              className="h-20 w-20 object-contain rounded-lg"
+              loading="eager"
+            />
+            <span className="text-xl font-bold text-primary-600">
+              Huellitas Quiteñas
+            </span>
           </Link>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
-            {/* Public Navigation */}
             {publicNavItems.map((item) => (
               <Link
                 key={item.to}
@@ -77,7 +79,6 @@ export const Header: React.FC = () => {
               </Link>
             ))}
 
-            {/* Authenticated Navigation */}
             {isAuthenticated && (
               <>
                 <div className="h-4 border-l border-gray-300" />
@@ -110,14 +111,10 @@ export const Header: React.FC = () => {
             ) : (
               <div className="flex items-center space-x-2">
                 <Link to="/login">
-                  <Button variant="ghost" size="sm">
-                    Iniciar Sesión
-                  </Button>
+                  <Button variant="ghost" size="sm">Iniciar Sesión</Button>
                 </Link>
                 <Link to="/register">
-                  <Button size="sm">
-                    Registrarse
-                  </Button>
+                  <Button size="sm">Registrarse</Button>
                 </Link>
               </div>
             )}

@@ -51,7 +51,7 @@ export default function LoginPublicPage() {
               <Heart className="h-8 w-8 text-white" />
             </div>
             <h1 className="text-2xl font-bold text-gray-900">Iniciar sesión</h1>
-            <p className="mt-2 text-sm text-gray-600">Acceso para adoptantes de AdoptaQuito</p>
+            <p className="mt-2 text-sm text-gray-600">Acceso para adoptantes de Huellitas Quiteñas</p>
           </div>
 
           {/* Error banner */}

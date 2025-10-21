@@ -193,12 +193,20 @@ const AboutPage: React.FC = () => {
             Adopta, dona, apadrina o participa como voluntario/a. Cada acción cuenta para transformar vidas y promover la convivencia responsable.
           </p>
           <div className="flex justify-center">
-            <Button 
-              size="lg" 
-              className="bg-white text-green-700 hover:bg-green-50 hover:text-green-800 font-bold px-8 py-3 shadow-lg border-2 border-white"
-            >
-              Adoptar Ahora
-            </Button>
+            <Button
+  size="lg"
+  className="rounded-full border-2 border-white text-white bg-transparent
+             px-10 py-3 font-semibold shadow-[0_8px_20px_rgba(0,0,0,0.25)]
+             hover:bg-orange-500 hover:border-orange-500 hover:text-white
+             transition-colors duration-200
+             focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-orange-400/60"
+>
+  Adoptar Ahora
+</Button>
+
+
+
+
           </div>
         </div>
       </div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Heart, Mail, Phone, MapPin } from 'lucide-react';
+import { Mail, Phone, MapPin } from 'lucide-react';
 
 export const Footer: React.FC = () => {
   return (
@@ -9,16 +9,22 @@ export const Footer: React.FC = () => {
           {/* Logo y misión */}
           <div className="col-span-1 md:col-span-2">
             <div className="flex items-center space-x-2 mb-4">
-              <div className="bg-white p-2 rounded-xl">
-                <Heart className="h-6 w-6 text-primary-500 fill-current" />
-              </div>
-              <span className="text-xl font-bold">AdoptaQuito</span>
-            </div>
+  <img
+    src="/images/logo.png"           // tu PNG transparente
+    alt="Huellitas Quiteñas"
+    className="h-24 w-24 object-contain"  // nada de ring, nada de bg
+    loading="lazy"
+  />
+  <span className="text-xl font-bold">Huellitas Quiteñas</span>
+</div>
+
+
             <p className="text-primary-100 mb-4">
-              Conectamos corazones para crear hogares llenos de amor. 
-              Facilitamos adopciones responsables de caninos en Quito a través 
-              de un proceso transparente y seguro.
+              Conectamos corazones para crear hogares llenos de amor.
+              Facilitamos adopciones responsables de caninos en Quito
+              a través de un proceso transparente y seguro.
             </p>
+
             <div className="flex space-x-4">
               <div className="flex items-center space-x-2 text-primary-200">
                 <MapPin className="h-4 w-4" />
@@ -44,7 +50,7 @@ export const Footer: React.FC = () => {
             <ul className="space-y-3 text-primary-200">
               <li className="flex items-center space-x-2">
                 <Mail className="h-4 w-4 flex-shrink-0" />
-                <span className="text-sm">contacto@adoptaquito.org</span>
+                <span className="text-sm">contacto@huellitasquito.ec</span>
               </li>
               <li className="flex items-center space-x-2">
                 <Phone className="h-4 w-4 flex-shrink-0" />
@@ -55,18 +61,15 @@ export const Footer: React.FC = () => {
         </div>
 
         <div className="border-t border-primary-500 mt-8 pt-8 text-center text-primary-200">
-          <p>&copy; 2025 AdoptaQuito. Todos los derechos reservados.</p>
+          <p>&copy; 2025 Huellitas Quiteñas. Todos los derechos reservados.</p>
           <div className="mt-2 space-x-4 text-sm">
-            <a href="/privacy" className="hover:text-white transition-colors">
-              Política de Privacidad
-            </a>
-            <a href="/terms" className="hover:text-white transition-colors">
-              Términos de Uso
-            </a>
+            <a href="/privacy" className="hover:text-white transition-colors">Política de Privacidad</a>
+            <a href="/terms" className="hover:text-white transition-colors">Términos de Uso</a>
           </div>
         </div>
       </div>
     </footer>
   );
 };
+
 export default Footer;

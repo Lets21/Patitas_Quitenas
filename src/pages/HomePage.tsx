@@ -26,7 +26,7 @@ export const HomePage: React.FC = () => {
   const testimonials = [
     {
       name: 'María González',
-      text: 'Gracias a AdoptaQuito encontré a Luna, mi compañera perfecta. El proceso fue muy profesional y me sentí apoyada en cada paso.',
+      text: 'Gracias a Huellitas Quiteñas encontré a Luna, mi compañera perfecta. El proceso fue muy profesional y me sentí apoyada en cada paso.',
       rating: 5
     },
     {
