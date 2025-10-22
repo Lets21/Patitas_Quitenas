@@ -186,17 +186,17 @@ function ClinicNotificationsPage() {
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 overflow-x-hidden">
       {/* Header de Clínica */}
       <ClinicHeader />
 
       {/* Contenido Principal */}
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
         {/* Header de Notificaciones */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between">
+        <div className="mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Notificaciones Clínicas</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Notificaciones Clínicas</h1>
               <p className="text-sm text-gray-600">
                 {unreadCount > 0
                   ? `${unreadCount} notificación${unreadCount > 1 ? 'es' : ''} sin leer`
@@ -205,9 +205,10 @@ function ClinicNotificationsPage() {
             </div>
             <div className="flex items-center space-x-3">
               {unreadCount > 0 && (
-                <Button variant="outline" size="sm" onClick={markAllAsRead}>
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  Marcar todas como leídas
+                <Button variant="outline" size="sm" onClick={markAllAsRead} className="text-xs sm:text-sm">
+                  <CheckCircle className="w-4 h-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">Marcar todas como leídas</span>
+                  <span className="sm:hidden">Marcar todas</span>
                 </Button>
               )}
             </div>
@@ -215,38 +216,38 @@ function ClinicNotificationsPage() {
         </div>
 
         {/* Filtros */}
-        <div className="bg-white rounded-lg p-4 mb-6 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Filter className="w-5 h-5 text-gray-400" />
-              <div className="flex space-x-2">
+        <div className="bg-white rounded-lg p-3 sm:p-4 mb-4 sm:mb-6 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              <Filter className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 flex-shrink-0" />
+              <div className="flex overflow-x-auto space-x-2 pb-2 sm:pb-0">
                 <button
                   onClick={() => setFilter('all')}
-                  className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${filter === 'all' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                  className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${filter === 'all' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
                 >
                   Todas ({notifications.length})
                 </button>
                 <button
                   onClick={() => setFilter('unread')}
-                  className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${filter === 'unread' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                  className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${filter === 'unread' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
                 >
                   Sin leer ({unreadCount})
                 </button>
                 <button
                   onClick={() => setFilter('clinical')}
-                  className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${filter === 'clinical' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                  className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${filter === 'clinical' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
                 >
                   Fichas Clínicas
                 </button>
                 <button
                   onClick={() => setFilter('appointment')}
-                  className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${filter === 'appointment' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                  className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${filter === 'appointment' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
                 >
                   Citas
                 </button>
                 <button
                   onClick={() => setFilter('treatment')}
-                  className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${filter === 'treatment' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                  className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${filter === 'treatment' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
                 >
                   Tratamientos
                 </button>
@@ -269,41 +270,46 @@ function ClinicNotificationsPage() {
             filteredNotifications.map(notification => (
               <Card
                 key={notification.id}
-                className={`p-4 transition-all hover:shadow-md ${!notification.isRead ? 'border-l-4 border-l-green-500 bg-green-50' : ''}`}
+                className={`p-3 sm:p-4 transition-all hover:shadow-md ${!notification.isRead ? 'border-l-4 border-l-green-500 bg-green-50' : ''}`}
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start space-x-4 flex-1">
+                <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
+                  <div className="flex items-start space-x-3 sm:space-x-4 flex-1 min-w-0">
                     <div className="flex-shrink-0 mt-1">{getNotificationIcon(notification.type)}</div>
 
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center space-x-2 mb-1">
-                        <h3 className={`text-sm font-medium ${!notification.isRead ? 'text-gray-900' : 'text-gray-700'}`}>
-                          {notification.title}
-                        </h3>
-                        {!notification.isRead && <div className="w-2 h-2 bg-green-500 rounded-full"></div>}
-                        <Badge size="sm" variant={getPriorityVariant(notification.priority)}>
-                          {notification.priority === 'high' ? 'Alta' : notification.priority === 'medium' ? 'Media' : 'Baja'}
-                        </Badge>
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
+                        <div className="flex items-center space-x-2">
+                          <h3 className={`text-sm font-medium truncate ${!notification.isRead ? 'text-gray-900' : 'text-gray-700'}`}>
+                            {notification.title}
+                          </h3>
+                          {!notification.isRead && <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0"></div>}
+                        </div>
+                        <div className="self-start sm:self-center">
+                          <Badge size="sm" variant={getPriorityVariant(notification.priority)}>
+                            {notification.priority === 'high' ? 'Alta' : notification.priority === 'medium' ? 'Media' : 'Baja'}
+                          </Badge>
+                        </div>
                       </div>
 
-                      <p className="text-sm text-gray-600 mb-2">{notification.message}</p>
+                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">{notification.message}</p>
 
-                      <div className="flex items-center space-x-4 text-xs text-gray-500">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs text-gray-500">
                         <span className="flex items-center">
-                          <Clock className="w-3 h-3 mr-1" />
+                          <Clock className="w-3 h-3 mr-1 flex-shrink-0" />
                           {formatTimestamp(notification.timestamp)}
                         </span>
-                        {notification.metadata?.animalName && <span>Paciente: {notification.metadata.animalName}</span>}
-                        {notification.metadata?.appointmentDate && <span>Cita: {new Date(notification.metadata.appointmentDate).toLocaleDateString()}</span>}
-                        {notification.metadata?.treatmentType && <span>Tratamiento: {notification.metadata.treatmentType}</span>}
+                        {notification.metadata?.animalName && <span className="truncate">Paciente: {notification.metadata.animalName}</span>}
+                        {notification.metadata?.appointmentDate && <span className="truncate">Cita: {new Date(notification.metadata.appointmentDate).toLocaleDateString()}</span>}
+                        {notification.metadata?.treatmentType && <span className="truncate">Tratamiento: {notification.metadata.treatmentType}</span>}
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center space-x-2 ml-4">
+                  <div className="flex items-center justify-end sm:justify-start space-x-2 sm:ml-4">
                     {notification.actionUrl && (
-                      <Button variant="outline" size="sm" className="text-green-600 border-green-600 hover:bg-green-50">
-                        Ver detalles
+                      <Button variant="outline" size="sm" className="text-green-600 border-green-600 hover:bg-green-50 text-xs sm:text-sm">
+                        <span className="hidden sm:inline">Ver detalles</span>
+                        <span className="sm:hidden">Ver</span>
                       </Button>
                     )}
 
