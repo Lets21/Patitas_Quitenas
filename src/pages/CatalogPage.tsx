@@ -1,7 +1,7 @@
 // src/pages/CatalogPage.tsx
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Search, Filter, Heart, MapPin, Calendar, Eye } from "lucide-react";
+import { Search, Heart, MapPin, Calendar, Eye } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -92,7 +92,6 @@ function normalizeAnimal(raw: any): DisplayAnimal | null {
 const CatalogPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filters, setFilters] = useState<LocalFilters>({});
-  const [showFilters, setShowFilters] = useState(false);
 
   const [animals, setAnimals] = useState<DisplayAnimal[]>([]);
   const [loading, setLoading] = useState(true);
@@ -210,7 +209,7 @@ const CatalogPage: React.FC = () => {
             </p>
           )}
 
-          {/* Search + Filtros */}
+          {/* Search */}
           <div className="flex flex-col md:flex-row gap-4 mt-6 mb-6">
             <div className="flex-1">
               <Input
@@ -220,164 +219,165 @@ const CatalogPage: React.FC = () => {
                 className="w-full"
               />
             </div>
-            <Button variant="outline" onClick={() => setShowFilters((v) => !v)} className="md:w-auto">
-              <Filter className="h-4 w-4 mr-2" />
-              Filtros
-            </Button>
           </div>
-
-          {/* Panel de filtros */}
-          {showFilters && (
-            <Card className="mb-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Tamaño */}
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-3">Tamaño</h3>
-                  <div className="space-y-2">
-                    {SIZE_OPTIONS.map((size) => (
-                      <label key={size} className="flex items-center">
-                        <input
-                          type="checkbox"
-                          className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                          checked={!!filters.size?.includes(size)}
-                          onChange={() => toggleFilter("size", size)}
-                        />
-                        <span className="ml-2 text-sm text-gray-700">{sizeLabel(size)}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Energía */}
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-3">Energía</h3>
-                  <div className="space-y-2">
-                    {ENERGY_OPTIONS.map((energy) => (
-                      <label key={energy} className="flex items-center">
-                        <input
-                          type="checkbox"
-                          className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                          checked={!!filters.energy?.includes(energy)}
-                          onChange={() => toggleFilter("energy", energy)}
-                        />
-                        <span className="ml-2 text-sm text-gray-700">{energyLabel(energy)}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Convivencia (placeholder) */}
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-3">Convivencia</h3>
-                  <div className="space-y-2">
-                    <label className="flex items-center">
-                      <input type="checkbox" className="rounded border-gray-300 text-primary-600 focus:ring-primary-500" disabled />
-                      <span className="ml-2 text-sm text-gray-700">Con niños</span>
-                    </label>
-                    <label className="flex items-center">
-                      <input type="checkbox" className="rounded border-gray-300 text-primary-600 focus:ring-primary-500" disabled />
-                      <span className="ml-2 text-sm text-gray-700">Con gatos</span>
-                    </label>
-                    <label className="flex items-center">
-                      <input type="checkbox" className="rounded border-gray-300 text-primary-600 focus:ring-primary-500" disabled />
-                      <span className="ml-2 text-sm text-gray-700">Con otros perros</span>
-                    </label>
-                  </div>
-                </div>
-              </div>
-            </Card>
-          )}
         </div>
 
-        {/* Grid de animales */}
-        {filteredAnimals.length === 0 ? (
-          <Card className="text-center py-16">
-            <div className="text-gray-400 mb-4">
-              <Search className="h-16 w-16 mx-auto" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No encontramos resultados</h3>
-            <p className="text-gray-600 mb-4">Intenta ajustar tus filtros o términos de búsqueda</p>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setSearchTerm("");
-                setFilters({});
-              }}
-            >
-              Limpiar filtros
-            </Button>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredAnimals.map((animal) => {
-              const b = stateBadge(animal.state);
-              const { age, breed, size, energy, coexistence } = animal.attributes;
-
-              return (
-                <Card
-                  key={animal.id}
-                  className="overflow-hidden hover:shadow-lg transition-shadow duration-300"
-                >
-                  <div className="aspect-video overflow-hidden rounded-t-2xl">
-                    <img
-                      src={urlFromBackend(animal.photos?.[0] || "")}
-                      alt={`Foto de ${animal.name}`}
-                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                    />
-                  </div>
-
-                  <div className="p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <div>
-                        <h3 className="text-xl font-semibold text-gray-900 mb-1">
-                          {animal.name}
-                        </h3>
-                        <p className="text-gray-600">{breed}</p>
-                      </div>
-                      <Badge variant={b.variant}>{b.label}</Badge>
-                    </div>
-
-                    <div className="space-y-2 mb-4">
-                      <div className="flex items-center text-sm text-gray-600">
-                        <Calendar className="h-4 w-4 mr-2 text-gray-400" />
-                        {age} {age === 1 ? "año" : "años"} • {ageBucket(age)}
-                      </div>
-                      <div className="flex items-center text-sm text-gray-600">
-                        <MapPin className="h-4 w-4 mr-2 text-gray-400" />
-                        {sizeLabel(size)} • {energyLabel(energy)}
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap gap-1 mb-4">
-                      {coexistence.children && <Badge size="sm">Con niños</Badge>}
-                      {coexistence.cats && <Badge size="sm">Con gatos</Badge>}
-                      {coexistence.dogs && <Badge size="sm">Con perros</Badge>}
-                    </div>
-
-                    <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                      {animal.clinicalSummary || "Salud validada y lista para adopción"}
-                    </p>
-
-                    <div className="flex gap-2">
-                      <Link to={`/adoptar/${animal.id}`} className="flex-1">
-                        <Button variant="outline" size="sm" className="w-full">
-                          <Eye className="h-4 w-4 mr-2" />
-                          Ver más
-                        </Button>
-                      </Link>
-                      <Link to="/login" className="flex-1">
-                        <Button size="sm" className="w-full">
-                          <Heart className="h-4 w-4 mr-2" />
-                          Adoptar
-                        </Button>
-                      </Link>
+        {/* Layout principal con filtros a la izquierda y contenido a la derecha */}
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* Panel de filtros - Lado izquierdo - Siempre visible */}
+          <div className="lg:w-56 flex-shrink-0">
+              <Card className="p-3">
+                <div className="space-y-3">
+                  {/* Tamaño */}
+                  <div>
+                    <h3 className="font-semibold text-gray-900 mb-2">Tamaño</h3>
+                    <div className="space-y-1">
+                      {SIZE_OPTIONS.map((size) => (
+                        <label key={size} className="flex items-center">
+                          <input
+                            type="checkbox"
+                            className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                            checked={!!filters.size?.includes(size)}
+                            onChange={() => toggleFilter("size", size)}
+                          />
+                          <span className="ml-2 text-sm text-gray-700">{sizeLabel(size)}</span>
+                        </label>
+                      ))}
                     </div>
                   </div>
-                </Card>
-              );
-            })}
+
+                  {/* Energía */}
+                  <div>
+                    <h3 className="font-semibold text-gray-900 mb-2">Energía</h3>
+                    <div className="space-y-1">
+                      {ENERGY_OPTIONS.map((energy) => (
+                        <label key={energy} className="flex items-center">
+                          <input
+                            type="checkbox"
+                            className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                            checked={!!filters.energy?.includes(energy)}
+                            onChange={() => toggleFilter("energy", energy)}
+                          />
+                          <span className="ml-2 text-sm text-gray-700">{energyLabel(energy)}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Convivencia */}
+                  <div>
+                    <h3 className="font-semibold text-gray-900 mb-2">Convivencia</h3>
+                    <div className="space-y-1">
+                      <label className="flex items-center">
+                        <input type="checkbox" className="rounded border-gray-300 text-primary-600 focus:ring-primary-500" disabled />
+                        <span className="ml-2 text-sm text-gray-700">Con niños</span>
+                      </label>
+                      <label className="flex items-center">
+                        <input type="checkbox" className="rounded border-gray-300 text-primary-600 focus:ring-primary-500" disabled />
+                        <span className="ml-2 text-sm text-gray-700">Con gatos</span>
+                      </label>
+                      <label className="flex items-center">
+                        <input type="checkbox" className="rounded border-gray-300 text-primary-600 focus:ring-primary-500" disabled />
+                        <span className="ml-2 text-sm text-gray-700">Con otros perros</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </Card>
           </div>
-        )}
+
+          {/* Contenido principal - Lado derecho con grid optimizado */}
+          <div className="flex-1 min-w-0">
+            {filteredAnimals.length === 0 ? (
+              <Card className="text-center py-16">
+                <div className="text-gray-400 mb-4">
+                  <Search className="h-16 w-16 mx-auto" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">No encontramos resultados</h3>
+                <p className="text-gray-600 mb-4">Intenta ajustar tus filtros o términos de búsqueda</p>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSearchTerm("");
+                    setFilters({});
+                  }}
+                >
+                  Limpiar filtros
+                </Button>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                {filteredAnimals.map((animal) => {
+                  const b = stateBadge(animal.state);
+                  const { age, breed, size, energy, coexistence } = animal.attributes;
+
+                  return (
+                    <Card
+                      key={animal.id}
+                      className="overflow-hidden hover:shadow-lg transition-shadow duration-300"
+                    >
+                      <div className="aspect-square overflow-hidden rounded-t-2xl">
+                        <img
+                          src={urlFromBackend(animal.photos?.[0] || "")}
+                          alt={`Foto de ${animal.name}`}
+                          className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                        />
+                      </div>
+
+                      <div className="p-6">
+                        <div className="flex items-start justify-between mb-4">
+                          <div>
+                            <h3 className="text-xl font-semibold text-gray-900 mb-1">
+                              {animal.name}
+                            </h3>
+                            <p className="text-gray-600">{breed}</p>
+                          </div>
+                          <Badge variant={b.variant}>{b.label}</Badge>
+                        </div>
+
+                        <div className="space-y-2 mb-4">
+                          <div className="flex items-center text-sm text-gray-600">
+                            <Calendar className="h-4 w-4 mr-2 text-gray-400" />
+                            {age} {age === 1 ? "año" : "años"} • {ageBucket(age)}
+                          </div>
+                          <div className="flex items-center text-sm text-gray-600">
+                            <MapPin className="h-4 w-4 mr-2 text-gray-400" />
+                            {sizeLabel(size)} • {energyLabel(energy)}
+                          </div>
+                        </div>
+
+                        <div className="flex flex-wrap gap-1 mb-4">
+                          {coexistence.children && <Badge size="sm">Con niños</Badge>}
+                          {coexistence.cats && <Badge size="sm">Con gatos</Badge>}
+                          {coexistence.dogs && <Badge size="sm">Con perros</Badge>}
+                        </div>
+
+                        <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+                          {animal.clinicalSummary || "Salud validada y lista para adopción"}
+                        </p>
+
+                        <div className="flex gap-2">
+                          <Link to={`/adoptar/${animal.id}`} className="flex-1">
+                            <Button variant="outline" size="sm" className="w-full h-9 text-xs">
+                              <Eye className="h-4 w-4 mr-2" />
+                              Ver más
+                            </Button>
+                          </Link>
+                          <Link to="/login" className="flex-1">
+                            <Button size="sm" className="w-full h-9 text-xs">
+                              <Heart className="h-4 w-4 mr-2" />
+                              Adoptar
+                            </Button>
+                          </Link>
+                        </div>
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
