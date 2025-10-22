@@ -1,26 +1,32 @@
+// src/app/ProtectedRoute.tsx
 import React from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuthStore } from "@/app/auth";
-import { isAdminRole } from "@/app/auth";
+
+type Role = "ADOPTANTE" | "FUNDACION" | "CLINICA" | "ADMIN";
 
 type Props = {
-  allowed: Array<"ADOPTANTE" | "FUNDACION" | "CLINICA" | "ADMIN">;
+  allowed: Role[];
   children: React.ReactElement;
 };
+
+const ADMIN_ROLES: Role[] = ["FUNDACION", "CLINICA", "ADMIN"];
 
 export function ProtectedRoute({ allowed, children }: Props) {
   const { user, token } = useAuthStore();
   const loc = useLocation();
 
+  const isAdminAllowed = allowed.some((r) => ADMIN_ROLES.includes(r));
+  const loginPath = isAdminAllowed ? "/admin/login" : "/login";
+
+  // No autenticado
   if (!token || !user) {
-    // si la ruta es para admin, mándalo al login de admin
-    const toAdminLogin = allowed.some(isAdminRole);
-    return <Navigate to={toAdminLogin ? "/admin/login" : "/login"} state={{ from: loc }} replace />;
+    return <Navigate to={loginPath} state={{ from: loc }} replace />;
   }
 
+  // Autenticado pero sin permiso para esta ruta
   if (!allowed.includes(user.role)) {
-    // logueado pero sin permisos → llévalo a su home por rol
-    const pathByRole: Record<string, string> = {
+    const pathByRole: Record<Role, string> = {
       ADOPTANTE: "/catalog",
       FUNDACION: "/fundacion",
       CLINICA: "/clinica",
@@ -29,5 +35,8 @@ export function ProtectedRoute({ allowed, children }: Props) {
     return <Navigate to={pathByRole[user.role]} replace />;
   }
 
+  // Autenticado y con permiso
   return children;
 }
+
+export default ProtectedRoute;

@@ -1,41 +1,85 @@
-// src/app/auth.ts
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
+/** ===== Tipos ===== */
 export type Role = "ADOPTANTE" | "FUNDACION" | "CLINICA" | "ADMIN";
 
-export type AuthUser = {
-  id?: string;   // preferido en el front
-  _id?: string;  // viene del backend
+export interface User {
+  id: string;
   email: string;
   role: Role;
-  profile?: {
-    firstName?: string;
-    lastName?: string;
+  profile: {
+    firstName: string;
+    lastName: string;
   };
-};
+  status: "ACTIVE" | "INACTIVE" | "PENDING";
+  createdAt: string;
+  updatedAt: string;
+}
 
-type AuthState = {
-  user?: AuthUser;
-  token?: string;
-  setAuthLocal: (p: { user: any; token: string }) => void;
-  clear: () => void;
-};
+export interface AuthState {
+  user: User | null;
+  token: string | null;
+  isAuthenticated: boolean;
 
-export const useAuthStore = create<AuthState>((set) => ({
-  user: undefined,
-  token: undefined,
-  setAuthLocal: ({ user, token }) =>
-    set({
-      user: {
-        id: user.id ?? user._id,
-        _id: user._id ?? user.id,
-        email: user.email,
-        role: user.role,
-        profile: user.profile,
+  // Métodos del store
+  login: (user: User, token: string) => void;
+  logout: () => void;
+  updateUser: (user: Partial<User>) => void;
+}
+
+/** ===== Store ===== */
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set, get) => ({
+      user: null,
+      token: null,
+      isAuthenticated: false,
+
+      login: (user, token) => {
+        set({ user, token, isAuthenticated: true });
       },
-      token,
-    }),
-  clear: () => set({ user: undefined, token: undefined }),
-}));
 
-export const isAdminRole = (r?: Role) => r === "FUNDACION" || r === "CLINICA" || r === "ADMIN";
+      logout: () => {
+        set({ user: null, token: null, isAuthenticated: false });
+      },
+
+      updateUser: (userData) => {
+        const current = get().user;
+        if (current) set({ user: { ...current, ...userData } });
+      },
+    }),
+    { name: "auth-storage" }
+  )
+);
+
+/** ===== Helpers exportados ===== */
+export const isAuthenticated = () => useAuthStore.getState().isAuthenticated;
+
+export const getCurrentUser = () => useAuthStore.getState().user;
+
+export const getCurrentUserRole = (): Role | null =>
+  useAuthStore.getState().user?.role ?? null;
+
+export const hasRole = (roles: Role[]) => {
+  const u = getCurrentUser();
+  return !!u && roles.includes(u.role);
+};
+
+export const isAdminRole = (r: Role) => r === "FUNDACION" || r === "CLINICA" || r === "ADMIN";
+
+/** Redirección por rol (útil en login) */
+export const getRedirectPath = (role: Role) => {
+  switch (role) {
+    case "ADOPTANTE":
+      return "/catalog"; // o "/"
+    case "FUNDACION":
+      return "/fundacion";
+    case "CLINICA":
+      return "/clinica";
+    case "ADMIN":
+      return "/admin";
+    default:
+      return "/";
+  }
+};

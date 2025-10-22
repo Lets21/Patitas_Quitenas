@@ -2,17 +2,17 @@ import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { ShieldCheck, Eye, EyeOff } from "lucide-react";
 import { apiClient } from "@/lib/api";
-import { useAuthStore } from "@/app/auth";
-import { roleHome } from "@/app/roleHome";
+import { useAuthStore, getRedirectPath, Role } from "@/app/auth";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 
 const ADMIN_ROLES = ["FUNDACION", "CLINICA", "ADMIN"] as const;
+type AdminRole = (typeof ADMIN_ROLES)[number];
 
 export default function LoginAdminPage() {
   const nav = useNavigate();
-  const setAuth = useAuthStore((s) => s.setAuthLocal);
+  const doLogin = useAuthStore((s) => s.login); // <- método del store
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -25,16 +25,17 @@ export default function LoginAdminPage() {
     try {
       setLoading(true);
       setErr("");
+
       const { user, token } = await apiClient.login(email, password);
 
-      if (!ADMIN_ROLES.includes(user.role as (typeof ADMIN_ROLES)[number])) {
+      // Solo Fundación/Clínica/Admin aquí
+      if (!ADMIN_ROLES.includes(user.role as AdminRole)) {
         setErr("Este acceso es exclusivo para Fundación, Clínica o Admin.");
         return;
-        // no navegamos ni guardamos auth
       }
 
-      setAuth({ user, token });
-      nav(roleHome[user.role], { replace: true });
+      doLogin(user, token);
+      nav(getRedirectPath(user.role as Role), { replace: true });
     } catch (e: any) {
       setErr(e?.message || "Error al iniciar sesión");
     } finally {
@@ -59,7 +60,7 @@ export default function LoginAdminPage() {
             </p>
           </div>
 
-          {/* Error banner */}
+          {/* Error */}
           {err && (
             <div
               role="alert"
@@ -112,13 +113,7 @@ export default function LoginAdminPage() {
               <span className="text-xs text-gray-500">Acceso interno</span>
             </div>
 
-            <Button
-              type="submit"
-              size="lg"
-              className="w-full"
-              disabled={disabled}
-              loading={loading}
-            >
+            <Button type="submit" size="lg" className="w-full" disabled={disabled} loading={loading}>
               Ingresar
             </Button>
           </form>
@@ -132,8 +127,6 @@ export default function LoginAdminPage() {
               </Link>
             </p>
           </div>
-
-          
         </Card>
       </div>
     </div>
