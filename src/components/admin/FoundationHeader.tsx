@@ -1,4 +1,3 @@
-import React from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { Bell } from "lucide-react";
 import { useAuthStore } from "@/lib/auth";
@@ -56,8 +55,16 @@ export default function FoundationHeader() {
             </Link>
           </div>
 
+          {/* Desktop user info and logout */}
           <div className="hidden md:flex items-center gap-3">
             {userName && <span className="text-sm text-gray-600">{userName}</span>}
+            <Button variant="ghost" size="sm" onClick={handleLogout}>
+              Cerrar sesión
+            </Button>
+          </div>
+
+          {/* Mobile logout button */}
+          <div className="md:hidden">
             <Button variant="ghost" size="sm" onClick={handleLogout}>
               Cerrar sesión
             </Button>
@@ -67,58 +74,114 @@ export default function FoundationHeader() {
 
       {/* Fila 2: tabs */}
       <div className="border-t">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex items-stretch gap-6">
-          <nav className="flex gap-6">
-            <NavLink
-              to="/fundacion"
-              end
-              className={({ isActive }) =>
-                `${lvl1Base} ${tabLine} ${isActive || inFoundation ? active : inactive}`
-              }
-            >
-              Fundación
-            </NavLink>
-
-            <NavLink
-              to="/notificaciones"
-              className={({ isActive }) =>
-                `${lvl1Base} ${tabLine} ${isActive ? active : inactive}`
-              }
-            >
-              <Bell className="h-4 w-4" />
-              Notificaciones
-            </NavLink>
-          </nav>
-
-          <div className="flex-1" />
-
-          {/* Tabs internos solo en /fundacion */}
-          {inFoundation && (
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          {/* Desktop tabs */}
+          <div className="hidden md:flex items-stretch gap-6">
             <nav className="flex gap-6">
               <NavLink
                 to="/fundacion"
                 end
                 className={({ isActive }) =>
-                  `inline-flex items-center gap-2 text-sm leading-6 ${tabLine} ${
-                    isActive ? active : inactive
-                  } text-gray-600 hover:text-primary-700`
+                  `${lvl1Base} ${tabLine} ${isActive || inFoundation ? active : inactive}`
                 }
               >
-                Perros Registrados
+                Fundación
               </NavLink>
 
               <NavLink
-                to="/fundacion/solicitudes"
+                to="/notificaciones"
                 className={({ isActive }) =>
-                  `inline-flex items-center gap-2 text-sm leading-6 ${tabLine} ${
-                    isActive ? active : inactive
-                  } text-gray-600 hover:text-primary-700`
+                  `${lvl1Base} ${tabLine} ${isActive ? active : inactive}`
                 }
               >
-                Solicitudes de Adopción
+                <Bell className="h-4 w-4" />
+                Notificaciones
               </NavLink>
             </nav>
-          )}
+
+            <div className="flex-1" />
+
+            {/* Tabs internos solo en /fundacion */}
+            {inFoundation && (
+              <nav className="flex gap-6">
+                <NavLink
+                  to="/fundacion"
+                  end
+                  className={({ isActive }) =>
+                    `inline-flex items-center gap-2 text-sm leading-6 ${tabLine} ${
+                      isActive ? active : inactive
+                    } text-gray-600 hover:text-primary-700`
+                  }
+                >
+                  Perros Registrados
+                </NavLink>
+
+                <NavLink
+                  to="/fundacion/solicitudes"
+                  className={({ isActive }) =>
+                    `inline-flex items-center gap-2 text-sm leading-6 ${tabLine} ${
+                      isActive ? active : inactive
+                    } text-gray-600 hover:text-primary-700`
+                  }
+                >
+                  Solicitudes de Adopción
+                </NavLink>
+              </nav>
+            )}
+          </div>
+
+          {/* Mobile tabs - horizontal scroll */}
+          <div className="md:hidden overflow-x-auto">
+            <nav className="flex gap-4 min-w-max py-3">
+              <NavLink
+                to="/fundacion"
+                end
+                className={({ isActive }) =>
+                  `${lvl1Base} ${tabLine} whitespace-nowrap ${isActive || inFoundation ? active : inactive}`
+                }
+              >
+                Fundación
+              </NavLink>
+
+              <NavLink
+                to="/notificaciones"
+                className={({ isActive }) =>
+                  `${lvl1Base} ${tabLine} whitespace-nowrap ${isActive ? active : inactive}`
+                }
+              >
+                <Bell className="h-4 w-4" />
+                Notificaciones
+              </NavLink>
+
+              {/* Tabs internos solo en /fundacion */}
+              {inFoundation && (
+                <>
+                  <NavLink
+                    to="/fundacion"
+                    end
+                    className={({ isActive }) =>
+                      `inline-flex items-center gap-2 text-sm leading-6 ${tabLine} whitespace-nowrap ${
+                        isActive ? active : inactive
+                      } text-gray-600 hover:text-primary-700`
+                    }
+                  >
+                    Perros Registrados
+                  </NavLink>
+
+                  <NavLink
+                    to="/fundacion/solicitudes"
+                    className={({ isActive }) =>
+                      `inline-flex items-center gap-2 text-sm leading-6 ${tabLine} whitespace-nowrap ${
+                        isActive ? active : inactive
+                      } text-gray-600 hover:text-primary-700`
+                    }
+                  >
+                    Solicitudes de Adopción
+                  </NavLink>
+                </>
+              )}
+            </nav>
+          </div>
         </div>
       </div>
     </header>
