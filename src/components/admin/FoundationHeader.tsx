@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
-import { BarChart3, Bell } from "lucide-react";
+import { Bell } from "lucide-react";
 import { useAuthStore } from "@/lib/auth";
 import { Button } from "@/components/ui/Button";
 
@@ -11,17 +11,15 @@ export default function FoundationHeader() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
 
-  // Si tu tipo User no tiene organization tipada, usa (user as any)?.organization?.name
   const orgName = ((user as any)?.organization?.name ?? "PAE").trim();
 
   const first = (user?.profile?.firstName || "").trim();
   const last  = (user?.profile?.lastName  || "").trim();
-  const userName = [first, last].filter(Boolean).join(" "); // "" si no hay datos
+  const userName = [first, last].filter(Boolean).join(" ");
 
-  // Sección principal de Fundación (excluye analítica y notificaciones)
+  // Sección principal de Fundación (excluye solo /notificaciones)
   const inFoundation =
     pathname.startsWith("/fundacion") &&
-    !pathname.startsWith("/fundacion/analitica") &&
     !pathname.startsWith("/notificaciones");
 
   const lvl1Base =
@@ -44,7 +42,6 @@ export default function FoundationHeader() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {/* Solo logo + nombre de la fundación */}
             <Link to="/fundacion" className="flex items-center gap-3 select-none">
               <img
                 src={PAE_LOGO}
@@ -82,17 +79,6 @@ export default function FoundationHeader() {
               Fundación
             </NavLink>
 
-            <NavLink
-              to="/fundacion/analitica"
-              className={({ isActive }) =>
-                `${lvl1Base} ${tabLine} ${isActive ? active : inactive}`
-              }
-            >
-              <BarChart3 className="h-4 w-4" />
-              Analítica
-            </NavLink>
-
-            {/* AQUI el cambio: va a /notificaciones */}
             <NavLink
               to="/notificaciones"
               className={({ isActive }) =>
