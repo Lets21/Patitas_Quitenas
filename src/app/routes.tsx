@@ -21,6 +21,7 @@ import ClinicDashboard from "@/features/clinic/ClinicDashboard";
 import AnalyticsDashboard from "@/features/analytics/AnalyticsDashboard";
 import AdminDashboard from "@/features/admin/AdminDashboard";
 import NotificationsPage from "@/features/notifications/NotificationsPage";
+import ClinicNotificationsPage from "@/features/clinic/ClinicNotificationsPage";
 
 import NotFoundPage from "@/features/errors/NotFoundPage";
 
@@ -99,13 +100,22 @@ export const router = createBrowserRouter([
     ),
   },
 
-  // Notificaciones (logueado en cualquier rol)
+  // Notificaciones específicas por rol
   {
     path: "/notificaciones",
     errorElement: <ErrorStub />,
     element: (
-      <ProtectedRoute allowed={["ADOPTANTE", "FUNDACION", "CLINICA", "ADMIN"]}>
+      <ProtectedRoute allowed={["FUNDACION"]}>
         <NotificationsPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/clinica/notificaciones",
+    errorElement: <ErrorStub />,
+    element: (
+      <ProtectedRoute allowed={["CLINICA"]}>
+        <ClinicNotificationsPage />
       </ProtectedRoute>
     ),
   },
