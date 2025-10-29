@@ -434,6 +434,32 @@ class ApiClient {
     const params = range ? `?range=${range}` : "";
     return request<any>(`/analytics/overview${params}`);
   }
+
+  // ===== Foundation Stats (Dashboard Fundación) =====
+  async getFoundationStats() {
+    // backend responde:
+    // {
+    //   ok: true,
+    //   data: {
+    //     totalDogs,
+    //     waitingDogs,
+    //     adoptedDogs,
+    //     activeRequests
+    //   }
+    // }
+    const res = await request<{
+      ok: boolean;
+      data: {
+        totalDogs: number;
+        waitingDogs: number;
+        adoptedDogs: number;
+        activeRequests: number;
+      };
+    }>("/foundation/stats");
+
+    // devolvemos solo .data para que el hook lo use directo
+    return res.data;
+  }
 }
 
 export const apiClient = new ApiClient();

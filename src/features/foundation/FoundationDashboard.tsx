@@ -1,7 +1,14 @@
 import React, { useState } from "react";
 import {
-  Plus, Search, Eye, Edit, Trash2, Dog,
-  Activity, CheckCircle, AlertCircle
+  Plus,
+  Search,
+  Eye,
+  Edit,
+  Trash2,
+  Dog,
+  Activity,
+  CheckCircle,
+  AlertCircle,
 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -10,24 +17,81 @@ import { Input } from "@/components/ui/Input";
 import FoundationHeader from "@/components/admin/FoundationHeader";
 import { useNavigate } from "react-router-dom";
 
+// 🔽 IMPORTAMOS EL HOOK NUEVO
+import { useFoundationStats } from "./useFoundationStats";
+
 function FoundationDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("todos");
   const navigate = useNavigate();
 
-  // Mock data
+  // 📊 1) Traemos las estadísticas reales desde el backend
+  const { data, isLoading, isError } = useFoundationStats();
+
+  // 🐶 datos mock de perros (esto todavía es estático, lo integraremos luego)
   const dogs = [
-    { id: "1", name: "Max", age: 2, breed: "Mestizo", size: "Mediano", health: ["Vacunado", "Esterilizado"], status: "Disponible", statusColor: "success" },
-    { id: "2", name: "Luna", age: 1, breed: "Labrador", size: "Grande", health: ["Vacunado", "Esterilizado"], status: "En proceso", statusColor: "warning" },
-    { id: "3", name: "Rocky", age: 3, breed: "Pastor Alemán", size: "Grande", health: ["Vacunado", "En tratamiento"], status: "Adoptado", statusColor: "info" }
+    {
+      id: "1",
+      name: "Max",
+      age: 2,
+      breed: "Mestizo",
+      size: "Mediano",
+      health: ["Vacunado", "Esterilizado"],
+      status: "Disponible",
+      statusColor: "success",
+    },
+    {
+      id: "2",
+      name: "Luna",
+      age: 1,
+      breed: "Labrador",
+      size: "Grande",
+      health: ["Vacunado", "Esterilizado"],
+      status: "En proceso",
+      statusColor: "warning",
+    },
+    {
+      id: "3",
+      name: "Rocky",
+      age: 3,
+      breed: "Pastor Alemán",
+      size: "Grande",
+      health: ["Vacunado", "En tratamiento"],
+      status: "Adoptado",
+      statusColor: "info",
+    },
   ];
 
-  const stats = [
-    { label: "Perros Registrados", value: 24, icon: Dog, color: "text-green-600" },
-    { label: "Solicitudes Activas", value: 8, icon: Activity, color: "text-yellow-600" },
-    { label: "Adopciones Completadas", value: 16, icon: CheckCircle, color: "text-blue-600" },
-    { label: "Perros en Espera", value: 8, icon: AlertCircle, color: "text-red-600" }
-  ];
+  // ⏳ 2) Mientras cargan stats mostramos algo visualmente limpio
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 overflow-x-hidden">
+        <FoundationHeader />
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 text-sm text-gray-500">
+          Cargando estadísticas...
+        </div>
+      </div>
+    );
+  }
+
+  // ❌ 3) Si hubo error (por ejemplo token inválido / no hay token)
+  if (isError || !data) {
+    return (
+      <div className="min-h-screen bg-gray-50 overflow-x-hidden">
+        <FoundationHeader />
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 text-sm text-red-600">
+          No se pudieron cargar las estadísticas de la fundación.
+          {/* futuro: aquí podríamos redirigir al login si es 401 */}
+        </div>
+      </div>
+    );
+  }
+
+  // ✅ 4) Si llegamos aquí, tenemos data real del backend:
+  // data.totalDogs
+  // data.activeRequests
+  // data.adoptedDogs
+  // data.waitingDogs
 
   return (
     // Corto cualquier overflow horizontal para que no aparezca el “bloque blanco”
@@ -37,19 +101,73 @@ function FoundationDashboard() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {stats.map((stat, index) => (
-            <Card key={index} className="p-6">
-              <div className="flex items-center">
-                <div className={`p-3 rounded-lg bg-gray-100 ${stat.color}`}>
-                  <stat.icon className="h-6 w-6" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">{stat.label}</p>
-                  <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                </div>
+          {/* Perros Registrados */}
+          <Card className="p-6">
+            <div className="flex items-center">
+              <div className={`p-3 rounded-lg bg-gray-100 text-green-600`}>
+                <Dog className="h-6 w-6" />
               </div>
-            </Card>
-          ))}
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">
+                  Perros Registrados
+                </p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {data.totalDogs}
+                </p>
+              </div>
+            </div>
+          </Card>
+
+          {/* Solicitudes Activas */}
+          <Card className="p-6">
+            <div className="flex items-center">
+              <div className={`p-3 rounded-lg bg-gray-100 text-yellow-600`}>
+                <Activity className="h-6 w-6" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">
+                  Solicitudes Activas
+                </p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {data.activeRequests}
+                </p>
+              </div>
+            </div>
+          </Card>
+
+          {/* Adopciones Completadas */}
+          <Card className="p-6">
+            <div className="flex items-center">
+              <div className={`p-3 rounded-lg bg-gray-100 text-blue-600`}>
+                <CheckCircle className="h-6 w-6" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">
+                  Adopciones Completadas
+                </p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {data.adoptedDogs}
+                </p>
+              </div>
+            </div>
+          </Card>
+
+          {/* Perros en Espera */}
+          <Card className="p-6">
+            <div className="flex items-center">
+              <div className={`p-3 rounded-lg bg-gray-100 text-red-600`}>
+                <AlertCircle className="h-6 w-6" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">
+                  Perros en Espera
+                </p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {data.waitingDogs}
+                </p>
+              </div>
+            </div>
+          </Card>
         </div>
 
         {/* Main Content */}
@@ -100,12 +218,24 @@ function FoundationDashboard() {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Perro</th>
-                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Edad</th>
-                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">Raza / Tamaño</th>
-                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">Estado de salud</th>
-                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Disponibilidad</th>
-                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Perro
+                    </th>
+                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
+                      Edad
+                    </th>
+                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
+                      Raza / Tamaño
+                    </th>
+                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
+                      Estado de salud
+                    </th>
+                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Disponibilidad
+                    </th>
+                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Acciones
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -117,9 +247,12 @@ function FoundationDashboard() {
                             <Dog className="h-4 w-4 text-yellow-600" />
                           </div>
                           <div className="min-w-0 flex-1">
-                            <span className="text-sm font-medium text-gray-900 block">{dog.name}</span>
+                            <span className="text-sm font-medium text-gray-900 block">
+                              {dog.name}
+                            </span>
                             <span className="text-xs text-gray-500 sm:hidden">
-                              {dog.age} {dog.age === 1 ? "año" : "años"} • {dog.breed}
+                              {dog.age} {dog.age === 1 ? "año" : "años"} •{" "}
+                              {dog.breed}
                             </span>
                           </div>
                         </div>
@@ -165,13 +298,25 @@ function FoundationDashboard() {
 
             {/* Pagination */}
             <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <p className="text-sm text-gray-700">Mostrando 3 de 24 perros</p>
+              <p className="text-sm text-gray-700">
+                Mostrando 3 de {data.totalDogs} perros
+              </p>
               <div className="flex flex-wrap gap-2 justify-center sm:justify-end">
-                <Button variant="outline" size="sm">Anterior</Button>
-                <Button size="sm" className="bg-green-600">1</Button>
-                <Button variant="outline" size="sm">2</Button>
-                <Button variant="outline" size="sm">3</Button>
-                <Button variant="outline" size="sm">Siguiente</Button>
+                <Button variant="outline" size="sm">
+                  Anterior
+                </Button>
+                <Button size="sm" className="bg-green-600">
+                  1
+                </Button>
+                <Button variant="outline" size="sm">
+                  2
+                </Button>
+                <Button variant="outline" size="sm">
+                  3
+                </Button>
+                <Button variant="outline" size="sm">
+                  Siguiente
+                </Button>
               </div>
             </div>
           </div>
