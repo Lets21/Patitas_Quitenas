@@ -7,14 +7,13 @@ import type {
   FilterOptions,
 } from "../types";
 
+// === IMPORTA EL STORE PARA LEER EL TOKEN EN TIEMPO REAL ===
+import { useAuthStore } from "@/lib/auth";
+
 /* =========================================================================
    CONFIG
    Lee VITE_API_URL (origin del backend). Normaliza para que termine en /api/v1
-   Ejemplos válidos:
-     VITE_API_URL=https://patitas-quitenas-backend.onrender.com
-     VITE_API_URL=http://localhost:4000
    ========================================================================= */
-
 const RAW_URL = (import.meta as any).env?.VITE_API_URL?.trim() ?? "";
 const ORIGIN = (RAW_URL || "http://localhost:4000").replace(/\/+$/, "");
 const API_BASE = ORIGIN.endsWith("/api/v1") ? ORIGIN : `${ORIGIN}/api/v1`;
@@ -23,9 +22,7 @@ const API_BASE = ORIGIN.endsWith("/api/v1") ? ORIGIN : `${ORIGIN}/api/v1`;
 const USE_MOCK = String((import.meta as any).env?.VITE_USE_MOCK) === "true";
 
 /* =========================================================================
-   Helper de URLs de archivos servidos por el backend (/uploads/...)
-   Si ya es absoluta, la deja igual. Si es relativa /uploads/..., la hace absoluta
-   con el ORIGIN (no con /api/v1).
+   Helpers de URL de archivos servidos por el backend (/uploads/...)
    ========================================================================= */
 export const urlFromBackend = (relOrAbs: string) => {
   if (!relOrAbs) return relOrAbs;
@@ -35,10 +32,28 @@ export const urlFromBackend = (relOrAbs: string) => {
 };
 
 /* =========================================================================
+   Lectura robusta del token
+   - 1º: Zustand store en memoria
+   - 2º: localStorage (persist de Zustand)
+   ========================================================================= */
+function getToken(): string | null {
+  try {
+    const mem = useAuthStore.getState()?.token;
+    if (mem) return mem;
+  } catch {}
+  try {
+    const persisted = JSON.parse(localStorage.getItem("auth-storage") || "null");
+    return persisted?.state?.token ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/* =========================================================================
    Subida simple de foto (multipart) para Fundación
    ========================================================================= */
 export async function uploadAnimalPhoto(file: File): Promise<string> {
-  const token = JSON.parse(localStorage.getItem("auth-storage") || "{}")?.state?.token;
+  const token = getToken();
   const fd = new FormData();
   fd.append("photo", file);
   const res = await fetch(`${API_BASE}/foundation/animals/upload`, {
@@ -130,17 +145,25 @@ function mapAnimal(dto: any): Animal {
   return { ...dto, id: dto.id ?? dto._id };
 }
 
+// Acepta { token } | { accessToken } | { jwt } | { data:{ token } } etc.
+function extractToken(payload: any): string | null {
+  if (!payload) return null;
+  const p = payload.data ?? payload;
+  return p.token ?? p.accessToken ?? p.jwt ?? null;
+}
+
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const token = JSON.parse(localStorage.getItem("auth-storage") || "{}")?.state?.token;
+  const token = getToken();
 
   const res = await fetch(`${API_BASE}${endpoint}`, {
+    method: options.method || "GET",
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...options.headers,
+      ...(options.headers || {}),
     },
     credentials: "include",
-    ...options,
+    body: options.body,
   });
 
   let data: any = null;
@@ -151,7 +174,7 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   }
 
   if (!res.ok) {
-    const msg = (data && (data.error || data.message)) || "Request failed";
+    const msg = (data && (data.error || data.message)) || `Request failed (${res.status})`;
     throw new Error(msg);
   }
 
@@ -163,13 +186,12 @@ async function requestForm<T>(
   fd: FormData,
   method: "POST" | "PATCH" = "POST"
 ): Promise<T> {
-  const token = JSON.parse(localStorage.getItem("auth-storage") || "{}")?.state?.token;
+  const token = getToken();
 
   const res = await fetch(`${API_BASE}${endpoint}`, {
     method,
     headers: {
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      // no setear Content-Type: el navegador pone el boundary correcto
     },
     credentials: "include",
     body: fd,
@@ -181,7 +203,7 @@ async function requestForm<T>(
   } catch {}
 
   if (!res.ok) {
-    const msg = (data && (data.error || data.message)) || "Request failed";
+    const msg = (data && (data.error || data.message)) || `Request failed (${res.status})`;
     throw new Error(msg);
   }
 
@@ -194,10 +216,20 @@ async function requestForm<T>(
 class ApiClient {
   // ===== Auth =====
   async login(email: string, password: string) {
-    return request<{ user: User; token: string }>("/auth/login", {
+    // Mapeo flexible del token
+    const raw = await request<any>("/auth/login", {
       method: "POST",
       body: JSON.stringify({ email, password }),
     });
+    const user: User = (raw.data?.user ?? raw.user) as User;
+    const token = extractToken(raw);
+    if (!token) {
+      // Si tu backend devuelve el token en header Set-Cookie (httpOnly) y no en JSON,
+      // la app seguirá funcionando porque el header Authorization no es estrictamente necesario.
+      // Pero para nuestras llamadas con Authorization, exigimos uno.
+      throw new Error("El backend no devolvió un token de acceso.");
+    }
+    return { user, token } as { user: User; token: string };
   }
 
   async register(data: { email: string; password: string; role: string; profile: any }) {
