@@ -1,16 +1,16 @@
+// src/pages/LoginPublic.tsx
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Heart, Eye, EyeOff } from "lucide-react";
 import { apiClient } from "@/lib/api";
-import { useAuthStore } from "@/app/auth";
-import { roleHome } from "@/app/roleHome";
+import { useAuthStore, getRedirectPath, type Role } from "@/lib/auth"; // <- OJO: lib/auth
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 
 export default function LoginPublicPage() {
   const nav = useNavigate();
-  const setAuth = useAuthStore((s) => s.setAuthLocal);
+  const doLogin = useAuthStore((s) => s.login); // <- método correcto del store
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -23,15 +23,18 @@ export default function LoginPublicPage() {
     try {
       setLoading(true);
       setErr("");
+
       const { user, token } = await apiClient.login(email, password);
 
+      // Este login es exclusivo para ADOPTANTE
       if (user.role !== "ADOPTANTE") {
-        setErr("Este login es solo para adoptantes. Usa el acceso de administración.");
+        setErr("Este acceso es solo para adoptantes. Usa el login de administración.");
         return;
       }
 
-      setAuth({ user, token });
-      nav(roleHome[user.role], { replace: true });
+      // Guarda en el store y redirige
+      doLogin(user, token);
+      nav(getRedirectPath(user.role as Role), { replace: true });
     } catch (e: any) {
       setErr(e?.message || "Error al iniciar sesión");
     } finally {
@@ -51,7 +54,9 @@ export default function LoginPublicPage() {
               <Heart className="h-8 w-8 text-white" />
             </div>
             <h1 className="text-2xl font-bold text-gray-900">Iniciar sesión</h1>
-            <p className="mt-2 text-sm text-gray-600">Acceso para adoptantes de Huellitas Quiteñas</p>
+            <p className="mt-2 text-sm text-gray-600">
+              Acceso para adoptantes de Huellitas Quiteñas
+            </p>
           </div>
 
           {/* Error banner */}
@@ -69,7 +74,7 @@ export default function LoginPublicPage() {
             <Input
               label="Email"
               type="email"
-              placeholder="tu@email.com"
+              placeholder="adoptante@demo.com"
               autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -107,13 +112,7 @@ export default function LoginPublicPage() {
               <span className="text-xs text-gray-500">Solo adoptantes</span>
             </div>
 
-            <Button
-              type="submit"
-              size="lg"
-              className="w-full"
-              disabled={disabled}
-              loading={loading}
-            >
+            <Button type="submit" size="lg" className="w-full" disabled={disabled} loading={loading}>
               Ingresar
             </Button>
           </form>
