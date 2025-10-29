@@ -60,7 +60,11 @@ const stateBadge = (state: AState) => {
 const PLACEHOLDER =
   "https://images.unsplash.com/photo-1517849845537-4d257902454a?w=1200";
 
+// src/pages/CatalogPage.tsx
 function normalizeAnimal(raw: any): DisplayAnimal | null {
+  const realId = raw?.id ?? raw?._id;
+  if (!realId) return null; // sin id, no mostramos esta tarjeta
+
   const attrs = raw?.attributes ?? {};
   const ageNumber = Number(attrs?.age ?? raw?.age ?? (raw?.health?.age as any) ?? 0);
   if (!Number.isFinite(ageNumber) || ageNumber < 0) return null;
@@ -69,7 +73,7 @@ function normalizeAnimal(raw: any): DisplayAnimal | null {
     Array.isArray(raw?.photos) && raw.photos.length ? raw.photos : [PLACEHOLDER];
 
   return {
-    id: String(raw?.id ?? raw?._id ?? crypto.randomUUID()),
+    id: String(realId),                // <-- sin UUID
     name: String(raw?.name ?? "Sin nombre"),
     photos,
     clinicalSummary: String(raw?.clinicalSummary ?? ""),
@@ -88,6 +92,7 @@ function normalizeAnimal(raw: any): DisplayAnimal | null {
     },
   };
 }
+
 
 const CatalogPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");

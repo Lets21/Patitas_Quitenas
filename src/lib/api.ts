@@ -292,16 +292,14 @@ class ApiClient {
     } as { animals: Animal[]; total: number };
   }
 
-  async getAnimal(id: string) {
-    if (USE_MOCK) {
-      await sleep(150);
-      const found = MOCK_ANIMALS.find((a) => (a.id ?? a._id) === id);
-      if (!found) throw new Error("Animal no encontrado");
-      return found;
-    }
-    const dto = await request<any>(`/animals/${id}`);
-    return mapAnimal(dto);
-  }
+  // src/lib/api.ts
+async getAnimal(id: string) {
+  if (!id) throw new Error("ID inválido");
+  const safeId = encodeURIComponent(String(id).trim().replace(/^\/+/, ""));
+  const dto = await request<any>(`/animals/${safeId}`); // <-- siempre barra
+  return mapAnimal(dto);
+}
+
 
   async createAnimal(payload: Partial<Animal>) {
     const dto = await request<any>("/animals", {
