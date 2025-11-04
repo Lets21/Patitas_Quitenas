@@ -27,6 +27,26 @@ export interface UserProfile {
 // ---------- Animales ----------
 export type AnimalState = "RESCUED" | "QUARANTINE" | "AVAILABLE" | "RESERVED" | "ADOPTED";
 
+export interface AnimalPersonality {
+  sociability?: number;   // 1..5
+  energy?: number;        // 1..5
+  training?: number;      // 1..5
+  adaptability?: number;  // 1..5
+}
+
+export interface AnimalCompatibility {
+  kids?: boolean;
+  cats?: boolean;
+  dogs?: boolean;
+  apartment?: boolean;
+}
+
+export interface AnimalClinicalHistory {
+  lastVaccination?: string | null; // ISO string o texto corto
+  sterilized?: boolean;
+  conditions?: string | null;
+}
+
 export interface Animal {
   // En frontend trabajamos con `id`. Si viene `_id` del backend, lo puedes mapear.
   id: string;
@@ -50,6 +70,10 @@ export interface Animal {
   foundationId: string;
   createdAt: string;
   updatedAt: string;
+  // Nuevos campos opcionales
+  personality?: AnimalPersonality;
+  compatibility?: AnimalCompatibility;
+  clinicalHistory?: AnimalClinicalHistory;
 }
 
 // Filtros del catálogo. Mantén arrays para size/energy (multi-selección).

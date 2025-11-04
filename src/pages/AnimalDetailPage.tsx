@@ -41,6 +41,10 @@ type DisplayAnimal = {
   foundationId?: string;
   createdAt?: string;
   updatedAt?: string;
+  // Nuevos campos opcionales
+  personality?: { sociability?: number; energy?: number; training?: number; adaptability?: number };
+  compatibility?: { kids?: boolean; cats?: boolean; dogs?: boolean; apartment?: boolean };
+  clinicalHistory?: { lastVaccination?: string | null; sterilized?: boolean; conditions?: string | null };
 };
 
 // Utilidades UI
@@ -77,22 +81,32 @@ const ProgressBar: React.FC<{ label: string; value: number; max?: number }> = ({
 
 const CompatibilityItem: React.FC<{
   label: string;
-  status: "excellent" | "good" | "moderate" | "poor";
+  value: boolean | undefined;
   icon: React.ReactNode;
-}> = ({ label, status, icon }) => {
+}> = ({ label, value, icon }) => {
+  // Si el valor es undefined, mostrar "No especificado"
+  if (value === undefined) {
+    return (
+      <div className="flex items-center justify-between py-2">
+        <div className="flex items-center">{icon}<span className="ml-2 text-sm font-medium text-gray-700">{label}</span></div>
+        <div className="px-3 py-1 rounded-full text-xs font-medium bg-gray-50 text-gray-600">
+          — No especificado
+        </div>
+      </div>
+    );
+  }
+
+  const status = value ? "excellent" : "poor";
   const style =
-    status === "excellent" || status === "good"
-      ? { color: "text-green-600", bg: "bg-green-50", icon: "✓" }
-      : status === "moderate"
-      ? { color: "text-orange-600", bg: "bg-orange-50", icon: "○" }
-      : { color: "text-red-600", bg: "bg-red-50", icon: "✗" };
+    status === "excellent"
+      ? { color: "text-green-600", bg: "bg-green-50", icon: "✓", text: "Excelente" }
+      : { color: "text-red-600", bg: "bg-red-50", icon: "✗", text: "Baja" };
 
   return (
     <div className="flex items-center justify-between py-2">
       <div className="flex items-center">{icon}<span className="ml-2 text-sm font-medium text-gray-700">{label}</span></div>
       <div className={`px-3 py-1 rounded-full text-xs font-medium ${style.bg} ${style.color}`}>
-        {style.icon}{" "}
-        {status === "excellent" ? "Excelente" : status === "good" ? "Buena" : status === "moderate" ? "Moderada" : "Baja"}
+        {style.icon} {style.text}
       </div>
     </div>
   );
@@ -143,6 +157,10 @@ const AnimalDetailPage: React.FC = () => {
           foundationId: dto.foundationId,
           createdAt: dto.createdAt,
           updatedAt: dto.updatedAt,
+          // Nuevos campos opcionales
+          personality: dto.personality,
+          compatibility: dto.compatibility,
+          clinicalHistory: dto.clinicalHistory,
         };
 
         setAnimal(mapped);
@@ -305,10 +323,10 @@ const AnimalDetailPage: React.FC = () => {
               <h3 className="text-lg font-semibold text-gray-900">Personalidad</h3>
             </div>
             <div className="space-y-3">
-              <ProgressBar label="Sociabilidad" value={4} />
-              <ProgressBar label="Energía" value={3} />
-              <ProgressBar label="Entrenamiento" value={3} />
-              <ProgressBar label="Adaptabilidad" value={5} />
+              <ProgressBar label="Sociabilidad" value={animal.personality?.sociability ?? 0} />
+              <ProgressBar label="Energía" value={animal.personality?.energy ?? 0} />
+              <ProgressBar label="Entrenamiento" value={animal.personality?.training ?? 0} />
+              <ProgressBar label="Adaptabilidad" value={animal.personality?.adaptability ?? 0} />
             </div>
           </Card>
 
@@ -318,10 +336,26 @@ const AnimalDetailPage: React.FC = () => {
               <h3 className="text-lg font-semibold text-gray-900">Compatibilidad</h3>
             </div>
             <div className="space-y-2">
-              <CompatibilityItem label="Niños" status="excellent" icon={<Users className="h-4 w-4 text-gray-500" />} />
-              <CompatibilityItem label="Otros perros" status="excellent" icon={<Users className="h-4 w-4 text-gray-500" />} />
-              <CompatibilityItem label="Gatos" status="moderate" icon={<Users className="h-4 w-4 text-gray-500" />} />
-              <CompatibilityItem label="Apartamento" status="good" icon={<Home className="h-4 w-4 text-gray-500" />} />
+              <CompatibilityItem 
+                label="Niños" 
+                value={animal.compatibility?.kids} 
+                icon={<Users className="h-4 w-4 text-gray-500" />} 
+              />
+              <CompatibilityItem 
+                label="Otros perros" 
+                value={animal.compatibility?.dogs} 
+                icon={<Users className="h-4 w-4 text-gray-500" />} 
+              />
+              <CompatibilityItem 
+                label="Gatos" 
+                value={animal.compatibility?.cats} 
+                icon={<Users className="h-4 w-4 text-gray-500" />} 
+              />
+              <CompatibilityItem 
+                label="Apartamento" 
+                value={animal.compatibility?.apartment} 
+                icon={<Home className="h-4 w-4 text-gray-500" />} 
+              />
             </div>
           </Card>
 
@@ -331,10 +365,28 @@ const AnimalDetailPage: React.FC = () => {
               <h3 className="text-lg font-semibold text-gray-900">Historial clínico</h3>
             </div>
             <div className="space-y-3 text-sm">
-              {/* Placeholder hasta conectar tu módulo clínico */}
-              <div className="flex justify-between"><span className="text-gray-600">Última vacunación:</span><span className="text-gray-900">—</span></div>
-              <div className="flex justify-between"><span className="text-gray-600">Esterilización:</span><span className="text-gray-900">—</span></div>
-              <div className="flex justify-between"><span className="text-gray-600">Condiciones:</span><span className="text-gray-900">—</span></div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Última vacunación:</span>
+                <span className="text-gray-900">
+                  {animal.clinicalHistory?.lastVaccination || "—"}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Esterilización:</span>
+                <span className="text-gray-900">
+                  {animal.clinicalHistory?.sterilized === true 
+                    ? "Sí" 
+                    : animal.clinicalHistory?.sterilized === false 
+                    ? "No" 
+                    : "—"}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Condiciones:</span>
+                <span className="text-gray-900">
+                  {animal.clinicalHistory?.conditions || "—"}
+                </span>
+              </div>
             </div>
           </Card>
         </div>
