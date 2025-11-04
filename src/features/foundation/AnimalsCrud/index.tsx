@@ -22,6 +22,10 @@ type Draft = {
   state: "AVAILABLE" | "RESERVED" | "ADOPTED";
   photos: File[];
   existingPhoto?: string;
+  // Nuevos campos
+  personality: { sociability?: number; energy?: number; training?: number; adaptability?: number };
+  compatibility: { kids?: boolean; cats?: boolean; dogs?: boolean; apartment?: boolean };
+  clinicalHistory: { lastVaccination?: string; sterilized?: boolean; conditions?: string };
 };
 
 const emptyDraft: Draft = {
@@ -36,6 +40,9 @@ const emptyDraft: Draft = {
   state: "AVAILABLE",
   photos: [],
   existingPhoto: undefined,
+  personality: {},
+  compatibility: {},
+  clinicalHistory: {},
 };
 
 // Normaliza id para documentos que vienen con id o _id
@@ -106,6 +113,9 @@ export default function AnimalsCrud() {
       state: a?.state ?? "AVAILABLE",
       photos: [],
       existingPhoto: a?.photos?.[0],
+      personality: a?.personality ?? {},
+      compatibility: a?.compatibility ?? {},
+      clinicalHistory: a?.clinicalHistory ?? {},
     });
     setShowForm(true);
   }
@@ -150,6 +160,21 @@ export default function AnimalsCrud() {
       } else if (draft.id && draft.existingPhoto) {
         // Conservar fotos actuales si no subimos nuevas
         fd.append("keepPhotos", JSON.stringify([draft.existingPhoto]));
+      }
+
+      // Serializar los nuevos campos como JSON string en el campo "extra"
+      const extra: any = {};
+      if (Object.keys(draft.personality).length > 0) {
+        extra.personality = draft.personality;
+      }
+      if (Object.keys(draft.compatibility).length > 0) {
+        extra.compatibility = draft.compatibility;
+      }
+      if (Object.keys(draft.clinicalHistory).length > 0) {
+        extra.clinicalHistory = draft.clinicalHistory;
+      }
+      if (Object.keys(extra).length > 0) {
+        fd.append("extra", JSON.stringify(extra));
       }
 
       if (draft.id) await apiClient.foundationUpdateAnimal(draft.id, fd);
@@ -232,7 +257,7 @@ export default function AnimalsCrud() {
                             ? "success"
                             : a?.state === "RESERVED"
                             ? "warning"
-                            : "neutral"
+                            : "default"
                         }
                       >
                         {a?.state === "AVAILABLE"
@@ -264,14 +289,15 @@ export default function AnimalsCrud() {
           )}
 
           {showForm && (
-            <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
-              <Card className="w-full max-w-2xl p-6">
-                <div className="text-lg font-semibold mb-4">
+            <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50 overflow-y-auto">
+              <Card className="w-full max-w-2xl max-h-[90vh] flex flex-col p-6 my-4">
+                <div className="text-lg font-semibold mb-4 flex-shrink-0">
                   {draft.id ? "Editar perro" : "Nuevo perro"}
                 </div>
 
-                <form onSubmit={onSubmit} className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <form onSubmit={onSubmit} className="flex flex-col flex-1 min-h-0">
+                  <div className="flex-1 overflow-y-auto space-y-4 pr-2 pb-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <Input
                       label="Nombre"
                       value={draft.name}
@@ -290,41 +316,50 @@ export default function AnimalsCrud() {
                         setDraft({ ...draft, age: Number(e.target.value) || 0 })
                       }
                     />
-                    <select
-                      value={draft.size}
-                      onChange={(e) =>
-                        setDraft({ ...draft, size: e.target.value as Draft["size"] })
-                      }
-                      className="px-3 py-2 border rounded-lg"
-                    >
-                      <option value="SMALL">Pequeño</option>
-                      <option value="MEDIUM">Mediano</option>
-                      <option value="LARGE">Grande</option>
-                    </select>
-                    <select
-                      value={draft.gender}
-                      onChange={(e) =>
-                        setDraft({ ...draft, gender: e.target.value as Draft["gender"] })
-                      }
-                      className="px-3 py-2 border rounded-lg"
-                    >
-                      <option value="FEMALE">Hembra</option>
-                      <option value="MALE">Macho</option>
-                    </select>
-                    <select
-                      value={draft.energy}
-                      onChange={(e) =>
-                        setDraft({ ...draft, energy: e.target.value as Draft["energy"] })
-                      }
-                      className="px-3 py-2 border rounded-lg"
-                    >
-                      <option value="LOW">Tranquilo</option>
-                      <option value="MEDIUM">Moderado</option>
-                      <option value="HIGH">Activo</option>
-                    </select>
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Tamaño</label>
+                      <select
+                        value={draft.size}
+                        onChange={(e) =>
+                          setDraft({ ...draft, size: e.target.value as Draft["size"] })
+                        }
+                        className="w-full px-3 py-2 border rounded-lg"
+                      >
+                        <option value="SMALL">Pequeño</option>
+                        <option value="MEDIUM">Mediano</option>
+                        <option value="LARGE">Grande</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Género</label>
+                      <select
+                        value={draft.gender}
+                        onChange={(e) =>
+                          setDraft({ ...draft, gender: e.target.value as Draft["gender"] })
+                        }
+                        className="w-full px-3 py-2 border rounded-lg"
+                      >
+                        <option value="FEMALE">Hembra</option>
+                        <option value="MALE">Macho</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Energía</label>
+                      <select
+                        value={draft.energy}
+                        onChange={(e) =>
+                          setDraft({ ...draft, energy: e.target.value as Draft["energy"] })
+                        }
+                        className="w-full px-3 py-2 border rounded-lg"
+                      >
+                        <option value="LOW">Tranquilo</option>
+                        <option value="MEDIUM">Moderado</option>
+                        <option value="HIGH">Activo</option>
+                      </select>
+                    </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                     <label className="flex items-center gap-2 text-sm">
                       <input
                         type="checkbox"
@@ -369,19 +404,206 @@ export default function AnimalsCrud() {
                     </label>
                   </div>
 
-                  <textarea
-                    className="w-full border rounded-lg px-3 py-2"
-                    placeholder="Resumen clínico"
-                    value={draft.clinicalSummary}
-                    onChange={(e) =>
-                      setDraft({ ...draft, clinicalSummary: e.target.value })
-                    }
-                    rows={3}
-                  />
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">Resumen clínico</label>
+                    <textarea
+                      className="w-full border rounded-lg px-3 py-2 text-sm"
+                      placeholder="Resumen clínico"
+                      value={draft.clinicalSummary}
+                      onChange={(e) =>
+                        setDraft({ ...draft, clinicalSummary: e.target.value })
+                      }
+                      rows={2}
+                    />
+                  </div>
+
+                  {/* Personalidad */}
+                  <div className="border-t pt-3">
+                    <h3 className="text-sm font-semibold mb-2">Personalidad (1-5)</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs text-gray-600">Sociabilidad</label>
+                        <input
+                          type="range"
+                          min="1"
+                          max="5"
+                          value={draft.personality.sociability ?? 3}
+                          onChange={(e) =>
+                            setDraft({
+                              ...draft,
+                              personality: { ...draft.personality, sociability: Number(e.target.value) },
+                            })
+                          }
+                          className="w-full"
+                        />
+                        <span className="text-xs text-gray-500">{draft.personality.sociability ?? 3}/5</span>
+                      </div>
+                      <div>
+                        <label className="text-xs text-gray-600">Energía</label>
+                        <input
+                          type="range"
+                          min="1"
+                          max="5"
+                          value={draft.personality.energy ?? 3}
+                          onChange={(e) =>
+                            setDraft({
+                              ...draft,
+                              personality: { ...draft.personality, energy: Number(e.target.value) },
+                            })
+                          }
+                          className="w-full"
+                        />
+                        <span className="text-xs text-gray-500">{draft.personality.energy ?? 3}/5</span>
+                      </div>
+                      <div>
+                        <label className="text-xs text-gray-600">Entrenamiento</label>
+                        <input
+                          type="range"
+                          min="1"
+                          max="5"
+                          value={draft.personality.training ?? 3}
+                          onChange={(e) =>
+                            setDraft({
+                              ...draft,
+                              personality: { ...draft.personality, training: Number(e.target.value) },
+                            })
+                          }
+                          className="w-full"
+                        />
+                        <span className="text-xs text-gray-500">{draft.personality.training ?? 3}/5</span>
+                      </div>
+                      <div>
+                        <label className="text-xs text-gray-600">Adaptabilidad</label>
+                        <input
+                          type="range"
+                          min="1"
+                          max="5"
+                          value={draft.personality.adaptability ?? 3}
+                          onChange={(e) =>
+                            setDraft({
+                              ...draft,
+                              personality: { ...draft.personality, adaptability: Number(e.target.value) },
+                            })
+                          }
+                          className="w-full"
+                        />
+                        <span className="text-xs text-gray-500">{draft.personality.adaptability ?? 3}/5</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Compatibilidad */}
+                  <div className="border-t pt-3">
+                    <h3 className="text-sm font-semibold mb-2">Compatibilidad</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={draft.compatibility.kids ?? false}
+                          onChange={(e) =>
+                            setDraft({
+                              ...draft,
+                              compatibility: { ...draft.compatibility, kids: e.target.checked },
+                            })
+                          }
+                        />
+                        Con niños
+                      </label>
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={draft.compatibility.cats ?? false}
+                          onChange={(e) =>
+                            setDraft({
+                              ...draft,
+                              compatibility: { ...draft.compatibility, cats: e.target.checked },
+                            })
+                          }
+                        />
+                        Con gatos
+                      </label>
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={draft.compatibility.dogs ?? false}
+                          onChange={(e) =>
+                            setDraft({
+                              ...draft,
+                              compatibility: { ...draft.compatibility, dogs: e.target.checked },
+                            })
+                          }
+                        />
+                        Con perros
+                      </label>
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={draft.compatibility.apartment ?? false}
+                          onChange={(e) =>
+                            setDraft({
+                              ...draft,
+                              compatibility: { ...draft.compatibility, apartment: e.target.checked },
+                            })
+                          }
+                        />
+                        Apartamento
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Historial clínico */}
+                  <div className="border-t pt-3">
+                    <h3 className="text-sm font-semibold mb-2">Historial clínico</h3>
+                    <div className="space-y-2">
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">Última vacunación</label>
+                        <input
+                          type="text"
+                          placeholder="Fecha o texto (ej: 2025-01-10)"
+                          value={draft.clinicalHistory.lastVaccination ?? ""}
+                          onChange={(e) =>
+                            setDraft({
+                              ...draft,
+                              clinicalHistory: { ...draft.clinicalHistory, lastVaccination: e.target.value },
+                            })
+                          }
+                          className="w-full border rounded-lg px-3 py-2 text-sm"
+                        />
+                      </div>
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={draft.clinicalHistory.sterilized ?? false}
+                          onChange={(e) =>
+                            setDraft({
+                              ...draft,
+                              clinicalHistory: { ...draft.clinicalHistory, sterilized: e.target.checked },
+                            })
+                          }
+                        />
+                        Esterilizado
+                      </label>
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">Condiciones</label>
+                        <textarea
+                          placeholder="Condiciones médicas (opcional)"
+                          value={draft.clinicalHistory.conditions ?? ""}
+                          onChange={(e) =>
+                            setDraft({
+                              ...draft,
+                              clinicalHistory: { ...draft.clinicalHistory, conditions: e.target.value },
+                            })
+                          }
+                          className="w-full border rounded-lg px-3 py-2 text-sm"
+                          rows={2}
+                        />
+                      </div>
+                    </div>
+                  </div>
 
                   <div className="space-y-2">
                     <div className="flex items-center gap-3">
-                      <label className="inline-flex items-center gap-2 px-3 py-2 border rounded-lg cursor-pointer">
+                      <label className="inline-flex items-center gap-2 px-3 py-2 border rounded-lg cursor-pointer text-sm hover:bg-gray-50">
                         <Upload className="w-4 h-4" />
                         Subir fotos
                         <input
@@ -397,7 +619,7 @@ export default function AnimalsCrud() {
                           }
                         />
                       </label>
-                      <span className="text-sm text-gray-600">
+                      <span className="text-xs text-gray-600">
                         {draft.photos.length
                           ? `${draft.photos.length} seleccionada(s)`
                           : "Sin archivos"}
@@ -426,8 +648,10 @@ export default function AnimalsCrud() {
                       </div>
                     )}
                   </div>
+                  </div>
 
-                  <div className="flex justify-end gap-2 pt-2">
+                  {/* Botones fijos en la parte inferior */}
+                  <div className="flex justify-end gap-2 pt-4 border-t mt-4 flex-shrink-0">
                     <Button
                       variant="outline"
                       onClick={() => setShowForm(false)}
