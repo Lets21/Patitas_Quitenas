@@ -141,6 +141,23 @@ const CatalogPage: React.FC = () => {
       mounted = false;
     };
   }, []);
+  // Prefiltrar catálogo con las preferencias del usuario (si completó onboarding)
+  useEffect(() => {
+    (async () => {
+      try {
+        const me = await apiClient.getProfile().catch(() => null);
+        const prefs = (me as any)?.profile?.preferences;
+        if (prefs?.completed) {
+          setFilters({
+            size: [prefs.preferredSize as Size],
+            energy: [prefs.preferredEnergy as Energy],
+          });
+        }
+      } catch {
+        // si hay error, no pasa nada: mostramos el catálogo general
+      }
+    })();
+  }, []);
 
   // Filtro en memoria
   const filteredAnimals = useMemo(() => {

@@ -202,7 +202,7 @@ export const Header: React.FC = () => {
                 email={email}
                 avatarUrl={avatarUrl}
                 onProfile={() => nav('/profile')}
-                onRequests={() => nav('/my-applications')}
+                onRequests={() => nav('/mis-solicitudes')}
                 onLogout={handleLogout}
               />
             ) : (
@@ -263,7 +263,7 @@ export const Header: React.FC = () => {
                     <User className="h-4 w-4 mr-1" />
                     Mi perfil
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={() => { setIsMenuOpen(false); nav('/my-applications'); }}>
+                  <Button variant="ghost" size="sm" onClick={() => { setIsMenuOpen(false); nav('/mis-solicitudes'); }}>
                     <ListChecks className="h-4 w-4 mr-1" />
                     Mis solicitudes
                   </Button>

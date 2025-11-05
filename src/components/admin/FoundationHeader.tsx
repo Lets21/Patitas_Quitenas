@@ -3,29 +3,25 @@ import { Bell } from "lucide-react";
 import { useAuthStore } from "@/lib/auth";
 import { Button } from "@/components/ui/Button";
 
-const PAE_LOGO = "/images/paelogo.png"; // Fundación PAE
+const PAE_LOGO = "/images/paelogo.png";
 
 export default function FoundationHeader() {
   const { user, logout } = useAuthStore();
   const { pathname } = useLocation();
   const navigate = useNavigate();
 
-  const orgName = ((user as any)?.organization?.name ?? "PAE").trim();
-
-  const first = (user?.profile?.firstName || "").trim();
-  const last  = (user?.profile?.lastName  || "").trim();
+  const orgName = String((user as any)?.organization?.name ?? "PAE").trim();
+  const first = String(user?.profile?.firstName ?? "").trim();
+  const last  = String(user?.profile?.lastName ?? "").trim();
   const userName = [first, last].filter(Boolean).join(" ");
 
-  // Sección principal de Fundación (excluye solo /notificaciones)
-  const inFoundation =
-    pathname.startsWith("/fundacion") &&
-    !pathname.startsWith("/notificaciones");
+  // Estamos en el área /fundacion (incluye subrutas)
+  const inFoundation = pathname === "/fundacion" || pathname.startsWith("/fundacion/");
 
-  const lvl1Base =
-    "inline-flex items-center gap-2 text-[15px] leading-6 text-gray-600 hover:text-primary-700 transition-colors";
-  const tabLine = "py-3 border-b-2";
-  const active = "border-primary-600 text-primary-700";
-  const inactive = "border-transparent";
+  const lvl1Base  = "inline-flex items-center gap-2 text-[15px] leading-6 text-gray-600 hover:text-primary-700 transition-colors";
+  const tabLine   = "py-3 border-b-2";
+  const active    = "border-primary-600 text-primary-700";
+  const inactive  = "border-transparent";
 
   const handleLogout = async () => {
     try {
@@ -55,7 +51,7 @@ export default function FoundationHeader() {
             </Link>
           </div>
 
-          {/* Desktop user info and logout */}
+          {/* Desktop user info */}
           <div className="hidden md:flex items-center gap-3">
             {userName && <span className="text-sm text-gray-600">{userName}</span>}
             <Button variant="ghost" size="sm" onClick={handleLogout}>
@@ -63,7 +59,7 @@ export default function FoundationHeader() {
             </Button>
           </div>
 
-          {/* Mobile logout button */}
+          {/* Mobile logout */}
           <div className="md:hidden">
             <Button variant="ghost" size="sm" onClick={handleLogout}>
               Cerrar sesión
@@ -78,11 +74,11 @@ export default function FoundationHeader() {
           {/* Desktop tabs */}
           <div className="hidden md:flex items-stretch gap-6">
             <nav className="flex gap-6">
+              {/* Tab principal Fundación: activa si estamos en cualquier /fundacion* */}
               <NavLink
                 to="/fundacion"
-                end
-                className={({ isActive }) =>
-                  `${lvl1Base} ${tabLine} ${isActive || inFoundation ? active : inactive}`
+                className={() =>
+                  `${lvl1Base} ${tabLine} ${inFoundation ? active : inactive}`
                 }
               >
                 Fundación
@@ -101,7 +97,7 @@ export default function FoundationHeader() {
 
             <div className="flex-1" />
 
-            {/* Tabs internos solo en /fundacion */}
+            {/* Tabs internas solo cuando estamos dentro de /fundacion */}
             {inFoundation && (
               <nav className="flex gap-6">
                 <NavLink
@@ -130,14 +126,13 @@ export default function FoundationHeader() {
             )}
           </div>
 
-          {/* Mobile tabs - horizontal scroll */}
+          {/* Mobile tabs */}
           <div className="md:hidden overflow-x-auto">
             <nav className="flex gap-4 min-w-max py-3">
               <NavLink
                 to="/fundacion"
-                end
-                className={({ isActive }) =>
-                  `${lvl1Base} ${tabLine} whitespace-nowrap ${isActive || inFoundation ? active : inactive}`
+                className={() =>
+                  `${lvl1Base} ${tabLine} whitespace-nowrap ${inFoundation ? active : inactive}`
                 }
               >
                 Fundación
@@ -153,7 +148,6 @@ export default function FoundationHeader() {
                 Notificaciones
               </NavLink>
 
-              {/* Tabs internos solo en /fundacion */}
               {inFoundation && (
                 <>
                   <NavLink

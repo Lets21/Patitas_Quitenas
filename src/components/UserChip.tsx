@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { ChevronDown, LogOut, User, ListChecks } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 type UserInfo = {
   name: string;
@@ -9,16 +10,17 @@ type UserInfo = {
 
 type Props = {
   user: UserInfo;
-  onProfile?: () => void;
-  onRequests?: () => void;
+  onProfile?: () => void;    // opcional: si no viene, navega a /profile
+  onRequests?: () => void;   // opcional: si no viene, navega a /mis-solicitudes
   onLogout: () => void;
 };
 
 export function UserChip({ user, onProfile, onRequests, onLogout }: Props) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
 
-  // close on outside click
+  // Cerrar al hacer click fuera o con ESC
   useEffect(() => {
     const onDoc = (e: MouseEvent) => {
       if (!ref.current?.contains(e.target as Node)) setOpen(false);
@@ -38,6 +40,24 @@ export function UserChip({ user, onProfile, onRequests, onLogout }: Props) {
     .join("")
     .slice(0, 2)
     .toUpperCase();
+
+  // Acciones con fallback de navegación
+  const goProfile = () => {
+    setOpen(false);
+    if (onProfile) onProfile();
+    else navigate("/profile");
+  };
+
+  const goRequests = () => {
+    setOpen(false);
+    if (onRequests) onRequests();
+    else navigate("/mis-solicitudes");
+  };
+
+  const goLogout = () => {
+    setOpen(false);
+    onLogout();
+  };
 
   return (
     <div className="relative" ref={ref}>
@@ -83,14 +103,16 @@ export function UserChip({ user, onProfile, onRequests, onLogout }: Props) {
           className="absolute right-0 z-50 mt-2 w-56 rounded-xl border border-black/10 bg-white/95 backdrop-blur shadow-lg"
         >
           <button
-            onClick={() => { setOpen(false); onProfile?.(); }}
+            role="menuitem"
+            onClick={goProfile}
             className="flex w-full items-center gap-2 px-3 py-2.5 text-sm hover:bg-gray-50"
           >
             <User className="h-4 w-4 text-gray-600" />
             Mi perfil
           </button>
           <button
-            onClick={() => { setOpen(false); onRequests?.(); }}
+            role="menuitem"
+            onClick={goRequests}
             className="flex w-full items-center gap-2 px-3 py-2.5 text-sm hover:bg-gray-50"
           >
             <ListChecks className="h-4 w-4 text-gray-600" />
@@ -98,7 +120,8 @@ export function UserChip({ user, onProfile, onRequests, onLogout }: Props) {
           </button>
           <div className="my-1 h-px bg-gray-100" />
           <button
-            onClick={() => { setOpen(false); onLogout(); }}
+            role="menuitem"
+            onClick={goLogout}
             className="flex w-full items-center gap-2 px-3 py-2.5 text-sm text-red-600 hover:bg-red-50"
           >
             <LogOut className="h-4 w-4" />

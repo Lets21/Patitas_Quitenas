@@ -9,17 +9,25 @@ import DashboardLayout from "@/layouts/DashboardLayout";
 import HomePage from "@/pages/HomePage";
 import CatalogPage from "@/pages/CatalogPage";
 import AnimalDetailPage from "@/pages/AnimalDetailPage";
-import LoginPublicPage from "@/pages/LoginPublic";   // ⬅️ nuevo
-import LoginAdminPage from "@/pages/LoginAdmin";     // ⬅️ nuevo
+import LoginPublicPage from "@/pages/LoginPublic";
+import LoginAdminPage from "@/pages/LoginAdmin";
 import RegisterPage from "@/pages/RegisterPage";
 import AboutPage from "@/pages/AboutPage";
+// Adoptante
+import AdoptApplyPage from "@/pages/AdoptApplyPage";
+import MyApplicationsPage from "@/pages/MyApplicationsPage";
 
-// Dashboards / features
+// Fundación
 import FoundationDashboard from "@/features/foundation/FoundationDashboard";
 import AnimalsCrud from "@/features/foundation/AnimalsCrud";
+import FoundationApplicationsPage from "@/features/foundation/Applications"; // ⬅️ NUEVO
+
+// Clínica / Analítica / Admin
 import ClinicDashboard from "@/features/clinic/ClinicDashboard";
 import AnalyticsDashboard from "@/features/analytics/AnalyticsDashboard";
 import AdminDashboard from "@/features/admin/AdminDashboard";
+
+// Notificaciones
 import NotificationsPage from "@/features/notifications/NotificationsPage";
 import ClinicNotificationsPage from "@/features/clinic/ClinicNotificationsPage";
 
@@ -28,11 +36,12 @@ import NotFoundPage from "@/features/errors/NotFoundPage";
 // Protecciones
 import { ProtectedRoute } from "@/app/ProtectedRoute";
 
-// Error Element simple (usa el tuyo si ya tienes uno)
 const ErrorStub = () => <div style={{ padding: 24 }}>Ocurrió un error 😿</div>;
 
 export const router = createBrowserRouter([
+  // =========================
   // Rutas públicas
+  // =========================
   {
     element: <MainLayout />,
     errorElement: <ErrorStub />,
@@ -43,17 +52,36 @@ export const router = createBrowserRouter([
       { path: "/adoptar", element: <CatalogPage /> },
       { path: "/adoptar/:animalId", element: <AnimalDetailPage /> },
 
-      // ⬇️ Logins separados
-      { path: "/login", element: <LoginPublicPage /> },  // Adoptantes
-      { path: "/admin/login", element: <LoginAdminPage /> }, // Fundación / Clínica / Admin
+      // Adoptante
+      {
+        path: "/adoptar/:animalId/aplicar",
+        element: (
+          <ProtectedRoute allowed={["ADOPTANTE"]}>
+            <AdoptApplyPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/mis-solicitudes",
+        element: (
+          <ProtectedRoute allowed={["ADOPTANTE"]}>
+            <MyApplicationsPage />
+          </ProtectedRoute>
+        ),
+      },
 
+      // Logins / registro / info
+      { path: "/login", element: <LoginPublicPage /> },
+      { path: "/admin/login", element: <LoginAdminPage /> },
       { path: "/register", element: <RegisterPage /> },
       { path: "/sobre-nosotros", element: <AboutPage /> },
-      { path: "/about", element: <AboutPage /> }, // alias
+      { path: "/about", element: <AboutPage /> },
     ],
   },
 
-  // Área Fundación (sidebar de dashboard)
+  // =========================
+  // Fundación (usa DashboardLayout con <Outlet/>)
+  // =========================
   {
     element: (
       <ProtectedRoute allowed={["FUNDACION"]}>
@@ -62,12 +90,15 @@ export const router = createBrowserRouter([
     ),
     errorElement: <ErrorStub />,
     children: [
-      { path: "/fundacion", element: <FoundationDashboard /> },
-      { path: "/fundacion/animales", element: <AnimalsCrud /> },
+      { path: "/fundacion", element: <FoundationDashboard /> },             // resumen
+      { path: "/fundacion/animales", element: <AnimalsCrud /> },            // perros
+      { path: "/fundacion/solicitudes", element: <FoundationApplicationsPage /> }, // ⬅️ NUEVA
     ],
   },
 
-  // Clínica (cada dashboard pinta su propio layout)
+  // =========================
+  // Clínica
+  // =========================
   {
     path: "/clinica",
     errorElement: <ErrorStub />,
@@ -78,7 +109,9 @@ export const router = createBrowserRouter([
     ),
   },
 
-  // Analítica (ADMIN)
+  // =========================
+  // Analítica (Admin)
+  // =========================
   {
     path: "/analitica",
     errorElement: <ErrorStub />,
@@ -89,7 +122,9 @@ export const router = createBrowserRouter([
     ),
   },
 
+  // =========================
   // Admin
+  // =========================
   {
     path: "/admin",
     errorElement: <ErrorStub />,
@@ -100,7 +135,9 @@ export const router = createBrowserRouter([
     ),
   },
 
-  // Notificaciones específicas por rol
+  // =========================
+  // Notificaciones
+  // =========================
   {
     path: "/notificaciones",
     errorElement: <ErrorStub />,
