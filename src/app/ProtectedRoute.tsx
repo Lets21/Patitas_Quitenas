@@ -1,7 +1,7 @@
 // src/app/ProtectedRoute.tsx
 import React from "react";
 import { Navigate, useLocation } from "react-router-dom";
-import { useAuthStore } from "@/app/auth";
+import { useAuthStore } from "@/lib/auth";
 
 type Role = "ADOPTANTE" | "FUNDACION" | "CLINICA" | "ADMIN";
 

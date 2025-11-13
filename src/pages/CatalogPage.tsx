@@ -1,12 +1,13 @@
 // src/pages/CatalogPage.tsx
 import React, { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Search, Heart, MapPin, Calendar, Eye } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Input } from "@/components/ui/Input";
 import { apiClient, urlFromBackend } from "@/lib/api";
+import { useAuthStore } from "@/lib/auth";
 
 // ========= Tipos “seguros para UI” =========
 type Size = "SMALL" | "MEDIUM" | "LARGE";
@@ -95,6 +96,8 @@ function normalizeAnimal(raw: any): DisplayAnimal | null {
 
 
 const CatalogPage: React.FC = () => {
+  const navigate = useNavigate();
+  const { user } = useAuthStore();
   const [searchTerm, setSearchTerm] = useState("");
   const [filters, setFilters] = useState<LocalFilters>({});
 
@@ -102,6 +105,16 @@ const CatalogPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [skipped, setSkipped] = useState(0);
+
+  // Función para manejar el click en "Adoptar"
+  function handleAdoptClick(animalId: string) {
+    const nextPath = `/adoptar/${animalId}/aplicar`;
+    if (!user || user.role !== "ADOPTANTE") {
+      navigate(`/login?next=${encodeURIComponent(nextPath)}`, { replace: true });
+    } else {
+      navigate(nextPath);
+    }
+  }
 
   // Carga desde API (usa apiClient, que ya lee VITE_API_URL)
   useEffect(() => {
@@ -385,12 +398,14 @@ const CatalogPage: React.FC = () => {
                               Ver más
                             </Button>
                           </Link>
-                          <Link to="/login" className="flex-1">
-                            <Button size="sm" className="w-full h-9 text-xs">
-                              <Heart className="h-4 w-4 mr-2" />
-                              Adoptar
-                            </Button>
-                          </Link>
+                          <Button 
+                            size="sm" 
+                            className="flex-1 h-9 text-xs"
+                            onClick={() => handleAdoptClick(animal.id)}
+                          >
+                            <Heart className="h-4 w-4 mr-2" />
+                            Adoptar
+                          </Button>
                         </div>
                       </div>
                     </Card>
