@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { ShieldCheck, Eye, EyeOff } from "lucide-react";
 import { apiClient } from "@/lib/api";
-import { useAuthStore, getRedirectPath, Role } from "@/app/auth";
+import { useAuthStore, getRedirectPath, type Role } from "@/lib/auth";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -12,7 +12,7 @@ type AdminRole = (typeof ADMIN_ROLES)[number];
 
 export default function LoginAdminPage() {
   const nav = useNavigate();
-  const doLogin = useAuthStore((s) => s.login); // <- método del store
+  const doLogin = useAuthStore((s) => s.login);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
