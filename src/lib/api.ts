@@ -371,6 +371,17 @@ async getAnimal(id: string) {
     );
   }
 
+  async getApplicationsRanking(animalId?: string, minScore?: number) {
+    const params = new URLSearchParams();
+    if (animalId) params.append("animalId", animalId);
+    if (minScore !== undefined && minScore > 0) {
+      params.append("minScore", String(minScore));
+    }
+    return request<{ applications: Application[]; total: number }>(
+      `/applications/ranking?${params.toString()}`
+    );
+  }
+
   async updateApplicationStatus(id: string, status: string, notes?: string) {
     return request<Application>(`/applications/${id}`, {
       method: "PATCH",

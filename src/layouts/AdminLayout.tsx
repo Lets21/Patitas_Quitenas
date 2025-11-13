@@ -1,9 +1,9 @@
 import { Outlet } from "react-router-dom";
 import { AdminHeader } from "@/components/admin/AdminHeader";
-import { useAuth } from "@/app/auth/AuthContext"; // ajusta si usas otro contexto
+import { useAuthStore } from "@/lib/auth";
 
 export default function AdminLayout() {
-  const { user } = useAuth(); // supongo que aquí tienes el rol
+  const user = useAuthStore((s) => s.user);
 
   // Mapea tu rol del backend a las keys del header
   const roleKey =

@@ -1,6 +1,6 @@
 // src/pages/LoginPublic.tsx
 import React, { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { Heart, Eye, EyeOff } from "lucide-react";
 import { apiClient } from "@/lib/api";
 import { useAuthStore, getRedirectPath, type Role } from "@/lib/auth"; // <- OJO: lib/auth
@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/Button";
 
 export default function LoginPublicPage() {
   const nav = useNavigate();
+  const [searchParams] = useSearchParams();
   const doLogin = useAuthStore((s) => s.login); // <- método correcto del store
 
   const [email, setEmail] = useState("");
@@ -34,7 +35,14 @@ export default function LoginPublicPage() {
 
       // Guarda en el store y redirige
       doLogin(user, token);
-      nav(getRedirectPath(user.role as Role), { replace: true });
+      
+      // Si hay un parámetro 'next' en la URL, redirigir allí, sino usar getRedirectPath
+      const nextPath = searchParams.get("next");
+      if (nextPath) {
+        nav(nextPath, { replace: true });
+      } else {
+        nav(getRedirectPath(user.role as Role), { replace: true });
+      }
     } catch (e: any) {
       setErr(e?.message || "Error al iniciar sesión");
     } finally {
