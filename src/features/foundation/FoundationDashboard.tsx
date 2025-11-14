@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Plus,
   Search,
@@ -17,53 +17,49 @@ import { Input } from "@/components/ui/Input";
 import FoundationHeader from "@/components/admin/FoundationHeader";
 import { useNavigate } from "react-router-dom";
 
-// 🔽 IMPORTAMOS EL HOOK NUEVO
+// 🔽 IMPORTAMOS LOS HOOKS
 import { useFoundationStats } from "./useFoundationStats";
+import { useFoundationAnimals } from "./useFoundationAnimals";
+import { urlFromBackend } from "@/lib/api";
 
 function FoundationDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("todos");
+  const [currentPage, setCurrentPage] = useState(1);
   const navigate = useNavigate();
 
-  // 📊 1) Traemos las estadísticas reales desde el backend
-  const { data, isLoading, isError } = useFoundationStats();
+  // Debounce del search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      setCurrentPage(1); // Reset a página 1 cuando se busca
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
-  // 🐶 datos mock de perros (esto todavía es estático, lo integraremos luego)
-  const dogs = [
-    {
-      id: "1",
-      name: "Max",
-      age: 2,
-      breed: "Mestizo",
-      size: "Mediano",
-      health: ["Vacunado", "Esterilizado"],
-      status: "Disponible",
-      statusColor: "success",
-    },
-    {
-      id: "2",
-      name: "Luna",
-      age: 1,
-      breed: "Labrador",
-      size: "Grande",
-      health: ["Vacunado", "Esterilizado"],
-      status: "En proceso",
-      statusColor: "warning",
-    },
-    {
-      id: "3",
-      name: "Rocky",
-      age: 3,
-      breed: "Pastor Alemán",
-      size: "Grande",
-      health: ["Vacunado", "En tratamiento"],
-      status: "Adoptado",
-      statusColor: "info",
-    },
-  ];
+  // Reset página cuando cambia el filtro
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterStatus]);
+
+  // 📊 1) Traemos las estadísticas reales desde el backend
+  const { data: statsData, isLoading: statsLoading, isError: statsError } = useFoundationStats();
+
+  // 🐶 2) Traemos los animales reales con paginación y filtros
+  const { 
+    data: animalsData, 
+    isLoading: animalsLoading, 
+    isError: animalsError 
+  } = useFoundationAnimals({
+    page: currentPage,
+    limit: 10,
+    search: debouncedSearch,
+    status: filterStatus,
+  });
 
   // ⏳ 2) Mientras cargan stats mostramos algo visualmente limpio
-  if (isLoading) {
+  if (statsLoading) {
     return (
       <div className="min-h-screen bg-gray-50 overflow-x-hidden">
         <FoundationHeader />
@@ -75,26 +71,22 @@ function FoundationDashboard() {
   }
 
   // ❌ 3) Si hubo error (por ejemplo token inválido / no hay token)
-  if (isError || !data) {
+  if (statsError || !statsData) {
     return (
       <div className="min-h-screen bg-gray-50 overflow-x-hidden">
         <FoundationHeader />
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 text-sm text-red-600">
           No se pudieron cargar las estadísticas de la fundación.
-          {/* futuro: aquí podríamos redirigir al login si es 401 */}
         </div>
       </div>
     );
   }
 
-  // ✅ 4) Si llegamos aquí, tenemos data real del backend:
-  // data.totalDogs
-  // data.activeRequests
-  // data.adoptedDogs
-  // data.waitingDogs
+  // Datos de animales (con loading y error handling)
+  const animals = animalsData?.animals || [];
+  const pagination = animalsData?.pagination || { page: 1, limit: 10, total: 0, totalPages: 1 };
 
   return (
-    // Corto cualquier overflow horizontal para que no aparezca el “bloque blanco”
     <div className="min-h-screen bg-gray-50 overflow-x-hidden">
       <FoundationHeader />
 
@@ -112,7 +104,7 @@ function FoundationDashboard() {
                   Perros Registrados
                 </p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {data.totalDogs}
+                  {statsData.totalDogs}
                 </p>
               </div>
             </div>
@@ -129,7 +121,7 @@ function FoundationDashboard() {
                   Solicitudes Activas
                 </p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {data.activeRequests}
+                  {statsData.activeRequests}
                 </p>
               </div>
             </div>
@@ -146,7 +138,7 @@ function FoundationDashboard() {
                   Adopciones Completadas
                 </p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {data.adoptedDogs}
+                  {statsData.adoptedDogs}
                 </p>
               </div>
             </div>
@@ -163,7 +155,7 @@ function FoundationDashboard() {
                   Perros en Espera
                 </p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {data.waitingDogs}
+                  {statsData.waitingDogs}
                 </p>
               </div>
             </div>
@@ -239,86 +231,133 @@ function FoundationDashboard() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {dogs.map((dog) => (
-                    <tr key={dog.id} className="hover:bg-gray-50">
-                      <td className="px-3 sm:px-6 py-4">
-                        <div className="flex items-center">
-                          <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center mr-3">
-                            <Dog className="h-4 w-4 text-yellow-600" />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <span className="text-sm font-medium text-gray-900 block">
-                              {dog.name}
-                            </span>
-                            <span className="text-xs text-gray-500 sm:hidden">
-                              {dog.age} {dog.age === 1 ? "año" : "años"} •{" "}
-                              {dog.breed}
-                            </span>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900 hidden sm:table-cell">
-                        {dog.age} {dog.age === 1 ? "año" : "años"}
-                      </td>
-                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900 hidden md:table-cell">
-                        {dog.breed} / {dog.size}
-                      </td>
-                      <td className="px-3 sm:px-6 py-4 hidden lg:table-cell">
-                        <div className="flex flex-wrap gap-1">
-                          {dog.health.map((health, index) => (
-                            <Badge key={index} variant="info" size="sm">
-                              {health}
-                            </Badge>
-                          ))}
-                        </div>
-                      </td>
-                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                        <Badge variant={dog.statusColor as any} size="sm">
-                          {dog.status}
-                        </Badge>
-                      </td>
-                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex space-x-1 sm:space-x-2">
-                          <button className="text-blue-600 hover:text-blue-900 p-1">
-                            <Eye className="h-4 w-4" />
-                          </button>
-                          <button className="text-green-600 hover:text-green-900 p-1">
-                            <Edit className="h-4 w-4" />
-                          </button>
-                          <button className="text-red-600 hover:text-red-900 p-1">
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
+                  {animalsLoading ? (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                        Cargando animales...
                       </td>
                     </tr>
-                  ))}
+                  ) : animalsError ? (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-8 text-center text-red-500">
+                        Error al cargar los animales
+                      </td>
+                    </tr>
+                  ) : animals.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                        No hay animales registrados
+                      </td>
+                    </tr>
+                  ) : (
+                    animals.map((dog) => (
+                      <tr key={dog.id} className="hover:bg-gray-50">
+                        <td className="px-3 sm:px-6 py-4">
+                          <div className="flex items-center">
+                            {dog.photo ? (
+                              <img
+                                src={urlFromBackend(dog.photo)}
+                                alt={dog.name}
+                                className="w-8 h-8 rounded-full object-cover mr-3"
+                              />
+                            ) : (
+                              <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center mr-3">
+                                <Dog className="h-4 w-4 text-yellow-600" />
+                              </div>
+                            )}
+                            <div className="min-w-0 flex-1">
+                              <span className="text-sm font-medium text-gray-900 block">
+                                {dog.name}
+                              </span>
+                              <span className="text-xs text-gray-500 sm:hidden">
+                                {dog.age} {dog.age === 1 ? "año" : "años"} •{" "}
+                                {dog.breed}
+                              </span>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900 hidden sm:table-cell">
+                          {dog.age} {dog.age === 1 ? "año" : "años"}
+                        </td>
+                        <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900 hidden md:table-cell">
+                          {dog.breed} / {dog.size}
+                        </td>
+                        <td className="px-3 sm:px-6 py-4 hidden lg:table-cell">
+                          <div className="flex flex-wrap gap-1">
+                            {dog.health.map((health, index) => (
+                              <Badge key={index} variant="info" size="sm">
+                                {health}
+                              </Badge>
+                            ))}
+                          </div>
+                        </td>
+                        <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                          <Badge variant={dog.statusColor as any} size="sm">
+                            {dog.statusLabel}
+                          </Badge>
+                        </td>
+                        <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <div className="flex space-x-1 sm:space-x-2">
+                            <button className="text-blue-600 hover:text-blue-900 p-1">
+                              <Eye className="h-4 w-4" />
+                            </button>
+                            <button className="text-green-600 hover:text-green-900 p-1">
+                              <Edit className="h-4 w-4" />
+                            </button>
+                            <button className="text-red-600 hover:text-red-900 p-1">
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
 
             {/* Pagination */}
-            <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <p className="text-sm text-gray-700">
-                Mostrando 3 de {data.totalDogs} perros
-              </p>
-              <div className="flex flex-wrap gap-2 justify-center sm:justify-end">
-                <Button variant="outline" size="sm">
-                  Anterior
-                </Button>
-                <Button size="sm" className="bg-green-600">
-                  1
-                </Button>
-                <Button variant="outline" size="sm">
-                  2
-                </Button>
-                <Button variant="outline" size="sm">
-                  3
-                </Button>
-                <Button variant="outline" size="sm">
-                  Siguiente
-                </Button>
+            {!animalsLoading && !animalsError && pagination.total > 0 && (
+              <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <p className="text-sm text-gray-700">
+                  Mostrando {animals.length} de {pagination.total} perros
+                </p>
+                <div className="flex flex-wrap gap-2 justify-center sm:justify-end">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={pagination.page === 1}
+                  >
+                    Anterior
+                  </Button>
+                  
+                  {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                    const pageNum = i + 1;
+                    return (
+                      <Button
+                        key={pageNum}
+                        size="sm"
+                        variant={pagination.page === pageNum ? "default" : "outline"}
+                        className={pagination.page === pageNum ? "bg-green-600" : ""}
+                        onClick={() => setCurrentPage(pageNum)}
+                      >
+                        {pageNum}
+                      </Button>
+                    );
+                  })}
+                  
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setCurrentPage(p => Math.min(pagination.totalPages, p + 1))}
+                    disabled={pagination.page === pagination.totalPages}
+                  >
+                    Siguiente
+                  </Button>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </Card>
       </div>

@@ -1,7 +1,7 @@
 // src/pages/CatalogPage.tsx
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Search, Heart, MapPin, Calendar, Eye } from "lucide-react";
+import { Search, Heart, MapPin, Calendar, Eye, SlidersHorizontal, Ruler, Cake, Stethoscope, Users, Zap, X, ChevronDown, ChevronUp } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -28,17 +28,37 @@ type DisplayAnimal = {
     energy: Energy;
     coexistence: { children: boolean; cats: boolean; dogs: boolean };
   };
+  personality?: { sociability?: number; energy?: number; training?: number; adaptability?: number };
+  compatibility?: { kids?: boolean; cats?: boolean; dogs?: boolean; apartment?: boolean };
+  clinicalHistory?: { lastVaccination?: string | null; sterilized?: boolean; conditions?: string | null };
 };
 
 type LocalFilters = {
   size?: Size[];
   energy?: Energy[];
   q?: string;
+  ageGroup?: string[];
+  sterilized?: boolean;
+  hasConditions?: boolean;
+  compatibility?: string[];
+  personalityMin?: { sociability?: number; adaptability?: number; training?: number };
 };
 
 // ========= Utilidades de UI =========
 const SIZE_OPTIONS: Size[] = ["SMALL", "MEDIUM", "LARGE"];
 const ENERGY_OPTIONS: Energy[] = ["LOW", "MEDIUM", "HIGH"];
+const AGE_GROUPS = [
+  { value: "PUPPY", label: "Cachorro (< 1 año)", min: 0, max: 0.99 },
+  { value: "YOUNG", label: "Joven (1-2 años)", min: 1, max: 2.99 },
+  { value: "ADULT", label: "Adulto (3-6 años)", min: 3, max: 6.99 },
+  { value: "SENIOR", label: "Senior (7+ años)", min: 7, max: 100 },
+];
+const COMPATIBILITY_OPTIONS = [
+  { value: "kids", label: "Niños" },
+  { value: "cats", label: "Gatos" },
+  { value: "dogs", label: "Otros perros" },
+  { value: "apartment", label: "Apartamento" },
+];
 
 const sizeLabel = (s: Size) => (s === "SMALL" ? "Pequeño" : s === "MEDIUM" ? "Mediano" : "Grande");
 const energyLabel = (e: Energy) => (e === "LOW" ? "Tranquilo" : e === "MEDIUM" ? "Moderado" : "Activo");
@@ -51,7 +71,7 @@ const stateBadge = (state: AState) => {
     case "RESERVED":
       return { label: "Reservado", variant: "warning" as const };
     case "ADOPTED":
-      return { label: "Adoptado", variant: "neutral" as const };
+      return { label: "Adoptado", variant: "default" as const };
     default:
       return { label: state, variant: "info" as const };
   }
@@ -73,8 +93,15 @@ function normalizeAnimal(raw: any): DisplayAnimal | null {
   const photos: string[] =
     Array.isArray(raw?.photos) && raw.photos.length ? raw.photos : [PLACEHOLDER];
 
+  const clamp5 = (n: number | undefined) => Math.max(0, Math.min(5, Number(n ?? 0)));
+  const toBool = (v: any) => {
+    if (v === true || v === 1 || String(v).toLowerCase() === "true") return true;
+    if (v === false || v === 0 || String(v).toLowerCase() === "false") return false;
+    return undefined;
+  };
+
   return {
-    id: String(realId),                // <-- sin UUID
+    id: String(realId),
     name: String(raw?.name ?? "Sin nombre"),
     photos,
     clinicalSummary: String(raw?.clinicalSummary ?? ""),
@@ -91,6 +118,29 @@ function normalizeAnimal(raw: any): DisplayAnimal | null {
         dogs: Boolean(attrs?.coexistence?.dogs ?? raw?.goodWith?.dogs ?? false),
       },
     },
+    personality: raw.personality
+      ? {
+          sociability: clamp5(raw.personality.sociability),
+          energy: clamp5(raw.personality.energy),
+          training: clamp5(raw.personality.training),
+          adaptability: clamp5(raw.personality.adaptability),
+        }
+      : undefined,
+    compatibility: raw.compatibility
+      ? {
+          kids: toBool(raw.compatibility.kids),
+          cats: toBool(raw.compatibility.cats),
+          dogs: toBool(raw.compatibility.dogs),
+          apartment: toBool(raw.compatibility.apartment),
+        }
+      : undefined,
+    clinicalHistory: raw.clinicalHistory
+      ? {
+          lastVaccination: raw.clinicalHistory.lastVaccination ?? null,
+          sterilized: toBool(raw.clinicalHistory.sterilized),
+          conditions: raw.clinicalHistory.conditions ?? null,
+        }
+      : undefined,
   };
 }
 
@@ -105,6 +155,19 @@ const CatalogPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [skipped, setSkipped] = useState(0);
+
+  // Estados para secciones colapsables
+  const [openSections, setOpenSections] = useState({
+    size: true,
+    age: true,
+    health: true,
+    compatibility: true,
+    energy: true,
+  });
+
+  const toggleSection = (section: keyof typeof openSections) => {
+    setOpenSections(prev => ({ ...prev, [section]: !prev[section] }));
+  };
 
   // Función para manejar el click en "Adoptar"
   function handleAdoptClick(animalId: string) {
@@ -193,6 +256,66 @@ const CatalogPage: React.FC = () => {
       list = list.filter((a) => filters.energy!.includes(a.attributes.energy));
     }
 
+    // Filtro por grupo de edad
+    if (filters.ageGroup?.length) {
+      list = list.filter((a) => {
+        return filters.ageGroup!.some((groupValue) => {
+          const group = AGE_GROUPS.find((g) => g.value === groupValue);
+          if (!group) return false;
+          return a.attributes.age >= group.min && a.attributes.age <= group.max;
+        });
+      });
+    }
+
+    // Filtro por esterilización
+    if (filters.sterilized !== undefined) {
+      list = list.filter((a) => a.clinicalHistory?.sterilized === filters.sterilized);
+    }
+
+    // Filtro por condiciones médicas
+    if (filters.hasConditions !== undefined) {
+      list = list.filter((a) => {
+        const hasConditions = !!a.clinicalHistory?.conditions && a.clinicalHistory.conditions.trim() !== "";
+        return filters.hasConditions ? hasConditions : !hasConditions;
+      });
+    }
+
+    // Filtro por compatibilidad
+    if (filters.compatibility?.length) {
+      list = list.filter((a) => {
+        return filters.compatibility!.every((comp) => {
+          if (comp === "kids") return a.compatibility?.kids === true;
+          if (comp === "cats") return a.compatibility?.cats === true;
+          if (comp === "dogs") return a.compatibility?.dogs === true;
+          if (comp === "apartment") return a.compatibility?.apartment === true;
+          return true;
+        });
+      });
+    }
+
+    // Filtro por personalidad (mínimo requerido)
+    if (filters.personalityMin) {
+      list = list.filter((a) => {
+        if (!a.personality) return false;
+        if (
+          filters.personalityMin!.sociability !== undefined &&
+          (a.personality.sociability ?? 0) < filters.personalityMin!.sociability
+        )
+          return false;
+        if (
+          filters.personalityMin!.adaptability !== undefined &&
+          (a.personality.adaptability ?? 0) < filters.personalityMin!.adaptability
+        )
+          return false;
+        if (
+          filters.personalityMin!.training !== undefined &&
+          (a.personality.training ?? 0) < filters.personalityMin!.training
+        )
+          return false;
+        return true;
+      });
+    }
+
     return list;
   }, [animals, searchTerm, filters]);
 
@@ -204,6 +327,18 @@ const CatalogPage: React.FC = () => {
       return { ...prev, [key]: next.length ? next : undefined };
     });
   };
+
+  // Contar filtros activos
+  const activeFiltersCount = useMemo(() => {
+    let count = 0;
+    if (filters.size?.length) count += filters.size.length;
+    if (filters.energy?.length) count += filters.energy.length;
+    if (filters.ageGroup?.length) count += filters.ageGroup.length;
+    if (filters.sterilized !== undefined) count++;
+    if (filters.hasConditions !== undefined) count++;
+    if (filters.compatibility?.length) count += filters.compatibility.length;
+    return count;
+  }, [filters]);
 
   if (loading) {
     return (
@@ -260,65 +395,308 @@ const CatalogPage: React.FC = () => {
         {/* Layout principal con filtros a la izquierda y contenido a la derecha */}
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Panel de filtros - Lado izquierdo - Siempre visible */}
-          <div className="lg:w-56 flex-shrink-0">
-              <Card className="p-3">
-                <div className="space-y-3">
-                  {/* Tamaño */}
-                  <div>
-                    <h3 className="font-semibold text-gray-900 mb-2">Tamaño</h3>
-                    <div className="space-y-1">
-                      {SIZE_OPTIONS.map((size) => (
-                        <label key={size} className="flex items-center">
-                          <input
-                            type="checkbox"
-                            className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                            checked={!!filters.size?.includes(size)}
-                            onChange={() => toggleFilter("size", size)}
-                          />
-                          <span className="ml-2 text-sm text-gray-700">{sizeLabel(size)}</span>
-                        </label>
-                      ))}
+          <div className="lg:w-72 flex-shrink-0">
+            <div className="sticky top-6">
+              <Card className="overflow-hidden shadow-md">
+                {/* Encabezado del panel de filtros */}
+                <div className="bg-gradient-to-r from-primary-600 to-primary-700 px-5 py-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <SlidersHorizontal className="h-5 w-5 text-white" />
+                      <h2 className="text-lg font-bold text-white">Filtros</h2>
                     </div>
+                    {activeFiltersCount > 0 && (
+                      <Badge className="bg-white text-primary-700 font-semibold">
+                        {activeFiltersCount}
+                      </Badge>
+                    )}
+                  </div>
+                  {activeFiltersCount > 0 && (
+                    <p className="text-primary-100 text-xs mt-1">
+                      {activeFiltersCount} filtro{activeFiltersCount > 1 ? 's' : ''} activo{activeFiltersCount > 1 ? 's' : ''}
+                    </p>
+                  )}
+                </div>
+
+                <div className="p-5 space-y-4">
+                  {/* Tamaño */}
+                  <div className="border-b border-gray-100 pb-4">
+                    <button
+                      onClick={() => toggleSection('size')}
+                      className="flex items-center justify-between w-full mb-3 group"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Ruler className="h-4 w-4 text-primary-600" />
+                        <h3 className="font-semibold text-gray-900 text-sm">Tamaño</h3>
+                      </div>
+                      {openSections.size ? (
+                        <ChevronUp className="h-4 w-4 text-gray-400 group-hover:text-gray-600" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4 text-gray-400 group-hover:text-gray-600" />
+                      )}
+                    </button>
+                    {openSections.size && (
+                      <div className="space-y-2 pl-6">
+                        {SIZE_OPTIONS.map((size) => (
+                          <label
+                            key={size}
+                            className="flex items-center cursor-pointer group"
+                          >
+                            <div className="relative flex items-center">
+                              <input
+                                type="checkbox"
+                                className="sr-only peer"
+                                checked={!!filters.size?.includes(size)}
+                                onChange={() => toggleFilter("size", size)}
+                              />
+                              <div className="w-5 h-5 border-2 border-gray-300 rounded peer-checked:border-primary-600 peer-checked:bg-primary-600 transition-all flex items-center justify-center">
+                                {filters.size?.includes(size) && (
+                                  <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                )}
+                              </div>
+                            </div>
+                            <span className="ml-3 text-sm text-gray-700 group-hover:text-gray-900">
+                              {sizeLabel(size)}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Grupo de edad */}
+                  <div className="border-b border-gray-100 pb-4">
+                    <button
+                      onClick={() => toggleSection('age')}
+                      className="flex items-center justify-between w-full mb-3 group"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Cake className="h-4 w-4 text-primary-600" />
+                        <h3 className="font-semibold text-gray-900 text-sm">Edad</h3>
+                      </div>
+                      {openSections.age ? (
+                        <ChevronUp className="h-4 w-4 text-gray-400 group-hover:text-gray-600" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4 text-gray-400 group-hover:text-gray-600" />
+                      )}
+                    </button>
+                    {openSections.age && (
+                      <div className="space-y-2 pl-6">
+                        {AGE_GROUPS.map((group) => (
+                          <label
+                            key={group.value}
+                            className="flex items-center cursor-pointer group"
+                          >
+                            <div className="relative flex items-center">
+                              <input
+                                type="checkbox"
+                                className="sr-only peer"
+                                checked={!!filters.ageGroup?.includes(group.value)}
+                                onChange={() => toggleFilter("ageGroup", group.value)}
+                              />
+                              <div className="w-5 h-5 border-2 border-gray-300 rounded peer-checked:border-primary-600 peer-checked:bg-primary-600 transition-all flex items-center justify-center">
+                                {filters.ageGroup?.includes(group.value) && (
+                                  <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                )}
+                              </div>
+                            </div>
+                            <span className="ml-3 text-sm text-gray-700 group-hover:text-gray-900">
+                              {group.label}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Estado de salud */}
+                  <div className="border-b border-gray-100 pb-4">
+                    <button
+                      onClick={() => toggleSection('health')}
+                      className="flex items-center justify-between w-full mb-3 group"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Stethoscope className="h-4 w-4 text-primary-600" />
+                        <h3 className="font-semibold text-gray-900 text-sm">Estado de salud</h3>
+                      </div>
+                      {openSections.health ? (
+                        <ChevronUp className="h-4 w-4 text-gray-400 group-hover:text-gray-600" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4 text-gray-400 group-hover:text-gray-600" />
+                      )}
+                    </button>
+                    {openSections.health && (
+                      <div className="space-y-2 pl-6">
+                        <label className="flex items-center cursor-pointer group">
+                          <div className="relative flex items-center">
+                            <input
+                              type="checkbox"
+                              className="sr-only peer"
+                              checked={filters.sterilized === true}
+                              onChange={(e) => {
+                                setFilters((prev) => ({
+                                  ...prev,
+                                  sterilized: e.target.checked ? true : undefined,
+                                }));
+                              }}
+                            />
+                            <div className="w-5 h-5 border-2 border-gray-300 rounded peer-checked:border-primary-600 peer-checked:bg-primary-600 transition-all flex items-center justify-center">
+                              {filters.sterilized === true && (
+                                <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                </svg>
+                              )}
+                            </div>
+                          </div>
+                          <span className="ml-3 text-sm text-gray-700 group-hover:text-gray-900">
+                            Esterilizado
+                          </span>
+                        </label>
+                        <label className="flex items-center cursor-pointer group">
+                          <div className="relative flex items-center">
+                            <input
+                              type="checkbox"
+                              className="sr-only peer"
+                              checked={filters.hasConditions === false}
+                              onChange={(e) => {
+                                setFilters((prev) => ({
+                                  ...prev,
+                                  hasConditions: e.target.checked ? false : undefined,
+                                }));
+                              }}
+                            />
+                            <div className="w-5 h-5 border-2 border-gray-300 rounded peer-checked:border-primary-600 peer-checked:bg-primary-600 transition-all flex items-center justify-center">
+                              {filters.hasConditions === false && (
+                                <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                </svg>
+                              )}
+                            </div>
+                          </div>
+                          <span className="ml-3 text-sm text-gray-700 group-hover:text-gray-900">
+                            Sin condiciones médicas
+                          </span>
+                        </label>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Compatibilidad */}
+                  <div className="border-b border-gray-100 pb-4">
+                    <button
+                      onClick={() => toggleSection('compatibility')}
+                      className="flex items-center justify-between w-full mb-3 group"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Users className="h-4 w-4 text-primary-600" />
+                        <h3 className="font-semibold text-gray-900 text-sm">Compatibilidad</h3>
+                      </div>
+                      {openSections.compatibility ? (
+                        <ChevronUp className="h-4 w-4 text-gray-400 group-hover:text-gray-600" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4 text-gray-400 group-hover:text-gray-600" />
+                      )}
+                    </button>
+                    {openSections.compatibility && (
+                      <div className="space-y-2 pl-6">
+                        {COMPATIBILITY_OPTIONS.map((comp) => (
+                          <label
+                            key={comp.value}
+                            className="flex items-center cursor-pointer group"
+                          >
+                            <div className="relative flex items-center">
+                              <input
+                                type="checkbox"
+                                className="sr-only peer"
+                                checked={!!filters.compatibility?.includes(comp.value)}
+                                onChange={() => toggleFilter("compatibility", comp.value)}
+                              />
+                              <div className="w-5 h-5 border-2 border-gray-300 rounded peer-checked:border-primary-600 peer-checked:bg-primary-600 transition-all flex items-center justify-center">
+                                {filters.compatibility?.includes(comp.value) && (
+                                  <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                )}
+                              </div>
+                            </div>
+                            <span className="ml-3 text-sm text-gray-700 group-hover:text-gray-900">
+                              {comp.label}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   {/* Energía */}
-                  <div>
-                    <h3 className="font-semibold text-gray-900 mb-2">Energía</h3>
-                    <div className="space-y-1">
-                      {ENERGY_OPTIONS.map((energy) => (
-                        <label key={energy} className="flex items-center">
-                          <input
-                            type="checkbox"
-                            className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                            checked={!!filters.energy?.includes(energy)}
-                            onChange={() => toggleFilter("energy", energy)}
-                          />
-                          <span className="ml-2 text-sm text-gray-700">{energyLabel(energy)}</span>
-                        </label>
-                      ))}
-                    </div>
+                  <div className="pb-4">
+                    <button
+                      onClick={() => toggleSection('energy')}
+                      className="flex items-center justify-between w-full mb-3 group"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Zap className="h-4 w-4 text-primary-600" />
+                        <h3 className="font-semibold text-gray-900 text-sm">Nivel de energía</h3>
+                      </div>
+                      {openSections.energy ? (
+                        <ChevronUp className="h-4 w-4 text-gray-400 group-hover:text-gray-600" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4 text-gray-400 group-hover:text-gray-600" />
+                      )}
+                    </button>
+                    {openSections.energy && (
+                      <div className="space-y-2 pl-6">
+                        {ENERGY_OPTIONS.map((energy) => (
+                          <label
+                            key={energy}
+                            className="flex items-center cursor-pointer group"
+                          >
+                            <div className="relative flex items-center">
+                              <input
+                                type="checkbox"
+                                className="sr-only peer"
+                                checked={!!filters.energy?.includes(energy)}
+                                onChange={() => toggleFilter("energy", energy)}
+                              />
+                              <div className="w-5 h-5 border-2 border-gray-300 rounded peer-checked:border-primary-600 peer-checked:bg-primary-600 transition-all flex items-center justify-center">
+                                {filters.energy?.includes(energy) && (
+                                  <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                )}
+                              </div>
+                            </div>
+                            <span className="ml-3 text-sm text-gray-700 group-hover:text-gray-900">
+                              {energyLabel(energy)}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
-                  {/* Convivencia */}
-                  <div>
-                    <h3 className="font-semibold text-gray-900 mb-2">Convivencia</h3>
-                    <div className="space-y-1">
-                      <label className="flex items-center">
-                        <input type="checkbox" className="rounded border-gray-300 text-primary-600 focus:ring-primary-500" disabled />
-                        <span className="ml-2 text-sm text-gray-700">Con niños</span>
-                      </label>
-                      <label className="flex items-center">
-                        <input type="checkbox" className="rounded border-gray-300 text-primary-600 focus:ring-primary-500" disabled />
-                        <span className="ml-2 text-sm text-gray-700">Con gatos</span>
-                      </label>
-                      <label className="flex items-center">
-                        <input type="checkbox" className="rounded border-gray-300 text-primary-600 focus:ring-primary-500" disabled />
-                        <span className="ml-2 text-sm text-gray-700">Con otros perros</span>
-                      </label>
-                    </div>
-                  </div>
+                  {/* Botón limpiar filtros */}
+                  {activeFiltersCount > 0 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full border-2 border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 font-medium"
+                      onClick={() => {
+                        setSearchTerm("");
+                        setFilters({});
+                      }}
+                    >
+                      <X className="h-4 w-4 mr-2" />
+                      Limpiar todos los filtros
+                    </Button>
+                  )}
                 </div>
               </Card>
+            </div>
           </div>
 
           {/* Contenido principal - Lado derecho con grid optimizado */}
@@ -344,7 +722,7 @@ const CatalogPage: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                 {filteredAnimals.map((animal) => {
                   const b = stateBadge(animal.state);
-                  const { age, breed, size, energy, coexistence } = animal.attributes;
+                  const { age, breed, size, energy } = animal.attributes;
 
                   return (
                     <Card
@@ -381,11 +759,52 @@ const CatalogPage: React.FC = () => {
                           </div>
                         </div>
 
-                        <div className="flex flex-wrap gap-1 mb-4">
-                          {coexistence.children && <Badge size="sm">Con niños</Badge>}
-                          {coexistence.cats && <Badge size="sm">Con gatos</Badge>}
-                          {coexistence.dogs && <Badge size="sm">Con perros</Badge>}
+                        {/* Badges de características destacadas */}
+                        <div className="flex flex-wrap gap-1.5 mb-3">
+                          {animal.clinicalHistory?.sterilized && (
+                            <Badge size="sm" variant="success">Esterilizado</Badge>
+                          )}
+                          {animal.compatibility?.kids && <Badge size="sm">Con niños</Badge>}
+                          {animal.compatibility?.cats && <Badge size="sm">Con gatos</Badge>}
+                          {animal.compatibility?.dogs && <Badge size="sm">Con perros</Badge>}
+                          {animal.compatibility?.apartment && <Badge size="sm">Apto depto</Badge>}
                         </div>
+
+                        {/* Personalidad (si existe) */}
+                        {animal.personality && (
+                          <div className="mb-3 text-xs text-gray-600 space-y-0.5">
+                            {animal.personality.sociability !== undefined && (
+                              <div className="flex items-center justify-between">
+                                <span>Sociabilidad:</span>
+                                <div className="flex space-x-0.5">
+                                  {Array.from({ length: 5 }, (_, i) => (
+                                    <div
+                                      key={i}
+                                      className={`w-2 h-2 rounded-full ${
+                                        i < (animal.personality!.sociability ?? 0) ? "bg-primary-500" : "bg-gray-200"
+                                      }`}
+                                    />
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            {animal.personality.adaptability !== undefined && (
+                              <div className="flex items-center justify-between">
+                                <span>Adaptabilidad:</span>
+                                <div className="flex space-x-0.5">
+                                  {Array.from({ length: 5 }, (_, i) => (
+                                    <div
+                                      key={i}
+                                      className={`w-2 h-2 rounded-full ${
+                                        i < (animal.personality!.adaptability ?? 0) ? "bg-primary-500" : "bg-gray-200"
+                                      }`}
+                                    />
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
 
                         <p className="text-gray-600 text-sm mb-4 line-clamp-2">
                           {animal.clinicalSummary || "Salud validada y lista para adopción"}

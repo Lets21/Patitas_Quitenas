@@ -5,12 +5,14 @@ interface BadgeProps {
   children: React.ReactNode;
   variant?: 'default' | 'success' | 'warning' | 'danger' | 'info';
   size?: 'sm' | 'md';
+  className?: string;
 }
 
 export const Badge: React.FC<BadgeProps> = ({
   children,
   variant = 'default',
-  size = 'md'
+  size = 'md',
+  className
 }) => {
   const baseClasses = 'inline-flex items-center rounded-full font-medium';
   
@@ -32,7 +34,8 @@ export const Badge: React.FC<BadgeProps> = ({
       className={clsx(
         baseClasses,
         variantClasses[variant],
-        sizeClasses[size]
+        sizeClasses[size],
+        className
       )}
     >
       {children}

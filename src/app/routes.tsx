@@ -21,6 +21,7 @@ import MyApplicationsPage from "@/pages/MyApplicationsPage";
 import FoundationDashboard from "@/features/foundation/FoundationDashboard";
 import AnimalsCrud from "@/features/foundation/AnimalsCrud";
 import FoundationApplicationsPage from "@/features/foundation/Applications"; // ⬅️ NUEVO
+import FoundationAnalytics from "@/features/foundation/FoundationAnalytics";
 
 // Clínica / Analítica / Admin
 import ClinicDashboard from "@/features/clinic/ClinicDashboard";
@@ -92,7 +93,8 @@ export const router = createBrowserRouter([
     children: [
       { path: "/fundacion", element: <FoundationDashboard /> },             // resumen
       { path: "/fundacion/animales", element: <AnimalsCrud /> },            // perros
-      { path: "/fundacion/solicitudes", element: <FoundationApplicationsPage /> }, // ⬅️ NUEVA
+      { path: "/fundacion/solicitudes", element: <FoundationApplicationsPage /> }, // solicitudes
+      { path: "/fundacion/estadisticas", element: <FoundationAnalytics /> }, // estadísticas
     ],
   },
 

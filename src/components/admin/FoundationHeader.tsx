@@ -122,6 +122,17 @@ export default function FoundationHeader() {
                 >
                   Solicitudes de Adopción
                 </NavLink>
+
+                <NavLink
+                  to="/fundacion/estadisticas"
+                  className={({ isActive }) =>
+                    `inline-flex items-center gap-2 text-sm leading-6 ${tabLine} ${
+                      isActive ? active : inactive
+                    } text-gray-600 hover:text-primary-700`
+                  }
+                >
+                  📊 Datos Estadísticos
+                </NavLink>
               </nav>
             )}
           </div>
@@ -171,6 +182,17 @@ export default function FoundationHeader() {
                     }
                   >
                     Solicitudes de Adopción
+                  </NavLink>
+
+                  <NavLink
+                    to="/fundacion/estadisticas"
+                    className={({ isActive }) =>
+                      `inline-flex items-center gap-2 text-sm leading-6 ${tabLine} whitespace-nowrap ${
+                        isActive ? active : inactive
+                      } text-gray-600 hover:text-primary-700`
+                    }
+                  >
+                    📊 Datos Estadísticos
                   </NavLink>
                 </>
               )}

@@ -1,0 +1,496 @@
+// src/features/foundation/FoundationAnalytics.tsx
+import {
+  TrendingUp,
+  Users,
+  Calendar,
+  Award,
+  Activity,
+  PieChart,
+  BarChart3,
+  Clock,
+} from "lucide-react";
+import { Card } from "@/components/ui/Card";
+import { Badge } from "@/components/ui/Badge";
+import { useFoundationAnalytics } from "./useFoundationAnalytics";
+import { urlFromBackend } from "@/lib/api";
+import FoundationHeader from "@/components/admin/FoundationHeader";
+
+function FoundationAnalytics() {
+  const { data, isLoading, isError } = useFoundationAnalytics();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 overflow-x-hidden">
+        <FoundationHeader />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <p className="text-gray-500">Cargando estadísticas...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isError || !data) {
+    return (
+      <div className="min-h-screen bg-gray-50 overflow-x-hidden">
+        <FoundationHeader />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <Card className="p-8 text-center">
+            <p className="text-red-600">
+              No se pudieron cargar las estadísticas. Intenta nuevamente.
+            </p>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  const {
+    adoptionsTimeline,
+    topAnimalsWithApplications,
+    stateDistribution,
+    adoptionRate,
+    applicationsByStatus,
+    avgDaysToAdoption,
+    recentAdoptions,
+    dogsBySize,
+    dogsByEnergy,
+    registrationTimeline,
+    summary,
+  } = data;
+
+  // Mapeo de estados para etiquetas en español
+  const stateLabels: Record<string, string> = {
+    AVAILABLE: "Disponible",
+    RESERVED: "Reservado",
+    ADOPTED: "Adoptado",
+    RESCUED: "Rescatado",
+    QUARANTINE: "Cuarentena",
+  };
+
+  const statusLabels: Record<string, string> = {
+    RECEIVED: "Recibidas",
+    IN_REVIEW: "En revisión",
+    HOME_VISIT: "Visita domiciliaria",
+    APPROVED: "Aprobadas",
+    REJECTED: "Rechazadas",
+  };
+
+  const sizeLabels: Record<string, string> = {
+    SMALL: "Pequeño",
+    MEDIUM: "Mediano",
+    LARGE: "Grande",
+  };
+
+  const energyLabels: Record<string, string> = {
+    LOW: "Baja",
+    MEDIUM: "Media",
+    HIGH: "Alta",
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 overflow-x-hidden">
+      <FoundationHeader />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
+            📊 Datos Estadísticos de la Fundación
+          </h1>
+          <p className="text-gray-600">
+            Análisis completo del desempeño y métricas clave
+          </p>
+        </div>
+
+        {/* Métricas Principales */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <Card className="p-6">
+            <div className="flex items-center">
+              <div className="p-3 rounded-lg bg-blue-100">
+                <TrendingUp className="h-6 w-6 text-blue-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">
+                  Tasa de Adopción
+                </p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {adoptionRate.toFixed(1)}%
+                </p>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="p-6">
+            <div className="flex items-center">
+              <div className="p-3 rounded-lg bg-green-100">
+                <Users className="h-6 w-6 text-green-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">
+                  Total Solicitudes
+                </p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {summary.totalApplications}
+                </p>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="p-6">
+            <div className="flex items-center">
+              <div className="p-3 rounded-lg bg-purple-100">
+                <Award className="h-6 w-6 text-purple-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">
+                  Perros Adoptados
+                </p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {summary.adoptedDogs}
+                </p>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="p-6">
+            <div className="flex items-center">
+              <div className="p-3 rounded-lg bg-orange-100">
+                <Clock className="h-6 w-6 text-orange-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">
+                  Tiempo Promedio
+                </p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {avgDaysToAdoption} días
+                </p>
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        {/* Gráficos y Tablas */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* Adopciones por mes */}
+          <Card className="p-6">
+            <div className="flex items-center mb-4">
+              <Calendar className="h-5 w-5 text-primary-600 mr-2" />
+              <h3 className="text-lg font-semibold text-gray-900">
+                Adopciones por Mes
+              </h3>
+            </div>
+            <div className="space-y-3">
+              {adoptionsTimeline.length === 0 ? (
+                <p className="text-sm text-gray-500">
+                  No hay datos de adopciones en los últimos 6 meses
+                </p>
+              ) : (
+                adoptionsTimeline.map((item, idx) => (
+                  <div key={idx} className="flex items-center justify-between">
+                    <span className="text-sm text-gray-700">{item.month}</span>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-32 h-4 bg-gray-200 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-green-500"
+                          style={{
+                            width: `${Math.min(
+                              (item.count / Math.max(...adoptionsTimeline.map((a) => a.count), 1)) * 100,
+                              100
+                            )}%`,
+                          }}
+                        />
+                      </div>
+                      <span className="text-sm font-semibold text-gray-900 w-8 text-right">
+                        {item.count}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </Card>
+
+          {/* Registro de perros por mes */}
+          <Card className="p-6">
+            <div className="flex items-center mb-4">
+              <BarChart3 className="h-5 w-5 text-primary-600 mr-2" />
+              <h3 className="text-lg font-semibold text-gray-900">
+                Registro de Perros por Mes
+              </h3>
+            </div>
+            <div className="space-y-3">
+              {registrationTimeline.length === 0 ? (
+                <p className="text-sm text-gray-500">
+                  No hay datos de registros en los últimos 6 meses
+                </p>
+              ) : (
+                registrationTimeline.map((item, idx) => (
+                  <div key={idx} className="flex items-center justify-between">
+                    <span className="text-sm text-gray-700">{item.month}</span>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-32 h-4 bg-gray-200 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-blue-500"
+                          style={{
+                            width: `${Math.min(
+                              (item.count / Math.max(...registrationTimeline.map((r) => r.count), 1)) * 100,
+                              100
+                            )}%`,
+                          }}
+                        />
+                      </div>
+                      <span className="text-sm font-semibold text-gray-900 w-8 text-right">
+                        {item.count}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </Card>
+        </div>
+
+        {/* Top Perros con Más Solicitudes */}
+        <Card className="p-6 mb-8">
+          <div className="flex items-center mb-4">
+            <Award className="h-5 w-5 text-primary-600 mr-2" />
+            <h3 className="text-lg font-semibold text-gray-900">
+              Perros con Más Solicitudes de Adopción
+            </h3>
+          </div>
+          {topAnimalsWithApplications.length === 0 ? (
+            <p className="text-sm text-gray-500">No hay datos disponibles</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Perro
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Raza
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Edad
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Estado
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Solicitudes
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {topAnimalsWithApplications.map((animal) => (
+                    <tr key={animal.animalId} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <img
+                            src={urlFromBackend(animal.photos[0] || "")}
+                            alt={animal.name}
+                            className="h-10 w-10 rounded-full object-cover"
+                          />
+                          <span className="ml-3 text-sm font-medium text-gray-900">
+                            {animal.name}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                        {animal.breed}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                        {animal.age} {animal.age === 1 ? "año" : "años"}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <Badge
+                          variant={
+                            animal.state === "ADOPTED"
+                              ? "success"
+                              : animal.state === "RESERVED"
+                              ? "warning"
+                              : "info"
+                          }
+                          size="sm"
+                        >
+                          {stateLabels[animal.state] || animal.state}
+                        </Badge>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="text-lg font-bold text-primary-600">
+                          {animal.applicationCount}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
+
+        {/* Grid inferior */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          {/* Distribución por Estado */}
+          <Card className="p-6">
+            <div className="flex items-center mb-4">
+              <PieChart className="h-5 w-5 text-primary-600 mr-2" />
+              <h3 className="text-lg font-semibold text-gray-900">
+                Distribución por Estado
+              </h3>
+            </div>
+            <div className="space-y-2">
+              {stateDistribution.map((state) => (
+                <div
+                  key={state._id}
+                  className="flex items-center justify-between py-2 border-b border-gray-100"
+                >
+                  <span className="text-sm text-gray-700">
+                    {stateLabels[state._id] || state._id}
+                  </span>
+                  <span className="text-sm font-semibold text-gray-900">
+                    {state.count}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          {/* Distribución por Tamaño */}
+          <Card className="p-6">
+            <div className="flex items-center mb-4">
+              <Activity className="h-5 w-5 text-primary-600 mr-2" />
+              <h3 className="text-lg font-semibold text-gray-900">
+                Perros por Tamaño
+              </h3>
+            </div>
+            <div className="space-y-2">
+              {dogsBySize.map((size) => (
+                <div
+                  key={size._id}
+                  className="flex items-center justify-between py-2 border-b border-gray-100"
+                >
+                  <span className="text-sm text-gray-700">
+                    {sizeLabels[size._id] || size._id}
+                  </span>
+                  <span className="text-sm font-semibold text-gray-900">
+                    {size.count}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          {/* Distribución por Energía */}
+          <Card className="p-6">
+            <div className="flex items-center mb-4">
+              <Activity className="h-5 w-5 text-primary-600 mr-2" />
+              <h3 className="text-lg font-semibold text-gray-900">
+                Perros por Energía
+              </h3>
+            </div>
+            <div className="space-y-2">
+              {dogsByEnergy.map((energy) => (
+                <div
+                  key={energy._id}
+                  className="flex items-center justify-between py-2 border-b border-gray-100"
+                >
+                  <span className="text-sm text-gray-700">
+                    {energyLabels[energy._id] || energy._id}
+                  </span>
+                  <span className="text-sm font-semibold text-gray-900">
+                    {energy.count}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
+
+        {/* Solicitudes por Estado */}
+        <Card className="p-6 mb-8">
+          <div className="flex items-center mb-4">
+            <Activity className="h-5 w-5 text-primary-600 mr-2" />
+            <h3 className="text-lg font-semibold text-gray-900">
+              Solicitudes por Estado
+            </h3>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            {applicationsByStatus.map((status) => (
+              <div
+                key={status._id}
+                className="bg-gray-50 rounded-lg p-4 text-center"
+              >
+                <p className="text-2xl font-bold text-gray-900">
+                  {status.count}
+                </p>
+                <p className="text-xs text-gray-600 mt-1">
+                  {statusLabels[status._id] || status._id}
+                </p>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        {/* Adopciones Recientes */}
+        <Card className="p-6">
+          <div className="flex items-center mb-4">
+            <Calendar className="h-5 w-5 text-primary-600 mr-2" />
+            <h3 className="text-lg font-semibold text-gray-900">
+              Adopciones Recientes
+            </h3>
+          </div>
+          {recentAdoptions.length === 0 ? (
+            <p className="text-sm text-gray-500">
+              No hay adopciones recientes registradas
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {recentAdoptions.map((adoption) => (
+                <div
+                  key={adoption._id}
+                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                >
+                  <div className="flex items-center space-x-3">
+                    <img
+                      src={urlFromBackend(adoption.photos[0] || "")}
+                      alt={adoption.name}
+                      className="h-12 w-12 rounded-full object-cover"
+                    />
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">
+                        {adoption.name}
+                      </p>
+                      <p className="text-xs text-gray-600">
+                        {adoption.attributes.breed} •{" "}
+                        {adoption.attributes.age}{" "}
+                        {adoption.attributes.age === 1 ? "año" : "años"}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-gray-500">
+                      {new Date(adoption.updatedAt).toLocaleDateString(
+                        "es-ES",
+                        {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        }
+                      )}
+                    </p>
+                    <Badge variant="success" size="sm">
+                      Adoptado
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+export default FoundationAnalytics;

@@ -155,6 +155,8 @@ function extractToken(payload: any): string | null {
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const token = getToken();
 
+  console.log(`[API Request] ${options.method || "GET"} ${API_BASE}${endpoint}`, { hasToken: !!token });
+
   const res = await fetch(`${API_BASE}${endpoint}`, {
     method: options.method || "GET",
     headers: {
@@ -173,8 +175,11 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     // 204 No Content posible
   }
 
+  console.log(`[API Response] ${options.method || "GET"} ${endpoint}`, { status: res.status, ok: res.ok, data });
+
   if (!res.ok) {
     const msg = (data && (data.error || data.message)) || `Request failed (${res.status})`;
+    console.error(`[API Error] ${endpoint}:`, msg, data);
     throw new Error(msg);
   }
 
@@ -467,6 +472,95 @@ async getAnimal(id: string) {
     }>("/foundation/stats");
 
     // devolvemos solo .data para que el hook lo use directo
+    return res.data;
+  }
+
+  // ===== Foundation Analytics (Estadísticas Avanzadas) =====
+  async getFoundationAnalytics() {
+    const res = await request<{
+      ok: boolean;
+      data: {
+        adoptionsTimeline: Array<{ month: string; count: number }>;
+        topAnimalsWithApplications: Array<{
+          animalId: string;
+          name: string;
+          breed: string;
+          age: number;
+          applicationCount: number;
+          photos: string[];
+          state: string;
+        }>;
+        stateDistribution: Array<{ _id: string; count: number }>;
+        adoptionRate: number;
+        applicationsByStatus: Array<{ _id: string; count: number }>;
+        avgDaysToAdoption: number;
+        recentAdoptions: Array<{
+          _id: string;
+          name: string;
+          attributes: { breed: string; age: number };
+          updatedAt: string;
+          photos: string[];
+        }>;
+        dogsBySize: Array<{ _id: string; count: number }>;
+        dogsByEnergy: Array<{ _id: string; count: number }>;
+        registrationTimeline: Array<{ month: string; count: number }>;
+        summary: {
+          totalDogs: number;
+          adoptedDogs: number;
+          totalApplications: number;
+        };
+      };
+    }>("/foundation/analytics");
+
+    return res.data;
+  }
+
+  // ===== Generic GET method =====
+  async get<T = any>(endpoint: string): Promise<{ ok: boolean; data: T }> {
+    return request<{ ok: boolean; data: T }>(endpoint);
+  }
+
+  // ===== Foundation Animals (Lista de animales con paginación) =====
+  async getFoundationAnimals(params: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    status?: string;
+  }) {
+    const queryParams = new URLSearchParams({
+      page: (params.page || 1).toString(),
+      limit: (params.limit || 10).toString(),
+      search: params.search || "",
+      status: params.status || "todos",
+    });
+
+    const res = await request<{
+      ok: boolean;
+      data: {
+        animals: Array<{
+          id: string;
+          name: string;
+          age: number;
+          breed: string;
+          size: string;
+          gender: string;
+          energy: string;
+          health: string[];
+          status: string;
+          statusLabel: string;
+          statusColor: string;
+          photo: string | null;
+          clinicalSummary: string;
+        }>;
+        pagination: {
+          page: number;
+          limit: number;
+          total: number;
+          totalPages: number;
+        };
+      };
+    }>(`/foundation/animals?${queryParams}`);
+
     return res.data;
   }
 }
