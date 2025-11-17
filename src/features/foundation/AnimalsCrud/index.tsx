@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
-import { Plus, Trash2, Edit, Upload, Search } from "lucide-react";
+import { Plus, Trash2, Edit, Upload, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { apiClient, urlFromBackend } from "@/lib/api";
 import type { Animal } from "@/types";
 
@@ -60,12 +60,35 @@ export default function AnimalsCrud() {
   const [showForm, setShowForm] = useState(false);
   const [draft, setDraft] = useState<Draft>({ ...emptyDraft });
 
+  // Estado de paginación
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalAnimals, setTotalAnimals] = useState(0);
+  const itemsPerPage = 12; // Mostrar 12 animales por página
+
   // Carga usando apiClient (ya envía Authorization Bearer desde auth-storage)
-  async function load() {
+  async function load(page: number = 1) {
     try {
       setLoading(true);
-      const { animals } = await apiClient.foundationListAnimals();
-      setItems(animals ?? []);
+      // Cargar con paginación desde el backend
+      const response = await fetch(`http://localhost:4000/api/v1/foundation/animals?page=${page}&limit=${itemsPerPage}&search=&status=todos`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('auth-storage') ? JSON.parse(localStorage.getItem('auth-storage')!).state.token : ''}`
+        }
+      });
+      const result = await response.json();
+      
+      if (result.ok && result.data) {
+        const animals = result.data.animals || [];
+        const pagination = result.data.pagination || {};
+        
+        setItems(animals);
+        setTotalAnimals(pagination.total || 0);
+        setTotalPages(pagination.totalPages || 1);
+        setCurrentPage(page);
+      } else {
+        setItems([]);
+      }
     } catch (err: any) {
       console.error("[FOUND LIST] error:", err);
       alert(err?.message || "Error cargando animales");
@@ -76,8 +99,32 @@ export default function AnimalsCrud() {
   }
 
   useEffect(() => {
-    load();
+    console.log("[AnimalsCrud] Component mounted, loading animals...");
+    load(currentPage);
+    
+    return () => {
+      console.log("[AnimalsCrud] Component unmounting...");
+    };
   }, []);
+
+  // Funciones de navegación
+  const goToPage = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      load(page);
+    }
+  };
+
+  const nextPage = () => {
+    if (currentPage < totalPages) {
+      load(currentPage + 1);
+    }
+  };
+
+  const prevPage = () => {
+    if (currentPage > 1) {
+      load(currentPage - 1);
+    }
+  };
 
   const filtered = useMemo(() => {
     if (!query.trim()) return items;
@@ -155,7 +202,7 @@ export default function AnimalsCrud() {
         })
       );
 
-      if (draft.photos.length) {
+      if (draft.photos && draft.photos.length) {
         draft.photos.forEach((f) => fd.append("photos", f));
       } else if (draft.id && draft.existingPhoto) {
         // Conservar fotos actuales si no subimos nuevas
@@ -191,10 +238,10 @@ export default function AnimalsCrud() {
   }
 
   // Previews de nuevas fotos
-  const photoPreviews = useMemo(
-    () => draft.photos.map((f) => URL.createObjectURL(f)),
-    [draft.photos]
-  );
+  const photoPreviews = useMemo(() => {
+    if (!draft.photos || draft.photos.length === 0) return [];
+    return draft.photos.map((f) => URL.createObjectURL(f));
+  }, [draft.photos]);
 
   return (
     <>
@@ -231,9 +278,9 @@ export default function AnimalsCrud() {
                 return (
                   <Card key={id ?? `${a?.name}-${a?.createdAt || Math.random()}`} className="p-4">
                     <div className="aspect-video rounded-xl overflow-hidden mb-3 bg-gray-100">
-                      {a?.photos?.[0] ? (
+                      {(a?.photo || a?.photos?.[0]) ? (
                         <img
-                          src={urlFromBackend(a.photos[0])}
+                          src={urlFromBackend(a.photo || a.photos[0])}
                           alt={a?.name || "Foto"}
                           className="w-full h-full object-cover"
                         />
@@ -244,31 +291,68 @@ export default function AnimalsCrud() {
                       )}
                     </div>
 
-                    <div className="font-semibold">{a?.name}</div>
-                    <div className="text-sm text-gray-600">{a?.attributes?.breed}</div>
-                    <div className="text-sm text-gray-600">
-                      {a?.attributes?.age} años • {a?.attributes?.size}
-                    </div>
-
-                    <div className="my-2">
-                      <Badge
-                        variant={
-                          a?.state === "AVAILABLE"
-                            ? "success"
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-bold text-gray-900">{a?.name}</h3>
+                        <Badge
+                          variant={
+                            a?.state === "AVAILABLE"
+                              ? "success"
+                              : a?.state === "RESERVED"
+                              ? "warning"
+                              : "default"
+                          }
+                        >
+                          {a?.state === "AVAILABLE"
+                            ? "Disponible"
                             : a?.state === "RESERVED"
-                            ? "warning"
-                            : "default"
-                        }
-                      >
-                        {a?.state === "AVAILABLE"
-                          ? "Disponible"
-                          : a?.state === "RESERVED"
-                          ? "Reservado"
-                          : "Adoptado"}
-                      </Badge>
+                            ? "Reservado"
+                            : "Adoptado"}
+                        </Badge>
+                      </div>
+
+                      <div className="text-sm font-medium text-primary-600">
+                        {a?.attributes?.breed || a?.breed || "Mestizo"}
+                      </div>
+
+                      <div className="flex flex-wrap gap-2 text-xs text-gray-600">
+                        <span className="inline-flex items-center px-2 py-1 bg-gray-100 rounded">
+                          🎂 {a?.attributes?.age || a?.age || 0} años
+                        </span>
+                        <span className="inline-flex items-center px-2 py-1 bg-gray-100 rounded">
+                          📏 {a?.attributes?.size === "SMALL" ? "Pequeño" : a?.attributes?.size === "MEDIUM" ? "Mediano" : a?.attributes?.size === "LARGE" ? "Grande" : "Mediano"}
+                        </span>
+                        <span className="inline-flex items-center px-2 py-1 bg-gray-100 rounded">
+                          ⚡ {a?.attributes?.energy === "LOW" ? "Tranquilo" : a?.attributes?.energy === "MEDIUM" ? "Moderado" : a?.attributes?.energy === "HIGH" ? "Energético" : "Moderado"}
+                        </span>
+                        <span className="inline-flex items-center px-2 py-1 bg-gray-100 rounded">
+                          {a?.attributes?.gender === "MALE" || a?.gender === "MALE" ? "♂️ Macho" : "♀️ Hembra"}
+                        </span>
+                      </div>
+
+                      {(a?.clinicalSummary || a?.health) && (
+                        <p className="text-xs text-gray-600 line-clamp-2">
+                          {a?.clinicalSummary || (Array.isArray(a?.health) ? a.health.join(", ") : "")}
+                        </p>
+                      )}
+
+                      {/* Compatibilidad */}
+                      {a?.attributes?.coexistence && (
+                        <div className="flex flex-wrap gap-1 text-xs">
+                          {a.attributes.coexistence.children && (
+                            <span className="px-2 py-0.5 bg-green-50 text-green-700 rounded">👶 Niños</span>
+                          )}
+                          {a.attributes.coexistence.dogs && (
+                            <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded">🐕 Perros</span>
+                          )}
+                          {a.attributes.coexistence.cats && (
+                            <span className="px-2 py-0.5 bg-purple-50 text-purple-700 rounded">🐈 Gatos</span>
+                          )}
+                        </div>
+                      )}
                     </div>
 
-                    <div className="flex gap-2 mt-3">
+                    <div className="flex gap-2 mt-4">
                       <Button variant="outline" onClick={() => openEdit(a)}>
                         <Edit className="w-4 h-4 mr-1" />
                         Editar
@@ -285,6 +369,53 @@ export default function AnimalsCrud() {
                   </Card>
                 );
               })}
+            </div>
+          )}
+
+          {/* Controles de paginación */}
+          {!loading && filtered.length > 0 && totalPages > 1 && (
+            <div className="mt-8 flex items-center justify-between">
+              <div className="text-sm text-gray-600">
+                Mostrando {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, totalAnimals)} de {totalAnimals} animales
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  onClick={prevPage}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  Anterior
+                </Button>
+                
+                <div className="flex gap-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                    <button
+                      key={pageNum}
+                      onClick={() => goToPage(pageNum)}
+                      className={`px-3 py-1 rounded ${
+                        pageNum === currentPage
+                          ? 'bg-primary-600 text-white'
+                          : 'bg-white border hover:bg-gray-50'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  ))}
+                </div>
+                
+                <Button
+                  variant="outline"
+                  onClick={nextPage}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1"
+                >
+                  Siguiente
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
           )}
 
@@ -620,7 +751,7 @@ export default function AnimalsCrud() {
                         />
                       </label>
                       <span className="text-xs text-gray-600">
-                        {draft.photos.length
+                        {draft.photos && draft.photos.length
                           ? `${draft.photos.length} seleccionada(s)`
                           : "Sin archivos"}
                       </span>
@@ -638,7 +769,7 @@ export default function AnimalsCrud() {
                       </div>
                     )}
 
-                    {draft.id && draft.existingPhoto && draft.photos.length === 0 && (
+                    {draft.id && draft.existingPhoto && (!draft.photos || draft.photos.length === 0) && (
                       <div className="flex items-center gap-2 text-sm text-gray-600">
                         <span>Foto actual:</span>
                         <img

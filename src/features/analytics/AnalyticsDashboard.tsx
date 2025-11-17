@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
-  BarChart3, 
   TrendingUp, 
   Clock, 
   Users, 
@@ -13,122 +12,172 @@ import {
 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { http } from '@/lib/http';
+
+interface Metricas {
+  totalSolicitudes: number;
+  cambioSolicitudes: string;
+  adopcionesCompletadas: number;
+  cambioAdopciones: string;
+  tiempoPromedio: number;
+  cambioTiempo: string;
+  fundacionActiva: string;
+  adopcionesFundacion: number;
+}
+
+interface DatoKNN {
+  categoria: string;
+  valor: number;
+  color: string;
+}
+
+interface DatoAbandono {
+  razon: string;
+  porcentaje: number;
+}
+
+interface PerfilReciente {
+  iniciales: string;
+  nombre: string;
+  ubicacion: string;
+  compatibilidad: number;
+  perro: string;
+  descripcion: string;
+  estado: string;
+  fecha: string;
+  colorInicial: string;
+}
 
 const AnalyticsDashboard: React.FC = () => {
   const [selectedPeriod, setSelectedPeriod] = useState('30');
   const [selectedFoundation, setSelectedFoundation] = useState('todas');
   const [selectedStatus, setSelectedStatus] = useState('todos');
   const [selectedAge, setSelectedAge] = useState('todas');
+  
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [metricas, setMetricas] = useState<Metricas>({
+    totalSolicitudes: 0,
+    cambioSolicitudes: '0%',
+    adopcionesCompletadas: 0,
+    cambioAdopciones: '0%',
+    tiempoPromedio: 0,
+    cambioTiempo: '0 días',
+    fundacionActiva: 'N/A',
+    adopcionesFundacion: 0
+  });
+  const [datosKNN, setDatosKNN] = useState<DatoKNN[]>([]);
+  const [datosAbandono, setDatosAbandono] = useState<DatoAbandono[]>([]);
+  const [perfilesRecientes, setPerfilesRecientes] = useState<PerfilReciente[]>([]);
+  const [topRazones, setTopRazones] = useState<string[]>([]);
 
-  // Datos mock basados en las capturas
-  const metricas = {
-    totalSolicitudes: 247,
-    cambioSolicitudes: '+12%',
-    adopcionesCompletadas: 68,
-    cambioAdopciones: '+5%',
-    tiempoPromedio: 14,
-    cambioTiempo: '+3 días',
-    fundacionActiva: 'Patitas Felices',
-    adopcionesFundacion: 89
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await http.get("/admin/analytics");
+        
+        if (response.data.ok) {
+          const { data } = response.data;
+          setMetricas(data.metricas);
+          setDatosKNN(data.datosKNN);
+          setDatosAbandono(data.datosAbandono);
+          setPerfilesRecientes(data.perfilesRecientes);
+          setTopRazones(data.topRazones);
+        }
+      } catch (err) {
+        console.error("Error fetching analytics:", err);
+        setError("No se pudieron cargar los datos de analítica");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAnalytics();
+  }, []);
+
+  const handleRefresh = async () => {
+    setLoading(true);
+    try {
+      const response = await http.get("/admin/analytics");
+      if (response.data.ok) {
+        const { data } = response.data;
+        setMetricas(data.metricas);
+        setDatosKNN(data.datosKNN);
+        setDatosAbandono(data.datosAbandono);
+        setPerfilesRecientes(data.perfilesRecientes);
+        setTopRazones(data.topRazones);
+      }
+    } catch (err) {
+      console.error("Error refreshing analytics:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const datosKNN = [
-    { categoria: 'Alta probabilidad', valor: 45, color: 'bg-green-500' },
-    { categoria: 'Probabilidad media', valor: 30, color: 'bg-teal-500' },
-    { categoria: 'Baja probabilidad', valor: 25, color: 'bg-red-400' }
-  ];
-
-  const datosAbandono = [
-    { razon: 'Falta de documentos', porcentaje: 19 },
-    { razon: 'Espacio inadecuado', porcentaje: 28 },
-    { razon: 'Incompatibilidad', porcentaje: 23 },
-    { razon: 'Cambio de opinión', porcentaje: 15 },
-    { razon: 'Otros', porcentaje: 15 }
-  ];
-
-  const perfilesRecientes = [
-    {
-      iniciales: 'JR',
-      nombre: 'Juan Rodríguez',
-      ubicacion: 'Quito Norte',
-      compatibilidad: 92,
-      perro: 'Max',
-      descripcion: 'Mestizo, 2 años',
-      estado: 'Completado',
-      fecha: '12/05/2023',
-      colorInicial: 'bg-blue-500'
-    },
-    {
-      iniciales: 'LM',
-      nombre: 'Laura Méndez',
-      ubicacion: 'Cumbayá',
-      compatibilidad: 87,
-      perro: 'Luna',
-      descripcion: 'Labrador, 4 meses',
-      estado: 'Completado',
-      fecha: '10/05/2023',
-      colorInicial: 'bg-green-500'
-    },
-    {
-      iniciales: 'CA',
-      nombre: 'Carlos Andrade',
-      ubicacion: 'Valle de los Chillos',
-      compatibilidad: 45,
-      perro: 'Rocky',
-      descripcion: 'Pastor Alemán, 5 años',
-      estado: 'En revisión',
-      fecha: '08/05/2023',
-      colorInicial: 'bg-purple-500'
-    }
-  ];
-
-  const tendenciasEdad = [
-    { edad: 'Cachorros (0-1 año)', valor: 35 },
-    { edad: 'Adultos (1-7 años)', valor: 45 },
-    { edad: 'Senior (7+ años)', valor: 20 }
-  ];
-
-  const topRazones = [
-    'Espacio inadecuado para la mascota (28%)',
-    'Incompatibilidad con otros animales (23%)',
-    'Falta de documentación completa (19%)'
-  ];
-
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Dashboard de Adopciones</h1>
-            <div className="flex items-center mt-2 text-sm text-blue-600 bg-blue-50 px-3 py-1 rounded-md">
-              <Info className="w-4 h-4 mr-2" />
-              Los datos mostrados aquí se basan en información anónima y clasificada mediante técnicas de ML (K-NN).
-            </div>
-          </div>
-          <div className="flex items-center space-x-3">
-            <Button variant="outline" size="sm">
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Actualizar datos
-            </Button>
-            <Button variant="outline" size="sm">
-              <Download className="w-4 h-4 mr-2" />
-              Exportar
-            </Button>
-          </div>
+  if (loading) {
+    return (
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex items-center justify-center py-12">
+          <div className="text-gray-500">Cargando datos de analítica...</div>
         </div>
       </div>
+    );
+  }
 
-      <div className="p-6">
+  if (error) {
+    return (
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex items-center justify-center py-12">
+          <div className="text-red-500">{error}</div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+      <div className="space-y-8">
+        {/* Header Section */}
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Analítica de Adopciones</h1>
+              <p className="text-gray-600 mt-2">
+                Vista general del estado y estadísticas de adopciones
+              </p>
+            </div>
+            <div className="flex items-center space-x-3">
+              <Button variant="outline" size="sm" onClick={handleRefresh}>
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Actualizar datos
+              </Button>
+              <Button variant="outline" size="sm">
+                <Download className="w-4 h-4 mr-2" />
+                Exportar
+              </Button>
+            </div>
+          </div>
+          
+          {/* Info Banner */}
+          <div className="flex items-start gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-blue-800">
+              Los datos mostrados aquí se basan en información anónima y clasificada mediante técnicas de ML (K-NN).
+            </p>
+          </div>
+        </div>
         {/* Filtros */}
-        <div className="bg-white rounded-lg p-4 mb-6 shadow-sm">
-          <div className="grid grid-cols-4 gap-4">
+        <Card className="p-6 mb-8">
+          <h3 className="text-sm font-semibold text-gray-900 mb-4 uppercase tracking-wide">Filtros</h3>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Período</label>
               <select 
                 value={selectedPeriod}
                 onChange={(e) => setSelectedPeriod(e.target.value)}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               >
                 <option value="30">Últimos 30 días</option>
                 <option value="60">Últimos 60 días</option>
@@ -140,7 +189,7 @@ const AnalyticsDashboard: React.FC = () => {
               <select 
                 value={selectedFoundation}
                 onChange={(e) => setSelectedFoundation(e.target.value)}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               >
                 <option value="todas">Todas</option>
                 <option value="pae">Fundación PAE</option>
@@ -152,7 +201,7 @@ const AnalyticsDashboard: React.FC = () => {
               <select 
                 value={selectedStatus}
                 onChange={(e) => setSelectedStatus(e.target.value)}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               >
                 <option value="todos">Todos</option>
                 <option value="disponible">Disponible</option>
@@ -164,7 +213,7 @@ const AnalyticsDashboard: React.FC = () => {
               <select 
                 value={selectedAge}
                 onChange={(e) => setSelectedAge(e.target.value)}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               >
                 <option value="todas">Todas</option>
                 <option value="cachorro">Cachorro</option>
@@ -173,25 +222,25 @@ const AnalyticsDashboard: React.FC = () => {
               </select>
             </div>
           </div>
-          <div className="mt-4">
-            <Button className="bg-green-600 hover:bg-green-700 text-white">
+          <div className="mt-6 flex justify-end">
+            <Button className="bg-primary-600 hover:bg-primary-700 text-white">
               Aplicar filtros
             </Button>
           </div>
-        </div>
+        </Card>
 
         {/* Métricas generales */}
         <div className="mb-8">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Métricas generales de adopciones</h2>
-          <div className="grid grid-cols-4 gap-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-6">Métricas Generales de Adopciones</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <Card className="p-6">
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Total de solicitudes</p>
-                  <p className="text-3xl font-bold text-gray-900">{metricas.totalSolicitudes}</p>
-                  <p className="text-sm text-green-600">{metricas.cambioSolicitudes} vs mes anterior</p>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-600">Total de solicitudes</p>
+                  <p className="text-3xl font-bold text-gray-900 mt-2">{metricas.totalSolicitudes}</p>
+                  <p className="text-sm text-green-600 mt-1">{metricas.cambioSolicitudes} vs mes anterior</p>
                 </div>
-                <div className="bg-green-100 p-3 rounded-lg">
+                <div className="bg-green-100 p-3 rounded-xl">
                   <FileText className="w-6 h-6 text-green-600" />
                 </div>
               </div>
@@ -199,12 +248,12 @@ const AnalyticsDashboard: React.FC = () => {
 
             <Card className="p-6">
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Adopciones completadas</p>
-                  <p className="text-3xl font-bold text-gray-900">{metricas.adopcionesCompletadas}%</p>
-                  <p className="text-sm text-green-600">{metricas.cambioAdopciones} vs mes anterior</p>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-600">Adopciones completadas</p>
+                  <p className="text-3xl font-bold text-gray-900 mt-2">{metricas.adopcionesCompletadas}%</p>
+                  <p className="text-sm text-green-600 mt-1">{metricas.cambioAdopciones} vs mes anterior</p>
                 </div>
-                <div className="bg-green-100 p-3 rounded-lg">
+                <div className="bg-green-100 p-3 rounded-xl">
                   <CheckCircle className="w-6 h-6 text-green-600" />
                 </div>
               </div>
@@ -212,26 +261,26 @@ const AnalyticsDashboard: React.FC = () => {
 
             <Card className="p-6">
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Tiempo promedio</p>
-                  <p className="text-3xl font-bold text-gray-900">{metricas.tiempoPromedio} días</p>
-                  <p className="text-sm text-red-600">{metricas.cambioTiempo} vs mes anterior</p>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-600">Tiempo promedio</p>
+                  <p className="text-3xl font-bold text-gray-900 mt-2">{metricas.tiempoPromedio} días</p>
+                  <p className="text-sm text-red-600 mt-1">{metricas.cambioTiempo} vs mes anterior</p>
                 </div>
-                <div className="bg-green-100 p-3 rounded-lg">
-                  <Clock className="w-6 h-6 text-green-600" />
+                <div className="bg-amber-100 p-3 rounded-xl">
+                  <Clock className="w-6 h-6 text-amber-600" />
                 </div>
               </div>
             </Card>
 
             <Card className="p-6">
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Fundación más activa</p>
-                  <p className="text-lg font-bold text-gray-900">{metricas.fundacionActiva}</p>
-                  <p className="text-sm text-gray-600">{metricas.adopcionesFundacion} adopciones</p>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-600">Fundación más activa</p>
+                  <p className="text-lg font-bold text-gray-900 mt-2">{metricas.fundacionActiva}</p>
+                  <p className="text-sm text-gray-600 mt-1">{metricas.adopcionesFundacion} adopciones</p>
                 </div>
-                <div className="bg-green-100 p-3 rounded-lg">
-                  <Users className="w-6 h-6 text-green-600" />
+                <div className="bg-purple-100 p-3 rounded-xl">
+                  <Users className="w-6 h-6 text-purple-600" />
                 </div>
               </div>
             </Card>
@@ -242,9 +291,11 @@ const AnalyticsDashboard: React.FC = () => {
         <div className="grid grid-cols-2 gap-6 mb-8">
           {/* Clasificación K-NN */}
           <Card className="p-6">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-semibold text-gray-900">Clasificación de usuarios con K-NN</h3>
-              <Info className="w-4 h-4 text-gray-400" />
+              <div className="text-gray-400 hover:text-gray-600 cursor-help" title="Clasificación basada en machine learning">
+                <Info className="w-5 h-5" />
+              </div>
             </div>
             
             <div className="flex items-center justify-center mb-6">
@@ -290,9 +341,11 @@ const AnalyticsDashboard: React.FC = () => {
 
           {/* Análisis de abandono */}
           <Card className="p-6">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-semibold text-gray-900">Análisis de abandono / rechazo</h3>
-              <Info className="w-4 h-4 text-gray-400" />
+              <div className="text-gray-400 hover:text-gray-600 cursor-help" title="Razones por las que se abandonan solicitudes">
+                <Info className="w-5 h-5" />
+              </div>
             </div>
 
             <div className="space-y-4 mb-6">
@@ -329,8 +382,8 @@ const AnalyticsDashboard: React.FC = () => {
         {/* Perfiles de adoptantes recientes */}
         <Card className="p-6 mb-8">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-gray-900">Perfiles de adoptantes recientes</h3>
-            <Button variant="outline" size="sm" className="text-green-600 border-green-600 hover:bg-green-50">
+            <h3 className="text-xl font-semibold text-gray-900">Perfiles de Adoptantes Recientes</h3>
+            <Button variant="outline" size="sm" className="text-primary-600 border-primary-600 hover:bg-primary-50">
               Ver todos
             </Button>
           </div>
@@ -400,12 +453,18 @@ const AnalyticsDashboard: React.FC = () => {
 
         {/* Tendencias por filtros */}
         <Card className="p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-6">Tendencias por filtros</h3>
+          <h3 className="text-xl font-semibold text-gray-900 mb-6">Tendencias por Filtros</h3>
           
-          <div className="flex space-x-8 mb-6">
-            <button className="text-green-600 border-b-2 border-green-600 pb-2 font-medium">Por edad</button>
-            <button className="text-gray-500 pb-2">Por raza</button>
-            <button className="text-gray-500 pb-2">Por ubicación</button>
+          <div className="flex space-x-8 mb-6 border-b">
+            <button className="text-primary-600 border-b-2 border-primary-600 pb-3 px-2 font-medium text-sm hover:text-primary-700 transition-colors">
+              Por edad
+            </button>
+            <button className="text-gray-500 pb-3 px-2 font-medium text-sm hover:text-gray-700 transition-colors">
+              Por raza
+            </button>
+            <button className="text-gray-500 pb-3 px-2 font-medium text-sm hover:text-gray-700 transition-colors">
+              Por ubicación
+            </button>
           </div>
 
           <div className="flex items-center space-x-4 mb-4">

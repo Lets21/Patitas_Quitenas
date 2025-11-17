@@ -1,153 +1,23 @@
-import { useState } from 'react';
-import { 
-  Settings, 
-  Users, 
-  BarChart3, 
-  Bell, 
-  Stethoscope, 
-  Building, 
-  Search, 
-  Filter, 
-  Plus, 
-  Edit, 
-  Trash2, 
-  Eye,
-  UserCheck,
-  UserX,
-  Calendar,
-  FileText,
-  TrendingUp,
-  AlertTriangle
-} from 'lucide-react';
-import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
-import { Input } from '@/components/ui/Input';
+// Este componente ya no se usa, se reemplazó por AdminOverview
+// Mantener por compatibilidad pero redirigir
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 function AdminDashboard() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('overview');
-  const [searchTerm, setSearchTerm] = useState('');
 
-  // Datos mock para el dashboard de admin
-  const stats = {
-    totalUsers: 1247,
-    activeUsers: 892,
-    totalAnimals: 156,
-    adoptionsThisMonth: 23,
-    pendingApplications: 45,
-    activeFundations: 8
-  };
-
-  const recentUsers = [
-    { id: 1, name: 'Juan Pérez', email: 'juan@email.com', role: 'ADOPTANTE', status: 'active', joinDate: '2025-01-15' },
-    { id: 2, name: 'María García', email: 'maria@fundacion.com', role: 'FUNDACION', status: 'active', joinDate: '2025-01-14' },
-    { id: 3, name: 'Dr. Carlos López', email: 'carlos@clinica.com', role: 'CLINICA', status: 'pending', joinDate: '2025-01-13' },
-    { id: 4, name: 'Ana Martínez', email: 'ana@email.com', role: 'ADOPTANTE', status: 'inactive', joinDate: '2025-01-12' }
-  ];
-
-  const systemAlerts = [
-    { id: 1, type: 'warning', message: 'Servidor de base de datos al 85% de capacidad', time: '2 horas' },
-    { id: 2, type: 'info', message: 'Actualización programada para el domingo', time: '1 día' },
-    { id: 3, type: 'error', message: 'Fallo en el servicio de notificaciones', time: '30 min' }
-  ];
-
-  const getRoleColor = (role: string) => {
-    switch (role) {
-      case 'ADMIN': return 'danger';
-      case 'FUNDACION': return 'info';
-      case 'CLINICA': return 'warning';
-      case 'ADOPTANTE': return 'success';
-      default: return 'default';
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'success';
-      case 'pending': return 'warning';
-      case 'inactive': return 'danger';
-      default: return 'default';
-    }
-  };
+  useEffect(() => {
+    navigate('/admin', { replace: true });
+  }, [navigate]);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
-      <div className="w-64 bg-white shadow-sm border-r flex flex-col">
-        {/* Header del Sidebar */}
-        <div className="p-6 border-b">
-          <div className="flex items-center space-x-3">
-            <div className="bg-green-500 p-2 rounded-xl">
-              <span className="text-white font-bold text-lg">?</span>
-            </div>
-            <div>
-              <h1 className="text-lg font-bold text-gray-900">AdoptaConCausa</h1>
-              <p className="text-sm text-gray-600">Panel Administrador</p>
-            </div>
-          </div>
-        </div>
+    <div className="flex items-center justify-center min-h-screen">
+      <p className="text-gray-500">Redirigiendo...</p>
+    </div>
+  );
+}
 
-        {/* Navigation para ADMIN - Todas las opciones */}
-        <nav className="flex-1 p-4">
-          <div className="space-y-2">
-            <button 
-              onClick={() => navigate('/fundacion')}
-              className="w-full flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
-            >
-              <Building className="w-5 h-5 mr-3 text-gray-400" />
-              Fundación
-            </button>
-            
-            <button 
-              onClick={() => navigate('/clinica')}
-              className="w-full flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
-            >
-              <Stethoscope className="w-5 h-5 mr-3 text-gray-400" />
-              Clínica
-            </button>
-            
-            <button 
-              onClick={() => navigate('/analitica')}
-              className="w-full flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
-            >
-              <BarChart3 className="w-5 h-5 mr-3 text-gray-400" />
-              Analítica
-            </button>
-            
-            <button 
-              onClick={() => navigate('/notificaciones')}
-              className="w-full flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
-            >
-              <Bell className="w-5 h-5 mr-3 text-gray-400" />
-              Notificaciones
-            </button>
-            
-            <button className="w-full flex items-center px-3 py-2 text-sm font-medium text-white bg-green-600 rounded-lg">
-              <Settings className="w-5 h-5 mr-3" />
-              Administración
-            </button>
-          </div>
-        </nav>
-
-        {/* User Info */}
-        <div className="p-4 border-t">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center">
-              <span className="text-white font-bold text-sm">AD</span>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-900">Administrador</p>
-              <p className="text-xs text-gray-500">Sistema Principal</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="flex-1">
-        {/* Header */}
+export default AdminDashboard;
         <div className="bg-white border-b border-gray-200 px-6 py-4">
           <div className="flex items-center justify-between">
             <div>

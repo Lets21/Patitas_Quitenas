@@ -328,17 +328,21 @@ async getAnimal(id: string) {
 
   // ===== Fundación – CRUD con fotos =====
   async foundationListAnimals() {
-    const data = await request<{ animals: any[]; total: number }>(`/foundation/animals`);
-    return { animals: data.animals.map(mapAnimal), total: data.total };
+    const response = await request<{ ok: boolean; data: { animals: any[]; pagination: any } }>(`/foundation/animals`);
+    const animalsData = response?.data?.animals || [];
+    const animals = Array.isArray(animalsData) ? animalsData.map(mapAnimal) : [];
+    return { animals, total: response?.data?.pagination?.total ?? 0 };
   }
 
   async foundationCreateAnimal(fd: FormData) {
     const res = await requestForm<{ data: any }>(`/foundation/animals`, fd, "POST");
+    if (!res?.data) throw new Error("Invalid response from server");
     return mapAnimal(res.data);
   }
 
   async foundationUpdateAnimal(id: string, fd: FormData) {
     const res = await requestForm<{ data: any }>(`/foundation/animals/${id}`, fd, "PATCH");
+    if (!res?.data) throw new Error("Invalid response from server");
     return mapAnimal(res.data);
   }
 
@@ -561,6 +565,74 @@ async getAnimal(id: string) {
       };
     }>(`/foundation/animals?${queryParams}`);
 
+    return res.data;
+  }
+
+  // ===== Admin - Users Management =====
+  async getAllUsers(params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    role?: string;
+    status?: string;
+  }) {
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.set("page", params.page.toString());
+    if (params?.limit) queryParams.set("limit", params.limit.toString());
+    if (params?.search) queryParams.set("search", params.search);
+    if (params?.role) queryParams.set("role", params.role);
+    if (params?.status) queryParams.set("status", params.status);
+
+    const endpoint = `/admin/users${queryParams.toString() ? `?${queryParams}` : ""}`;
+    const res = await request<{
+      ok: boolean;
+      data: {
+        users: User[];
+        pagination?: {
+          page: number;
+          limit: number;
+          total: number;
+          totalPages: number;
+        };
+      };
+    }>(endpoint);
+
+    return res.data;
+  }
+
+  async getUserById(id: string) {
+    const res = await request<{ ok: boolean; data: User }>(`/admin/users/${id}`);
+    return res.data;
+  }
+
+  async createUser(userData: Partial<User>) {
+    const res = await request<{ ok: boolean; data: User }>("/admin/users", {
+      method: "POST",
+      body: JSON.stringify(userData),
+    });
+    return res.data;
+  }
+
+  async updateUser(id: string, userData: Partial<User>) {
+    const res = await request<{ ok: boolean; data: User }>(`/admin/users/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(userData),
+    });
+    return res.data;
+  }
+
+  async deleteUser(id: string) {
+    const res = await request<{ ok: boolean; message: string }>(`/admin/users/${id}`, {
+      method: "DELETE",
+    });
+    return res;
+  }
+
+  async toggleUserStatus(id: string, active: boolean) {
+    const res = await request<{ ok: boolean; data: User }>(`/admin/users/${id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ active }),
+    });
     return res.data;
   }
 }

@@ -10,6 +10,7 @@ export default function FoundationHeader() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
 
+  const isAdmin = user?.role === "ADMIN";
   const orgName = String((user as any)?.organization?.name ?? "PAE").trim();
   const first = String(user?.profile?.firstName ?? "").trim();
   const last  = String(user?.profile?.lastName ?? "").trim();
@@ -53,6 +54,14 @@ export default function FoundationHeader() {
 
           {/* Desktop user info */}
           <div className="hidden md:flex items-center gap-3">
+            {isAdmin && (
+              <Link 
+                to="/admin"
+                className="text-xs px-2 py-1 bg-red-50 text-red-700 rounded-md hover:bg-red-100 font-medium"
+              >
+                ← Volver al Panel Admin
+              </Link>
+            )}
             {userName && <span className="text-sm text-gray-600">{userName}</span>}
             <Button variant="ghost" size="sm" onClick={handleLogout}>
               Cerrar sesión

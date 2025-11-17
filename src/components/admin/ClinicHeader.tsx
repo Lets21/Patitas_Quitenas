@@ -10,6 +10,7 @@ export default function ClinicHeader() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
 
+  const isAdmin = user?.role === "ADMIN";
   const orgName = "UDLA Clínica";
 
   const first = (user?.profile?.firstName || "").trim();
@@ -57,6 +58,14 @@ export default function ClinicHeader() {
 
           {/* Desktop user info and logout */}
           <div className="hidden md:flex items-center gap-3">
+            {isAdmin && (
+              <Link 
+                to="/admin"
+                className="text-xs px-2 py-1 bg-red-50 text-red-700 rounded-md hover:bg-red-100 font-medium"
+              >
+                ← Volver al Panel Admin
+              </Link>
+            )}
             {userName && <span className="text-sm text-gray-600">{userName}</span>}
             <Button variant="ghost" size="sm" onClick={handleLogout}>
               Cerrar sesión

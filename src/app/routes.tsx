@@ -27,6 +27,10 @@ import FoundationAnalytics from "@/features/foundation/FoundationAnalytics";
 import ClinicDashboard from "@/features/clinic/ClinicDashboard";
 import AnalyticsDashboard from "@/features/analytics/AnalyticsDashboard";
 import AdminDashboard from "@/features/admin/AdminDashboard";
+import AdminOverview from "@/features/admin/AdminOverview";
+import UsersPage from "@/features/admin/UsersPage";
+import SettingsPage from "@/features/admin/SettingsPage";
+import AdminLayout from "@/layouts/AdminLayout";
 
 // Notificaciones
 import NotificationsPage from "@/features/notifications/NotificationsPage";
@@ -82,10 +86,11 @@ export const router = createBrowserRouter([
 
   // =========================
   // Fundación (usa DashboardLayout con <Outlet/>)
+  // ADMIN también puede acceder
   // =========================
   {
     element: (
-      <ProtectedRoute allowed={["FUNDACION"]}>
+      <ProtectedRoute allowed={["FUNDACION", "ADMIN"]}>
         <DashboardLayout />
       </ProtectedRoute>
     ),
@@ -100,12 +105,13 @@ export const router = createBrowserRouter([
 
   // =========================
   // Clínica
+  // ADMIN también puede acceder
   // =========================
   {
     path: "/clinica",
     errorElement: <ErrorStub />,
     element: (
-      <ProtectedRoute allowed={["CLINICA"]}>
+      <ProtectedRoute allowed={["CLINICA", "ADMIN"]}>
         <ClinicDashboard />
       </ProtectedRoute>
     ),
@@ -119,9 +125,15 @@ export const router = createBrowserRouter([
     errorElement: <ErrorStub />,
     element: (
       <ProtectedRoute allowed={["ADMIN"]}>
-        <AnalyticsDashboard />
+        <AdminLayout />
       </ProtectedRoute>
     ),
+    children: [
+      {
+        index: true,
+        element: <AnalyticsDashboard />,
+      },
+    ],
   },
 
   // =========================
@@ -132,9 +144,14 @@ export const router = createBrowserRouter([
     errorElement: <ErrorStub />,
     element: (
       <ProtectedRoute allowed={["ADMIN"]}>
-        <AdminDashboard />
+        <AdminLayout />
       </ProtectedRoute>
     ),
+    children: [
+      { index: true, element: <AdminOverview /> },
+      { path: "usuarios", element: <UsersPage /> },
+      { path: "sistema", element: <SettingsPage /> },
+    ],
   },
 
   // =========================
