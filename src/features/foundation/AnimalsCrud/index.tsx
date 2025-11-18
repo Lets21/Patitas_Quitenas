@@ -203,7 +203,12 @@ export default function AnimalsCrud() {
       );
 
       if (draft.photos && draft.photos.length) {
+        // Subir nuevas fotos
         draft.photos.forEach((f) => fd.append("photos", f));
+        // En modo edición, si hay nuevas fotos, NO mantener las anteriores (reemplazar)
+        if (draft.id) {
+          fd.append("keepPhotos", JSON.stringify([]));
+        }
       } else if (draft.id && draft.existingPhoto) {
         // Conservar fotos actuales si no subimos nuevas
         fd.append("keepPhotos", JSON.stringify([draft.existingPhoto]));
