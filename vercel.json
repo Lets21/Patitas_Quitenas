@@ -1,5 +1,11 @@
 
 {
+  "rewrites": [
+    { 
+      "source": "/(.*)", 
+      "destination": "/index.html" 
+    }
+  ],
   "headers": [
     {
       "source": "/(favicon.ico|favicon16.png|favicon32.png)",
