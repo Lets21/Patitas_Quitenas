@@ -78,11 +78,11 @@ export default function AnimalsCrud() {
         status: 'todos'
       });
       
-      if (result.ok && result.data) {
-        const animals = result.data.animals || [];
-        const pagination = result.data.pagination || {};
+      if (result && result.animals) {
+        const animals = result.animals || [];
+        const pagination = result.pagination || {};
         
-        setItems(animals);
+        setItems(animals as any);
         setTotalAnimals(pagination.total || 0);
         setTotalPages(pagination.totalPages || 1);
         setCurrentPage(page);
