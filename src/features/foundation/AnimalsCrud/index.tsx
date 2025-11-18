@@ -70,13 +70,13 @@ export default function AnimalsCrud() {
   async function load(page: number = 1) {
     try {
       setLoading(true);
-      // Cargar con paginación desde el backend
-      const response = await fetch(`http://localhost:4000/api/v1/foundation/animals?page=${page}&limit=${itemsPerPage}&search=&status=todos`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('auth-storage') ? JSON.parse(localStorage.getItem('auth-storage')!).state.token : ''}`
-        }
+      // Cargar con paginación desde el backend usando apiClient
+      const result = await apiClient.getFoundationAnimals({
+        page,
+        limit: itemsPerPage,
+        search: '',
+        status: 'todos'
       });
-      const result = await response.json();
       
       if (result.ok && result.data) {
         const animals = result.data.animals || [];
