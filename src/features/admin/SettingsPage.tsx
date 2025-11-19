@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
 import { http } from "@/lib/http";
+import toast from "react-hot-toast";
 
 interface SystemStats {
   status: string;
@@ -76,7 +77,7 @@ export default function SettingsPage() {
       }
     } catch (error) {
       console.error("Error loading settings:", error);
-      alert("Error al cargar la configuración del sistema");
+      toast.error("Error al cargar la configuración del sistema");
     } finally {
       setLoading(false);
     }
@@ -92,11 +93,11 @@ export default function SettingsPage() {
       const response = await http.put("/admin/settings", settings);
       
       if (response.data.ok) {
-        alert("Configuración guardada exitosamente");
+        toast.success("Configuración guardada exitosamente");
         loadSettings(); // Recargar para obtener los valores actualizados
       }
     } catch (error: any) {
-      alert(error.response?.data?.message || "Error al guardar la configuración");
+      toast.error(error.response?.data?.message || "Error al guardar la configuración");
     } finally {
       setSaving(false);
     }

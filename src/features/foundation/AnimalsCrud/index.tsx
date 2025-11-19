@@ -5,9 +5,11 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Plus, Trash2, Edit, Upload, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { apiClient, urlFromBackend } from "@/lib/api";
 import type { Animal } from "@/types";
+import toast from "react-hot-toast";
 
 type Draft = {
   id?: string;
@@ -59,6 +61,13 @@ export default function AnimalsCrud() {
   const [query, setQuery] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [draft, setDraft] = useState<Draft>({ ...emptyDraft });
+  
+  // Estado para diálogo de confirmación
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    animalId?: string;
+    animalName?: string;
+  }>({ isOpen: false });
 
   // Estado de paginación
   const [currentPage, setCurrentPage] = useState(1);
@@ -91,7 +100,7 @@ export default function AnimalsCrud() {
       }
     } catch (err: any) {
       console.error("[FOUND LIST] error:", err);
-      alert(err?.message || "Error cargando animales");
+      toast.error(err?.message || "Error al cargar los animales");
       setItems([]);
     } finally {
       setLoading(false);
@@ -167,15 +176,26 @@ export default function AnimalsCrud() {
     setShowForm(true);
   }
 
-  async function onDelete(id?: string) {
-    if (!id) return alert("No se pudo determinar el id del registro.");
-    if (!confirm("¿Eliminar este registro?")) return;
+  function onDelete(id?: string, name?: string) {
+    if (!id) {
+      toast.error("No se pudo determinar el ID del animal");
+      return;
+    }
+    setConfirmDialog({ isOpen: true, animalId: id, animalName: name });
+  }
+
+  async function handleConfirmDelete() {
+    const { animalId, animalName } = confirmDialog;
+    if (!animalId) return;
+    
     try {
-      setDeletingId(id);
-      await apiClient.foundationDeleteAnimal(id);
-      await load();
+      setDeletingId(animalId);
+      await apiClient.foundationDeleteAnimal(animalId);
+      toast.success(`${animalName || "El animal"} ha sido eliminado correctamente`);
+      setConfirmDialog({ isOpen: false });
+      await load(currentPage);
     } catch (err: any) {
-      alert(err?.message || "Error eliminando");
+      toast.error(err?.message || "Error al eliminar el animal");
     } finally {
       setDeletingId(null);
     }
@@ -229,14 +249,19 @@ export default function AnimalsCrud() {
         fd.append("extra", JSON.stringify(extra));
       }
 
-      if (draft.id) await apiClient.foundationUpdateAnimal(draft.id, fd);
-      else await apiClient.foundationCreateAnimal(fd);
+      if (draft.id) {
+        await apiClient.foundationUpdateAnimal(draft.id, fd);
+        toast.success(`${draft.name} ha sido actualizado correctamente`);
+      } else {
+        await apiClient.foundationCreateAnimal(fd);
+        toast.success(`${draft.name} ha sido creado exitosamente`);
+      }
 
       setShowForm(false);
       setDraft({ ...emptyDraft });
-      await load();
+      await load(currentPage);
     } catch (err: any) {
-      alert(err?.message || "Error guardando");
+      toast.error(err?.message || "Error al guardar el animal");
     } finally {
       setSaving(false);
     }
@@ -364,7 +389,7 @@ export default function AnimalsCrud() {
                       </Button>
                       <Button
                         variant="outline"
-                        onClick={() => onDelete(id)}
+                        onClick={() => onDelete(id, a?.name)}
                         disabled={!!deletingId && deletingId === id}
                       >
                         <Trash2 className="w-4 h-4 mr-1" />
@@ -806,6 +831,19 @@ export default function AnimalsCrud() {
           )}
         </div>
       </div>
+
+      {/* Diálogo de confirmación para eliminar */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={() => setConfirmDialog({ isOpen: false })}
+        onConfirm={handleConfirmDelete}
+        title="¿Eliminar este perrito?"
+        message={`¿Estás seguro de que deseas eliminar a ${confirmDialog.animalName || "este animal"}? Esta acción no se puede deshacer.`}
+        confirmText="Sí, eliminar"
+        cancelText="Cancelar"
+        variant="danger"
+        isLoading={!!deletingId}
+      />
     </>
   );
 }

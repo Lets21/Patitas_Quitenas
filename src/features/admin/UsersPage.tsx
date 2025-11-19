@@ -20,7 +20,9 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Input } from "@/components/ui/Input";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { http } from "@/lib/http";
+import toast from "react-hot-toast";
 
 // Interface específica para el admin (viene del backend con _id)
 interface AdminUser {
@@ -71,6 +73,12 @@ export default function UsersPage() {
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState<"create" | "edit" | "view">("create");
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
+  
+  // Diálogo de confirmación
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    user?: AdminUser;
+  }>({ isOpen: false });
 
   // Form data
   const [formData, setFormData] = useState<FormData>({
@@ -163,29 +171,35 @@ export default function UsersPage() {
     try {
       if (modalMode === "create") {
         await http.post("/admin/users", formData);
-        alert("Usuario creado exitosamente");
+        toast.success("Usuario creado exitosamente");
       } else if (modalMode === "edit" && selectedUser) {
         const { password, ...updateData } = formData;
         await http.put(`/admin/users/${selectedUser._id}`, updateData);
-        alert("Usuario actualizado exitosamente");
+        toast.success("Usuario actualizado exitosamente");
       }
       
       closeModal();
       loadUsers();
     } catch (error: any) {
-      alert(error.response?.data?.message || `Error al ${modalMode === "create" ? "crear" : "actualizar"} usuario`);
+      toast.error(error.response?.data?.message || `Error al ${modalMode === "create" ? "crear" : "actualizar"} usuario`);
     }
   };
 
-  const handleDelete = async (user: AdminUser) => {
-    if (!confirm(`¿Estás seguro de eliminar al usuario ${user.email}?`)) return;
+  const handleDelete = (user: AdminUser) => {
+    setConfirmDialog({ isOpen: true, user });
+  };
+  
+  const handleConfirmDelete = async () => {
+    const user = confirmDialog.user;
+    if (!user) return;
     
     try {
       await http.delete(`/admin/users/${user._id}`);
-      alert("Usuario eliminado exitosamente");
+      toast.success(`Usuario ${user.email} eliminado exitosamente`);
+      setConfirmDialog({ isOpen: false });
       loadUsers();
     } catch (error: any) {
-      alert(error.response?.data?.message || "Error al eliminar usuario");
+      toast.error(error.response?.data?.message || "Error al eliminar usuario");
     }
   };
 
@@ -194,9 +208,10 @@ export default function UsersPage() {
       await http.patch(`/admin/users/${user._id}/toggle-status`, {
         isActive: !user.isActive
       });
+      toast.success(`Usuario ${user.isActive ? 'desactivado' : 'activado'} correctamente`);
       loadUsers();
     } catch (error: any) {
-      alert(error.response?.data?.message || "Error al cambiar estado");
+      toast.error(error.response?.data?.message || "Error al cambiar estado");
     }
   };
 
@@ -747,6 +762,18 @@ export default function UsersPage() {
           </div>
         </div>
       )}
+      
+      {/* Diálogo de confirmación para eliminar */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={() => setConfirmDialog({ isOpen: false })}
+        onConfirm={handleConfirmDelete}
+        title="¿Eliminar usuario?"
+        message={`¿Estás seguro de que deseas eliminar al usuario ${confirmDialog.user?.email || ''}? Esta acción no se puede deshacer.`}
+        confirmText="Sí, eliminar"
+        cancelText="Cancelar"
+        variant="danger"
+      />
     </div>
   );
 }
