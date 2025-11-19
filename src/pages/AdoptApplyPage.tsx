@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/Input";
 import { apiClient } from "@/lib/api";
 import { ArrowLeft } from "lucide-react";
 import { useAuthStore } from "@/lib/auth";
+import toast from "react-hot-toast";
 
 export default function AdoptApplyPage() {
   const nav = useNavigate();
@@ -37,7 +38,9 @@ export default function AdoptApplyPage() {
         const animalData = await apiClient.getAnimal(animalId);
         setAnimal(animalData);
       } catch (e: any) {
-        setErr(e?.message || "Error cargando información del animal");
+        const errorMsg = e?.message || "Error cargando información del animal";
+        setErr(errorMsg);
+        toast.error(errorMsg);
       } finally {
         setLoadingAnimal(false);
       }
@@ -67,10 +70,15 @@ export default function AdoptApplyPage() {
       setErr("");
       await apiClient.createApplication({ animalId, form });
       // Mostrar mensaje de éxito
-      alert("Solicitud enviada. Tu puntuación será evaluada por la fundación.");
+      toast.success(
+        `¡Solicitud enviada exitosamente! ${animal?.name ? `Tu solicitud para adoptar a ${animal.name} será evaluada por la fundación.` : 'Tu puntuación será evaluada por la fundación.'}`,
+        { duration: 5000 }
+      );
       nav("/mis-solicitudes", { replace: true });
     } catch (e: any) {
-      setErr(e?.message || "Error creando la solicitud");
+      const errorMsg = e?.message || "Error al enviar la solicitud. Por favor, intenta nuevamente.";
+      setErr(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setLoading(false);
     }
