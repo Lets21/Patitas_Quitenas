@@ -405,6 +405,10 @@ async getAnimal(id: string) {
     });
   }
 
+  async getApplication(id: string) {
+    return request<Application>(`/applications/${id}`);
+  }
+
   // ===== Clinical =====
   async getClinicalRecord(animalId: string) {
     if (USE_MOCK) {
