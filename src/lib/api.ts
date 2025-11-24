@@ -398,6 +398,13 @@ async getAnimal(id: string) {
     });
   }
 
+  async rejectApplication(id: string, data: { reason: string }) {
+    return request<{ ok: boolean; message: string }>(`/applications/${id}/reject`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  }
+
   // ===== Clinical =====
   async getClinicalRecord(animalId: string) {
     if (USE_MOCK) {

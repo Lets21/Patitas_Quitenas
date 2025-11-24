@@ -10,6 +10,7 @@ type AppRow = {
   status: "RECEIVED" | "IN_REVIEW" | "HOME_VISIT" | "APPROVED" | "REJECTED" | string;
   createdAt: string;
   animalId: any; // viene populado: { name, photos, attributes? }
+  rejectReason?: string;
 };
 
 function StatusBadge({ s }: { s: AppRow["status"] }) {
@@ -104,6 +105,11 @@ export default function MyApplicationsPage() {
                     </div>
                     <StatusBadge s={a.status} />
                   </div>
+                  {a.status === "REJECTED" && a.rejectReason && (
+                    <div className="mt-2 text-red-600 text-sm">
+                      <strong>Motivo del rechazo: </strong> {a.rejectReason}
+                    </div>
+                  )}
                 </div>
 
                 {/* (Opcional) Enlace a detalle si lo agregas más adelante */}
