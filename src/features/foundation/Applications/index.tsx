@@ -1,16 +1,23 @@
 // src/features/foundation/ApplicationsPage.tsx
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { apiClient } from "@/lib/api";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Input } from "@/components/ui/Input";
 import ScoreIndicator from "@/components/ScoreIndicator";
-import ApplicationFormView from "@/components/ApplicationFormView";
 import RejectApplicationModal from "../RejectApplicationModal";
+import ApplicationDetailsModal from "../ApplicationDetailsModal";
 
 // >>> IMPORTA TU HEADER DE FUNDACIÓN <<<
 import FoundationHeader from "@/components/admin/FoundationHeader";
+
+type ViewMode = "all" | "ranking";
+
+const VIEW_MODE_TABS: { id: ViewMode; label: string }[] = [
+  { id: "all", label: "Todas" },
+  { id: "ranking", label: "Ranking por puntuación" },
+];
 
 type AppRow = {
   _id: string;
@@ -71,11 +78,12 @@ export default function FoundationApplicationsPage() {
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<string>(""); // filtro
   const [q, setQ] = useState("");
-  const [viewMode, setViewMode] = useState<"all" | "ranking">("all"); // Por defecto mostrar todas
+  const [viewMode, setViewMode] = useState<ViewMode>("all"); // Por defecto mostrar todas
   const [rankingRows, setRankingRows] = useState<AppRow[]>([]);
   const [loadingRanking, setLoadingRanking] = useState(false);
   const [rejectingAppId, setRejectingAppId] = useState<string | null>(null);
   const [rejectingAppIsPuppy, setRejectingAppIsPuppy] = useState(false);
+  const [viewingAppId, setViewingAppId] = useState<string | null>(null);
   
   // Score mínimo fijo para ranking: 70%
   const RANKING_MIN_SCORE = 70;
@@ -120,11 +128,17 @@ export default function FoundationApplicationsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, viewMode]);
 
-  const filtered = useMemo(() => {
-    const term = q.trim().toLowerCase();
-    if (!term) return rows;
+  const filterBySearchAndStatus = (
+    list: AppRow[],
+    term: string,
+    statusFilter: string
+  ) => {
+    const normalized = term.trim().toLowerCase();
+    return list.filter((r) => {
+      const matchesStatus = !statusFilter || r.status === statusFilter;
+      if (!matchesStatus) return false;
+      if (!normalized) return true;
 
-    return rows.filter((r) => {
       const animal =
         typeof r.animalId === "string" ? r.animalId : r.animalId?.name || "";
 
@@ -142,11 +156,21 @@ export default function FoundationApplicationsPage() {
       const adopterName = `${adopterFirst} ${adopterLast} ${adopterEmail}`.trim();
 
       return (
-        animal.toLowerCase().includes(term) ||
-        adopterName.toLowerCase().includes(term)
+        animal.toLowerCase().includes(normalized) ||
+        adopterName.toLowerCase().includes(normalized)
       );
     });
-  }, [rows, q]);
+  };
+
+  const filtered = useMemo(
+    () => filterBySearchAndStatus(rows, q, status),
+    [rows, q, status]
+  );
+
+  const filteredRanking = useMemo(
+    () => filterBySearchAndStatus(rankingRows, q, status),
+    [rankingRows, q, status]
+  );
 
   async function updateStatus(id: string, next: AppRow["status"]) {
     await apiClient.updateApplicationStatus(id, next);
@@ -187,44 +211,46 @@ export default function FoundationApplicationsPage() {
 
       {/* Padding top para que el contenido no quede oculto bajo el header sticky */}
       <div className="max-w-7xl mx-auto p-6 pt-20">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-6">
           <h1 className="text-2xl font-semibold">Solicitudes de adopción</h1>
 
-          <div className="flex gap-3 items-center">
-            <div className="flex gap-2">
-              <Button
-                variant={viewMode === "all" ? "primary" : "outline"}
-                onClick={() => setViewMode("all")}
-                className={viewMode === "all" ? "bg-primary-600 text-white" : "border-gray-300 text-gray-700"}
-              >
-                Todas
-              </Button>
-              <Button
-                variant={viewMode === "ranking" ? "primary" : "outline"}
-                onClick={() => setViewMode("ranking")}
-                className={viewMode === "ranking" ? "bg-primary-600 text-white" : "border-gray-300 text-gray-700"}
-              >
-                Ranking por puntuación
-              </Button>
+          <div className="flex flex-col gap-3 items-start sm:items-end w-full sm:w-auto">
+            <div className="inline-flex w-full sm:w-auto items-center rounded-full border border-primary-200 bg-white p-1 shadow-sm min-w-[280px]">
+              {VIEW_MODE_TABS.map((tab) => {
+                const isActive = viewMode === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setViewMode(tab.id)}
+                    aria-pressed={isActive}
+                    className={`flex-1 rounded-full px-5 py-2 text-sm font-medium text-center transition-all duration-200 ${
+                      isActive
+                        ? "bg-primary-600 text-white shadow-md ring-1 ring-primary-500"
+                        : "text-primary-700 hover:bg-primary-50"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                );
+              })}
             </div>
-
-           {viewMode === "ranking" && (
-             <div className="flex gap-2 items-center">
-               <span className="text-sm text-gray-600">
-                 Mostrando solo solicitudes con score ≥ {RANKING_MIN_SCORE}%
-               </span>
-             </div>
-           )}
-           {viewMode === "all" && (
-              <>
+            {viewMode === "ranking" && (
+              <p className="text-xs text-gray-500 text-left sm:text-right w-full">
+                Mostrando solo solicitudes con score ≥ {RANKING_MIN_SCORE}%
+              </p>
+            )}
+            <div className="w-full sm:w-auto">
+              <div className="flex flex-col gap-2 sm:flex-row">
                 <Input
                   placeholder="Buscar por adoptante o perro..."
                   value={q}
                   onChange={(e) => setQ(e.target.value)}
+                  className="w-full sm:w-64"
                 />
 
                 <select
-                  className="border rounded-md px-3 py-2"
+                  className="border rounded-md px-3 py-2 w-full sm:w-48"
                   value={status}
                   onChange={(e) => setStatus(e.target.value)}
                 >
@@ -235,21 +261,21 @@ export default function FoundationApplicationsPage() {
                   <option value="APPROVED">Aprobadas</option>
                   <option value="REJECTED">Rechazadas</option>
                 </select>
-              </>
-            )}
+              </div>
+            </div>
           </div>
         </div>
 
         {viewMode === "ranking" ? (
           loadingRanking ? (
             <Card className="p-6 text-gray-500">Cargando ranking…</Card>
-          ) : rankingRows.length === 0 ? (
+          ) : filteredRanking.length === 0 ? (
             <Card className="p-6 text-gray-500">
               No hay solicitudes con score ≥ {RANKING_MIN_SCORE}%.
             </Card>
           ) : (
             <div className="grid gap-4">
-              {rankingRows.map((a) => {
+              {filteredRanking.map((a) => {
                 const animalName = formatAnimalName(a);
                 const adopterName = formatAdopterName(a);
                 const scorePct = a.scorePct ?? 0;
@@ -298,6 +324,14 @@ export default function FoundationApplicationsPage() {
                       <div className="flex flex-col items-end gap-2">
                         <div className="text-xs text-gray-500">ID: {a._id}</div>
                         <div className="flex flex-wrap gap-2 justify-end">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setViewingAppId(a._id)}
+                            className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                          >
+                            Ver respuestas
+                          </Button>
                           {a.status !== "IN_REVIEW" && (
                             <Button
                               variant="outline"
@@ -340,12 +374,6 @@ export default function FoundationApplicationsPage() {
                         </div>
                       </div>
                     </div>
-                    
-                    {a.form && (
-                      <div className="mt-4">
-                        <ApplicationFormView form={a.form} />
-                      </div>
-                    )}
                   </Card>
                 );
               })}
@@ -405,6 +433,14 @@ export default function FoundationApplicationsPage() {
                     <div className="flex flex-col items-end gap-2">
                       <div className="text-xs text-gray-500">ID: {a._id}</div>
                       <div className="flex flex-wrap gap-2 justify-end">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setViewingAppId(a._id)}
+                          className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                        >
+                          Ver respuestas
+                        </Button>
                         {a.status !== "IN_REVIEW" && (
                           <Button
                             variant="outline"
@@ -447,12 +483,6 @@ export default function FoundationApplicationsPage() {
                       </div>
                     </div>
                   </div>
-
-                  {a.form && (
-                    <div className="mt-4">
-                      <ApplicationFormView form={a.form} />
-                    </div>
-                  )}
                 </Card>
               );
             })}
@@ -467,6 +497,14 @@ export default function FoundationApplicationsPage() {
           animalIsPuppy={rejectingAppIsPuppy}
           onClose={() => setRejectingAppId(null)}
           onSuccess={handleRejectSuccess}
+        />
+      )}
+
+      {/* Modal de detalles de respuestas */}
+      {viewingAppId && (
+        <ApplicationDetailsModal
+          applicationId={viewingAppId}
+          onClose={() => setViewingAppId(null)}
         />
       )}
     </>
