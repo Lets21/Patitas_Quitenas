@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Input } from "@/components/ui/Input";
 import ScoreIndicator from "@/components/ScoreIndicator";
 import ApplicationFormView from "@/components/ApplicationFormView";
+import RejectApplicationModal from "../RejectApplicationModal";
 
 // >>> IMPORTA TU HEADER DE FUNDACIÓN <<<
 import FoundationHeader from "@/components/admin/FoundationHeader";
@@ -17,6 +18,7 @@ type AppRow = {
   createdAt: string;
   scorePct?: number;
   eligible?: boolean;
+  rejectReason?: string;
   animalId?:
     | {
         _id: string;
@@ -45,14 +47,24 @@ const STATUS_LABEL: Record<AppRow["status"], string> = {
 
 const STATUS_VARIANT: Record<
   AppRow["status"],
-  "info" | "warning" | "success" | "neutral"
+  "info" | "warning" | "success" | "danger" | "default"
 > = {
   RECEIVED: "info",
   IN_REVIEW: "warning",
   HOME_VISIT: "warning",
   APPROVED: "success",
-  REJECTED: "neutral",
+  REJECTED: "danger",
 };
+
+// Helper para determinar si un animal es cachorro
+function isPuppy(animal: AppRow["animalId"]): boolean {
+  if (!animal || typeof animal === "string") return false;
+  const age = animal.attributes?.age;
+  if (typeof age === "number") {
+    return age <= 1; // <= 1 año = cachorro
+  }
+  return false;
+}
 
 export default function FoundationApplicationsPage() {
   const [rows, setRows] = useState<AppRow[]>([]);
@@ -62,6 +74,8 @@ export default function FoundationApplicationsPage() {
   const [viewMode, setViewMode] = useState<"all" | "ranking">("all"); // Por defecto mostrar todas
   const [rankingRows, setRankingRows] = useState<AppRow[]>([]);
   const [loadingRanking, setLoadingRanking] = useState(false);
+  const [rejectingAppId, setRejectingAppId] = useState<string | null>(null);
+  const [rejectingAppIsPuppy, setRejectingAppIsPuppy] = useState(false);
   
   // Score mínimo fijo para ranking: 70%
   const RANKING_MIN_SCORE = 70;
@@ -139,6 +153,19 @@ export default function FoundationApplicationsPage() {
     await load();
   }
 
+  function handleRejectClick(app: AppRow) {
+    setRejectingAppIsPuppy(isPuppy(app.animalId));
+    setRejectingAppId(app._id);
+  }
+
+  function handleRejectSuccess() {
+    if (viewMode === "ranking") {
+      loadRanking();
+    } else {
+      load();
+    }
+  }
+
   function formatAdopterName(a: AppRow): string {
     if (!a.adopterId) return "—";
     if (typeof a.adopterId === "string") return a.adopterId;
@@ -166,14 +193,14 @@ export default function FoundationApplicationsPage() {
           <div className="flex gap-3 items-center">
             <div className="flex gap-2">
               <Button
-                variant={viewMode === "all" ? "default" : "outline"}
+                variant={viewMode === "all" ? "primary" : "outline"}
                 onClick={() => setViewMode("all")}
                 className={viewMode === "all" ? "bg-primary-600 text-white" : "border-gray-300 text-gray-700"}
               >
                 Todas
               </Button>
               <Button
-                variant={viewMode === "ranking" ? "default" : "outline"}
+                variant={viewMode === "ranking" ? "primary" : "outline"}
                 onClick={() => setViewMode("ranking")}
                 className={viewMode === "ranking" ? "bg-primary-600 text-white" : "border-gray-300 text-gray-700"}
               >
@@ -302,9 +329,9 @@ export default function FoundationApplicationsPage() {
                           )}
                           {a.status !== "REJECTED" && (
                             <Button
-                              variant="destructive"
+                              variant="danger"
                               size="sm"
-                              onClick={() => updateStatus(a._id, "REJECTED")}
+                              onClick={() => handleRejectClick(a)}
                               className="bg-red-600 hover:bg-red-700 text-white"
                             >
                               Rechazar
@@ -409,9 +436,9 @@ export default function FoundationApplicationsPage() {
                         )}
                         {a.status !== "REJECTED" && (
                           <Button
-                            variant="destructive"
+                            variant="danger"
                             size="sm"
-                            onClick={() => updateStatus(a._id, "REJECTED")}
+                            onClick={() => handleRejectClick(a)}
                             className="bg-red-600 hover:bg-red-700 text-white"
                           >
                             Rechazar
@@ -432,6 +459,16 @@ export default function FoundationApplicationsPage() {
           </div>
         )}
       </div>
+
+      {/* Modal de rechazo */}
+      {rejectingAppId && (
+        <RejectApplicationModal
+          applicationId={rejectingAppId}
+          animalIsPuppy={rejectingAppIsPuppy}
+          onClose={() => setRejectingAppId(null)}
+          onSuccess={handleRejectSuccess}
+        />
+      )}
     </>
   );
 }
