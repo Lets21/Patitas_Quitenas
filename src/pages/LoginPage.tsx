@@ -12,8 +12,15 @@ import toast from 'react-hot-toast';
 import { apiClient } from "@/lib/api";
 
 const loginSchema = z.object({
-  email: z.string().email('Email inválido'),
-  password: z.string().min(1, 'Contraseña requerida')
+  email: z
+    .string()
+    .min(1, 'Email requerido')
+    .email('Email inválido')
+    .toLowerCase(),
+  password: z
+    .string()
+    .min(1, 'Contraseña requerida')
+    .min(8, 'La contraseña debe tener al menos 8 caracteres')
 });
 
 type LoginForm = z.infer<typeof loginSchema>;
@@ -33,7 +40,8 @@ export const LoginPage: React.FC = () => {
     defaultValues: {
       email: '',
       password: ''
-    }
+    },
+    mode: 'onChange'
   });
 
   const onSubmit = async (data: LoginForm) => {
@@ -72,7 +80,7 @@ export const LoginPage: React.FC = () => {
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" noValidate>
             <div>
               <Input
                 {...register('email')}
@@ -81,6 +89,8 @@ export const LoginPage: React.FC = () => {
                 placeholder="tu@email.com"
                 error={errors.email?.message}
                 autoComplete="email"
+                aria-invalid={!!errors.email}
+                enterKeyHint="next"
               />
             </div>
 
@@ -92,12 +102,16 @@ export const LoginPage: React.FC = () => {
                 placeholder="••••••••"
                 error={errors.password?.message}
                 autoComplete="current-password"
+                aria-invalid={!!errors.password}
+                enterKeyHint="done"
               />
               <button
                 type="button"
-                className="absolute right-3 top-9 text-gray-400 hover:text-gray-600"
+                className="absolute right-3 top-[42px] rounded-md text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-300"
                 onClick={() => setShowPassword(!showPassword)}
                 tabIndex={-1}
+                aria-pressed={showPassword}
+                aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
               >
                 {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
               </button>

@@ -1,5 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { ShieldCheck, Eye, EyeOff } from "lucide-react";
 import { apiClient } from "@/lib/api";
 import { useAuthStore, getRedirectPath, type Role } from "@/lib/auth";
@@ -10,23 +13,43 @@ import { Button } from "@/components/ui/Button";
 const ADMIN_ROLES = ["FUNDACION", "CLINICA", "ADMIN"] as const;
 type AdminRole = (typeof ADMIN_ROLES)[number];
 
+const loginSchema = z.object({
+  email: z
+    .string()
+    .min(1, 'Email requerido')
+    .email('Email inválido')
+    .toLowerCase(),
+  password: z
+    .string()
+    .min(1, 'Contraseña requerida')
+    .min(8, 'La contraseña debe tener al menos 8 caracteres')
+});
+
+type LoginForm = z.infer<typeof loginSchema>;
+
 export default function LoginAdminPage() {
   const nav = useNavigate();
   const doLogin = useAuthStore((s) => s.login);
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
 
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors }
+  } = useForm<LoginForm>({
+    resolver: zodResolver(loginSchema),
+    mode: 'onChange'
+  });
+
+  const onSubmit = async (data: LoginForm) => {
     try {
       setLoading(true);
       setErr("");
 
-      const { user, token } = await apiClient.login(email, password);
+      const { user, token } = await apiClient.login(data.email, data.password);
 
       // Solo Fundación/Clínica/Admin aquí
       if (!ADMIN_ROLES.includes(user.role as AdminRole)) {
@@ -41,9 +64,9 @@ export default function LoginAdminPage() {
     } finally {
       setLoading(false);
     }
-  }
+  };
 
-  const disabled = loading || !email || !password;
+  const disabled = loading;
 
   return (
     <div className="min-h-screen bg-surface-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
@@ -71,25 +94,27 @@ export default function LoginAdminPage() {
           )}
 
           {/* Form */}
-          <form onSubmit={onSubmit} className="space-y-6" noValidate>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" noValidate>
             <Input
+              {...register('email')}
               label="Email"
               type="email"
               placeholder="admin@demo.com"
               autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              error={errors.email?.message}
+              aria-invalid={!!errors.email}
               enterKeyHint="next"
             />
 
             <div className="relative">
               <Input
+                {...register('password')}
                 label="Contraseña"
                 type={show ? "text" : "password"}
                 placeholder="••••••••"
                 autoComplete="current-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                error={errors.password?.message}
+                aria-invalid={!!errors.password}
                 enterKeyHint="done"
               />
               <button

@@ -6,28 +6,55 @@ import { z } from "zod";
 import { Heart, Eye, EyeOff } from "lucide-react";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
+import { PhoneInput } from "../components/ui/PhoneInput";
 import { Card } from "../components/ui/Card";
 import toast from "react-hot-toast";
 import { apiClient } from "@/lib/api";
 
-// Teléfono Ecuador (+593) tolerante con espacios/guiones
-const phoneEC = z
+// Validación de teléfono más flexible para soportar múltiples países
+const phoneValidation = z
   .string()
   .min(1, "Teléfono requerido")
   .regex(
-    /^\+?593[\s-]?\d{2,3}[\s-]?\d{3}[\s-]?\d{3}$|^\+?593[\s-]?9\d{2}[\s-]?\d{3}[\s-]?\d{3}$|^\+?593\d{9}$/,
-    "Formato recomendado: +593 XXX-XXX-XXX"
+    /^\+\d{1,4}\s?\d{6,14}$/,
+    "Formato inválido. Use el selector de país y escriba solo números"
   );
+
+// Validación de contraseña más robusta
+const passwordValidation = z
+  .string()
+  .min(8, "La contraseña debe tener al menos 8 caracteres")
+  .regex(/[A-Z]/, "Debe contener al menos una letra mayúscula")
+  .regex(/[a-z]/, "Debe contener al menos una letra minúscula")
+  .regex(/[0-9]/, "Debe contener al menos un número");
 
 const registerSchema = z
   .object({
-    email: z.string().email("Email inválido"),
-    password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres"),
-    confirmPassword: z.string(),
-    firstName: z.string().min(1, "Nombre requerido"),
-    lastName: z.string().min(1, "Apellido requerido"),
-    phone: phoneEC,
-    address: z.string().min(1, "Dirección requerida"),
+    email: z
+      .string()
+      .min(1, "Email requerido")
+      .email("Email inválido")
+      .toLowerCase(),
+    password: passwordValidation,
+    confirmPassword: z.string().min(1, "Confirme su contraseña"),
+    firstName: z
+      .string()
+      .min(1, "Nombre requerido")
+      .min(2, "El nombre debe tener al menos 2 caracteres")
+      .max(50, "El nombre es demasiado largo")
+      .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, "El nombre solo puede contener letras"),
+    lastName: z
+      .string()
+      .min(1, "Apellido requerido")
+      .min(2, "El apellido debe tener al menos 2 caracteres")
+      .max(50, "El apellido es demasiado largo")
+      .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, "El apellido solo puede contener letras"),
+    phone: phoneValidation,
+    address: z
+      .string()
+      .min(1, "Dirección requerida")
+      .min(10, "La dirección debe ser más específica")
+      .max(200, "La dirección es demasiado larga"),
     terms: z.boolean().refine((v) => v === true, "Debes aceptar los términos y condiciones"),
   })
   .refine((d) => d.password === d.confirmPassword, {
@@ -48,11 +75,12 @@ export const RegisterPage: React.FC = () => {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<RegisterForm>({
     resolver: zodResolver(registerSchema),
     defaultValues: { terms: false },
-    mode: "onTouched",
+    mode: "onChange",
   });
 
   const onSubmit = async (data: RegisterForm) => {
@@ -129,12 +157,11 @@ export const RegisterPage: React.FC = () => {
               enterKeyHint="next"
             />
 
-            <Input
-              {...register("phone")}
-              type="tel"
+            <PhoneInput
               label="Teléfono"
-              placeholder="+593 XXX-XXX-XXX"
+              placeholder="999-999-999"
               error={errors.phone?.message}
+              onChange={(fullNumber) => setValue("phone", fullNumber, { shouldValidate: true })}
               autoComplete="tel"
               aria-invalid={!!errors.phone}
             />

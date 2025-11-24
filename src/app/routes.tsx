@@ -13,6 +13,12 @@ import LoginPublicPage from "@/pages/LoginPublic";
 import LoginAdminPage from "@/pages/LoginAdmin";
 import RegisterPage from "@/pages/RegisterPage";
 import AboutPage from "@/pages/AboutPage";
+// Legal
+import TermsPage from "@/features/legal/TermsPage";
+import PrivacyPage from "@/features/legal/PrivacyPage";
+// Info
+import ProcessPage from "@/pages/ProcessPage";
+import FAQPage from "@/pages/FAQPage";
 // Adoptante
 import AdoptApplyPage from "@/pages/AdoptApplyPage";
 import MyApplicationsPage from "@/pages/MyApplicationsPage";
@@ -81,6 +87,18 @@ export const router = createBrowserRouter([
       { path: "/register", element: <RegisterPage /> },
       { path: "/sobre-nosotros", element: <AboutPage /> },
       { path: "/about", element: <AboutPage /> },
+      
+      // Legal
+      { path: "/terminos", element: <TermsPage /> },
+      { path: "/terms", element: <TermsPage /> },
+      { path: "/privacidad", element: <PrivacyPage /> },
+      { path: "/privacy", element: <PrivacyPage /> },
+      
+      // Info
+      { path: "/process", element: <ProcessPage /> },
+      { path: "/proceso", element: <ProcessPage /> },
+      { path: "/faq", element: <FAQPage /> },
+      { path: "/preguntas", element: <FAQPage /> },
     ],
   },
 

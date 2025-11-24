@@ -1,31 +1,54 @@
 // src/pages/LoginPublic.tsx
 import React, { useState } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Heart, Eye, EyeOff } from "lucide-react";
 import { apiClient } from "@/lib/api";
-import { useAuthStore, getRedirectPath, type Role } from "@/lib/auth"; // <- OJO: lib/auth
+import { useAuthStore, getRedirectPath, type Role } from "@/lib/auth";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 
+const loginSchema = z.object({
+  email: z
+    .string()
+    .min(1, 'Email requerido')
+    .email('Email inválido')
+    .toLowerCase(),
+  password: z
+    .string()
+    .min(1, 'Contraseña requerida')
+    .min(8, 'La contraseña debe tener al menos 8 caracteres')
+});
+
+type LoginForm = z.infer<typeof loginSchema>;
+
 export default function LoginPublicPage() {
   const nav = useNavigate();
   const [searchParams] = useSearchParams();
-  const doLogin = useAuthStore((s) => s.login); // <- método correcto del store
+  const doLogin = useAuthStore((s) => s.login);
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
 
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors }
+  } = useForm<LoginForm>({
+    resolver: zodResolver(loginSchema),
+    mode: 'onChange'
+  });
+
+  const onSubmit = async (data: LoginForm) => {
     try {
       setLoading(true);
       setErr("");
 
-      const { user, token } = await apiClient.login(email, password);
+      const { user, token } = await apiClient.login(data.email, data.password);
 
       // Este login es exclusivo para ADOPTANTE
       if (user.role !== "ADOPTANTE") {
@@ -48,9 +71,9 @@ export default function LoginPublicPage() {
     } finally {
       setLoading(false);
     }
-  }
+  };
 
-  const disabled = loading || !email || !password;
+  const disabled = loading;
 
   return (
     <div className="min-h-screen bg-surface-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
@@ -78,25 +101,27 @@ export default function LoginPublicPage() {
           )}
 
           {/* Form */}
-          <form onSubmit={onSubmit} className="space-y-6" noValidate>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" noValidate>
             <Input
+              {...register('email')}
               label="Email"
               type="email"
               placeholder="adoptante@demo.com"
               autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              error={errors.email?.message}
+              aria-invalid={!!errors.email}
               enterKeyHint="next"
             />
 
             <div className="relative">
               <Input
+                {...register('password')}
                 label="Contraseña"
                 type={show ? "text" : "password"}
                 placeholder="••••••••"
                 autoComplete="current-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                error={errors.password?.message}
+                aria-invalid={!!errors.password}
                 enterKeyHint="done"
               />
               <button
