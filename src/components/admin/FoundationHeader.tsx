@@ -118,7 +118,7 @@ export default function FoundationHeader() {
                     } text-gray-600 hover:text-primary-700`
                   }
                 >
-                  Perros Registrados
+                  Caninos Registrados
                 </NavLink>
 
                 <NavLink

@@ -137,6 +137,15 @@ export function AdminHeader() {
                 >
                   Sistema
                 </NavLink>
+
+                <NavLink
+                  to="/admin/contactos"
+                  className={({ isActive }) =>
+                    `${lvl1Base} ${tabLine} ${isActive ? active : inactive}`
+                  }
+                >
+                  Mensajes
+                </NavLink>
               </nav>
             )}
           </div>

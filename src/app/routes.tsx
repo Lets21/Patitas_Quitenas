@@ -13,6 +13,7 @@ import LoginPublicPage from "@/pages/LoginPublic";
 import LoginAdminPage from "@/pages/LoginAdmin";
 import RegisterPage from "@/pages/RegisterPage";
 import AboutPage from "@/pages/AboutPage";
+import ContactPage from "@/pages/ContactPage";
 // Legal
 import TermsPage from "@/features/legal/TermsPage";
 import PrivacyPage from "@/features/legal/PrivacyPage";
@@ -36,6 +37,7 @@ import AdminDashboard from "@/features/admin/AdminDashboard";
 import AdminOverview from "@/features/admin/AdminOverview";
 import UsersPage from "@/features/admin/UsersPage";
 import SettingsPage from "@/features/admin/SettingsPage";
+import ContactMessagesPage from "@/features/admin/ContactMessagesPage";
 import AdminLayout from "@/layouts/AdminLayout";
 
 // Notificaciones
@@ -99,6 +101,8 @@ export const router = createBrowserRouter([
       { path: "/proceso", element: <ProcessPage /> },
       { path: "/faq", element: <FAQPage /> },
       { path: "/preguntas", element: <FAQPage /> },
+      { path: "/contact", element: <ContactPage /> },
+      { path: "/contacto", element: <ContactPage /> },
     ],
   },
 
@@ -169,6 +173,7 @@ export const router = createBrowserRouter([
       { index: true, element: <AdminOverview /> },
       { path: "usuarios", element: <UsersPage /> },
       { path: "sistema", element: <SettingsPage /> },
+      { path: "contactos", element: <ContactMessagesPage /> },
     ],
   },
 

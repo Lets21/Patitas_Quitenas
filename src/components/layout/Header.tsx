@@ -116,6 +116,7 @@ export const Header: React.FC = () => {
     { to: '/', label: 'Inicio' },
     { to: '/catalog', label: 'Adoptar' },
     { to: '/about', label: 'Nosotros' },
+    { to: '/contact', label: 'Contacto' },
   ];
 
   const getNavItemsByRole = () => {
