@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
 import { apiClient } from "@/lib/api";
 import { ArrowLeft } from "lucide-react";
 import { useAuthStore } from "@/lib/auth";
@@ -68,7 +67,9 @@ export default function AdoptApplyPage() {
     try {
       setLoading(true);
       setErr("");
-      await apiClient.createApplication({ animalId, form });
+      const { acceptSterilization, ...formWithoutSterilization } = form;
+      const payloadForm = isPuppy ? form : formWithoutSterilization;
+      await apiClient.createApplication({ animalId, form: payloadForm });
       // Mostrar mensaje de éxito
       toast.success(
         `¡Solicitud enviada exitosamente! ${animal?.name ? `Tu solicitud para adoptar a ${animal.name} será evaluada por la fundación.` : 'Tu puntuación será evaluada por la fundación.'}`,
