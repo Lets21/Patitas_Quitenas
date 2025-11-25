@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -10,6 +10,7 @@ import { PhoneInput } from "../components/ui/PhoneInput";
 import { Card } from "../components/ui/Card";
 import toast from "react-hot-toast";
 import { apiClient } from "@/lib/api";
+import { validateEmail } from "@/utils/validateEmail";
 
 // Validación de teléfono más flexible para soportar múltiples países
 const phoneValidation = z
@@ -33,8 +34,16 @@ const registerSchema = z
     email: z
       .string()
       .min(1, "Email requerido")
-      .email("Email inválido")
-      .toLowerCase(),
+      .transform((val) => val.trim().toLowerCase())
+      .superRefine((value, ctx) => {
+        const result = validateEmail(value);
+        if (!result.isValid) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: result.error ?? "Email inválido",
+          });
+        }
+      }),
     password: passwordValidation,
     confirmPassword: z.string().min(1, "Confirme su contraseña"),
     firstName: z
@@ -70,12 +79,14 @@ export const RegisterPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [emailSuggestion, setEmailSuggestion] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const {
     register,
     handleSubmit,
     setValue,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<RegisterForm>({
     resolver: zodResolver(registerSchema),
@@ -83,11 +94,42 @@ export const RegisterPage: React.FC = () => {
     mode: "onChange",
   });
 
+  const watchedEmail = watch("email", "");
+
+  useEffect(() => {
+    if (!watchedEmail) {
+      setEmailSuggestion(null);
+      return;
+    }
+    const result = validateEmail(watchedEmail);
+    if (
+      result.suggestion &&
+      result.suggestion !== watchedEmail.trim().toLowerCase()
+    ) {
+      setEmailSuggestion(result.suggestion);
+    } else {
+      setEmailSuggestion(null);
+    }
+  }, [watchedEmail]);
+
+  const applyEmailSuggestion = () => {
+    if (!emailSuggestion) return;
+    setValue("email", emailSuggestion, { shouldValidate: true, shouldDirty: true });
+    setEmailSuggestion(null);
+  };
+
   const onSubmit = async (data: RegisterForm) => {
     setLoading(true);
     try {
+      const validation = validateEmail(data.email);
+      if (!validation.isValid) {
+        toast.error(validation.error || "Email inválido");
+        setLoading(false);
+        return;
+      }
+
       const payload = {
-        email: data.email,
+        email: validation.normalized,
         password: data.password,
         role: ROLE_ADOPTANTE, // fijo
         profile: {
@@ -156,6 +198,20 @@ export const RegisterPage: React.FC = () => {
               aria-invalid={!!errors.email}
               enterKeyHint="next"
             />
+
+            {emailSuggestion && (
+              <div className="mt-2 flex flex-wrap items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                <span>¿Quizás quisiste escribir:</span>
+                <button
+                  type="button"
+                  className="font-semibold text-primary-700 underline"
+                  onClick={applyEmailSuggestion}
+                >
+                  {emailSuggestion}
+                </button>
+                <span>?</span>
+              </div>
+            )}
 
             <PhoneInput
               label="Teléfono"

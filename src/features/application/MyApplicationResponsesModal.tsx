@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { apiClient } from "@/lib/api";
-import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
 import { X } from "lucide-react";
 import TrafficLight from "@/components/TrafficLight";
-import { isPuppy, scoreApplication } from "@/utils/evaluationUtils";
-import { collectSuggestionEntries } from "./applicationSuggestions";
+import { scoreApplication, isPuppy } from "@/utils/evaluationUtils";
+import { collectSuggestionEntries } from "@/features/foundation/applicationSuggestions";
 
-interface ApplicationDetailsModalProps {
+interface MyApplicationResponsesModalProps {
   applicationId: string;
   onClose: () => void;
 }
@@ -24,26 +24,18 @@ interface ApplicationForm {
   acceptSterilization?: "yes" | "no";
 }
 
-interface ApplicationData {
-  _id: string;
-  form?: ApplicationForm;
-  animalId?: {
-    _id: string;
-    name: string;
-    attributes?: {
-      age?: number;
-    };
-  };
-  adopterId?:
-    | {
-        _id?: string;
-        email?: string;
-        profile?: { firstName?: string; lastName?: string };
-      }
-    | string;
-}
+const QUESTION_LABELS: Record<keyof ApplicationForm, string> = {
+  familyDecision: "¿Todos en la familia están de acuerdo con la adopción?",
+  housing: "Tipo de vivienda",
+  monthlyBudget: "Presupuesto mensual estimado para el cuidado del perro",
+  relationAnimals: "¿Cómo describirías tu relación previa con animales?",
+  travelPlans: "Si necesitas viajar, ¿qué harías con el perro?",
+  behaviorResponse: "Si el perro presenta problemas de comportamiento, ¿qué harías?",
+  careCommitment: "Nivel de cuidados que estás dispuesto a ofrecer",
+  allowVisits: "¿Aceptas visitas periódicas para verificar el bienestar?",
+  acceptSterilization: "¿Aceptas que el perro sea esterilizado?",
+};
 
-// Mapeo de valores a etiquetas legibles
 const VALUE_LABELS: Record<string, Record<string, string>> = {
   familyDecision: {
     agree: "Totalmente de acuerdo",
@@ -54,10 +46,10 @@ const VALUE_LABELS: Record<string, Record<string, string>> = {
   housing: {
     "Casa urbana": "Casa urbana",
     "Casa de campo": "Casa de campo",
-    "Departamento": "Departamento",
-    "Quinta": "Quinta",
-    "Hacienda": "Hacienda",
-    "Otro": "Otro",
+    Departamento: "Departamento",
+    Quinta: "Quinta",
+    Hacienda: "Hacienda",
+    Otro: "Otro",
   },
   monthlyBudget: {
     high: "Alto (más de $100)",
@@ -98,82 +90,51 @@ const VALUE_LABELS: Record<string, Record<string, string>> = {
   },
 };
 
-// Etiquetas de las preguntas
-const QUESTION_LABELS: Record<keyof ApplicationForm, string> = {
-  familyDecision: "¿Todos en la familia están de acuerdo con la adopción?",
-  housing: "Tipo de vivienda",
-  monthlyBudget: "Presupuesto mensual estimado para el cuidado del perro",
-  relationAnimals: "¿Cómo describirías tu relación previa con animales?",
-  travelPlans: "Si necesitas viajar, ¿qué harías con el perro?",
-  behaviorResponse: "Si el perro presenta problemas de comportamiento, ¿qué harías?",
-  careCommitment: "Nivel de cuidados que estás dispuesto a ofrecer",
-  allowVisits: "¿Aceptas que la fundación realice visitas periódicas para verificar el bienestar del perro?",
-  acceptSterilization: "¿Aceptas que el perro sea esterilizado?",
-};
-
 function formatValue(key: keyof ApplicationForm, value: any): string {
   if (value === null || value === undefined || value === "") {
     return "No especificado";
   }
-
-  const valueMap = VALUE_LABELS[key];
-  if (valueMap && valueMap[value]) {
-    return valueMap[value];
-  }
-
-  return String(value);
+  const map = VALUE_LABELS[key];
+  return map?.[value] ?? String(value);
 }
 
-function formatAdopterName(adopter?: ApplicationData["adopterId"]): string {
-  if (!adopter) return "—";
-  if (typeof adopter === "string") return adopter;
-  const first = adopter.profile?.firstName ?? "";
-  const last = adopter.profile?.lastName ?? "";
-  const name = `${first} ${last}`.trim();
-  return name || adopter.email || "—";
-}
-
-export default function ApplicationDetailsModal({
+export default function MyApplicationResponsesModal({
   applicationId,
   onClose,
-}: ApplicationDetailsModalProps) {
+}: MyApplicationResponsesModalProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [application, setApplication] = useState<ApplicationData | null>(null);
+  const [application, setApplication] = useState<any | null>(null);
 
   useEffect(() => {
-    async function loadApplication() {
+    async function fetchApplication() {
       try {
         setLoading(true);
         setError(null);
         const data = await apiClient.getApplication(applicationId);
-        setApplication(data as any);
+        setApplication(data);
       } catch (err: any) {
-        setError(err?.message || "Error al cargar la solicitud");
+        setError(err?.message || "No se pudieron cargar tus respuestas.");
       } finally {
         setLoading(false);
       }
     }
-
     if (applicationId) {
-      loadApplication();
+      fetchApplication();
     }
   }, [applicationId]);
 
-  if (!applicationId) return null;
-
-  const form = application?.form || {};
+  const form = (application?.form ?? {}) as ApplicationForm;
   const animalIsPuppy = isPuppy(application?.animalId);
-  const adopterName = formatAdopterName(application?.adopterId);
   const evaluation = useMemo(
     () => scoreApplication(form, application?.animalId),
     [form, application?.animalId]
   );
   const detail = evaluation?.detail ?? {};
   const suggestionEntries = useMemo(() => collectSuggestionEntries(form), [form]);
-  const showSuggestions = (evaluation?.pct ?? 0) < 100 && suggestionEntries.length > 0;
+  const showSuggestions =
+    (evaluation?.pct ?? 0) < 100 && suggestionEntries.length > 0;
 
-  // Orden de las preguntas según el formulario
   const questionOrder: (keyof ApplicationForm)[] = [
     "familyDecision",
     "housing",
@@ -183,22 +144,15 @@ export default function ApplicationDetailsModal({
     "behaviorResponse",
     "careCommitment",
     "allowVisits",
-    "acceptSterilization", // Solo se muestra si es cachorro
+    "acceptSterilization",
   ];
 
-  // Filtrar preguntas con valores y excluir acceptSterilization si no es cachorro
   const questionsWithValues = questionOrder
     .filter((key) => {
-      if (key === "acceptSterilization" && !animalIsPuppy) {
-        return false;
-      }
+      if (key === "acceptSterilization" && !animalIsPuppy) return false;
       const value = form[key];
-      if (value === null || value === undefined) {
-        return false;
-      }
-      if (typeof value === "string") {
-        return value.trim().length > 0;
-      }
+      if (value === null || value === undefined) return false;
+      if (typeof value === "string") return value.trim().length > 0;
       return true;
     })
     .map((key) => {
@@ -216,15 +170,14 @@ export default function ApplicationDetailsModal({
     });
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[60]">
       <Card className="w-full max-w-3xl max-h-[90vh] overflow-y-auto p-6 animate-in fade-in zoom-in duration-200">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-xl font-semibold text-gray-900">
-              Respuestas del cuestionario de adopción
-            </h2>
-            <p className="text-sm text-gray-600 mt-1">
-              Postulante: <span className="font-medium text-gray-900">{adopterName}</span>
+            <h2 className="text-2xl font-semibold text-gray-900">Tus respuestas</h2>
+            <p className="text-sm text-gray-600">
+              Score general:{" "}
+              <span className="font-semibold text-gray-900">{evaluation?.pct ?? 0}%</span>
             </p>
           </div>
           <button
@@ -236,17 +189,12 @@ export default function ApplicationDetailsModal({
         </div>
 
         {loading ? (
-          <div className="text-center py-8 text-gray-500">Cargando respuestas...</div>
+          <div className="text-center py-10 text-gray-500">Cargando respuestas…</div>
         ) : error ? (
-          <div className="text-center py-8">
-            <p className="text-red-600 mb-4">{error}</p>
-            <Button variant="outline" onClick={onClose}>
-              Cerrar
-            </Button>
-          </div>
+          <div className="text-center py-10 text-red-600">{error}</div>
         ) : questionsWithValues.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            No hay respuestas disponibles para esta solicitud.
+          <div className="text-center py-10 text-gray-500">
+            No encontramos respuestas para esta solicitud.
           </div>
         ) : (
           <>
@@ -278,30 +226,30 @@ export default function ApplicationDetailsModal({
                 <span>Riesgoso</span>
               </div>
             </div>
-          </>
-        )}
 
-        {showSuggestions && (
-          <div className="mt-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">
-              Sugerencias basadas en el cuestionario
-            </h3>
-            <div className="flex gap-3 rounded-lg border border-[#ffcaca] bg-[#fff7f7] p-4">
-              <span className="text-2xl" role="img" aria-label="Alerta">
-                ⚠️
-              </span>
-              <div className="space-y-2 text-sm text-gray-800">
-                <p className="font-medium">
-                  Observamos las siguientes respuestas que requieren atención adicional por parte de la fundación:
-                </p>
-                <ul className="list-disc pl-5 space-y-1">
-                  {suggestionEntries.map((entry, idx) => (
-                    <li key={`${entry.message}-${idx}`}>{entry.message}</li>
-                  ))}
-                </ul>
+            {showSuggestions && (
+              <div className="mt-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                  Consejos para mejorar
+                </h3>
+                <div className="flex gap-3 rounded-lg border border-[#ffcaca] bg-[#fff7f7] p-4">
+                  <span className="text-2xl" role="img" aria-label="Alerta">
+                    ⚠️
+                  </span>
+                  <div className="space-y-2 text-sm text-gray-800">
+                    <p className="font-medium">
+                      Encontramos algunas respuestas que podrías mejorar:
+                    </p>
+                    <ul className="list-disc pl-5 space-y-1">
+                      {suggestionEntries.map((entry, idx) => (
+                        <li key={`${entry.message}-${idx}`}>{entry.message}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+            )}
+          </>
         )}
 
         <div className="mt-6 flex justify-end">
