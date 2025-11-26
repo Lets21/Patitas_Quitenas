@@ -6,7 +6,7 @@ export interface User {
   email: string;
   role: UserRole;
   profile: UserProfile;
-  status: "ACTIVE" | "INACTIVE" | "PENDING_VERIFICATION";
+  status: "ACTIVE" | "INACTIVE" | "PENDING" | "PENDING_VERIFICATION";
   createdAt: string;
   updatedAt: string;
 }

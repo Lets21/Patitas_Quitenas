@@ -11,6 +11,7 @@ import { Card } from "../components/ui/Card";
 import toast from "react-hot-toast";
 import { apiClient } from "@/lib/api";
 import { validateEmail } from "@/utils/validateEmail";
+import { useAuthStore } from "@/lib/auth";
 
 // Validación de teléfono más flexible para soportar múltiples países
 const phoneValidation = z
@@ -118,6 +119,7 @@ export const RegisterPage: React.FC = () => {
     setEmailSuggestion(null);
   };
 
+  const login = useAuthStore((state) => state.login);
   const onSubmit = async (data: RegisterForm) => {
     setLoading(true);
     try {
@@ -143,8 +145,16 @@ export const RegisterPage: React.FC = () => {
       const res = await apiClient.register(payload);
       if ((res as any).error) throw new Error((res as any).error);
 
-      toast.success("Registro exitoso. Ahora puedes iniciar sesión.");
-      navigate("/login");
+      // Login automático después de registro
+      try {
+        const loginRes = await apiClient.login(payload.email, payload.password);
+        login(loginRes.user, loginRes.token);
+        toast.success("¡Registro exitoso! Bienvenido/a");
+        navigate("/");
+      } catch (loginError: any) {
+        toast.error("La cuenta se creó pero no se pudo iniciar sesión automáticamente. Inicia sesión manualmente.");
+        navigate("/login");
+      }
     } catch (error: any) {
       toast.error(error?.message || "Error al registrar.");
     } finally {
