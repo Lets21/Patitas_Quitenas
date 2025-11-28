@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Bell, 
   Check, 
@@ -35,83 +35,34 @@ interface Notification {
 function NotificationsPage() {
   
   const [filter, setFilter] = useState<'all' | 'unread' | 'adoption' | 'clinical' | 'system'>('all');
-  const [notifications, setNotifications] = useState<Notification[]>([
-    {
-      id: '1',
-      type: 'adoption',
-      title: 'Nueva solicitud de adopción',
-      message: 'Juan Rodríguez ha enviado una solicitud para adoptar a Max',
-      timestamp: '2025-01-15T10:30:00Z',
-      isRead: false,
-      priority: 'high',
-      actionUrl: '/adopciones/solicitud/1',
-      metadata: {
-        animalName: 'Max',
-        userName: 'Juan Rodríguez'
-      }
-    },
-    {
-      id: '2',
-      type: 'clinical',
-      title: 'Ficha clínica completada',
-      message: 'La evaluación médica de Luna ha sido completada por Dr. María Sánchez',
-      timestamp: '2025-01-15T09:15:00Z',
-      isRead: false,
-      priority: 'medium',
-      actionUrl: '/clinica/ficha/2',
-      metadata: {
-        animalName: 'Luna',
-        clinicName: 'Clínica Veterinaria UDLA'
-      }
-    },
-    {
-      id: '3',
-      type: 'adoption',
-      title: 'Adopción exitosa',
-      message: 'Bella ha sido adoptada exitosamente por la familia Méndez',
-      timestamp: '2025-01-14T16:45:00Z',
-      isRead: true,
-      priority: 'medium',
-      metadata: {
-        animalName: 'Bella',
-        userName: 'Familia Méndez'
-      }
-    },
-    {
-      id: '4',
-      type: 'system',
-      title: 'Actualización del sistema',
-      message: 'El sistema se actualizará el próximo domingo a las 2:00 AM',
-      timestamp: '2025-01-14T14:20:00Z',
-      isRead: true,
-      priority: 'low'
-    },
-    {
-      id: '5',
-      type: 'alert',
-      title: 'Recordatorio de seguimiento',
-      message: 'Rocky requiere una revisión de seguimiento en 3 días',
-      timestamp: '2025-01-14T11:30:00Z',
-      isRead: false,
-      priority: 'high',
-      actionUrl: '/clinica/seguimiento/5',
-      metadata: {
-        animalName: 'Rocky'
-      }
-    },
-    {
-      id: '6',
-      type: 'clinical',
-      title: 'Vacunación pendiente',
-      message: 'Toby necesita completar su esquema de vacunación',
-      timestamp: '2025-01-13T15:10:00Z',
-      isRead: true,
-      priority: 'medium',
-      metadata: {
-        animalName: 'Toby'
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+
+  useEffect(() => {
+    async function fetchNotifications() {
+      try {
+        const res = await fetch("/api/v1/notifications", {
+          credentials: "include"
+        });
+        const data = await res.json();
+        if (Array.isArray(data.notifications)) {
+          setNotifications(data.notifications.map((n: any) => ({
+            id: n._id,
+            type: n.type,
+            title: n.title,
+            message: n.message,
+            timestamp: n.timestamp,
+            isRead: n.isRead,
+            priority: n.priority,
+            actionUrl: n.actionUrl,
+            metadata: n.metadata
+          })));
+        }
+      } catch (err) {
+        // Puedes mostrar un error o fallback
       }
     }
-  ]);
+    fetchNotifications();
+  }, []);
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
