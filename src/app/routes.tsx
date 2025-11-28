@@ -7,6 +7,7 @@ import DashboardLayout from "@/layouts/DashboardLayout";
 
 // Público
 import HomePage from "@/pages/HomePage";
+import ProfilePage from "@/pages/ProfilePage";
 import CatalogPage from "@/pages/CatalogPage";
 import AnimalDetailPage from "@/pages/AnimalDetailPage";
 import LoginPublicPage from "@/pages/LoginPublic";
@@ -64,6 +65,7 @@ export const router = createBrowserRouter([
       { path: "/catalogo", element: <CatalogPage /> },
       { path: "/adoptar", element: <CatalogPage /> },
       { path: "/adoptar/:animalId", element: <AnimalDetailPage /> },
+      { path: "/profile", element: <ProtectedRoute allowed={["ADOPTANTE","FUNDACION","ADMIN","CLINICA"]}><ProfilePage /></ProtectedRoute> },
 
       // Adoptante
       {
