@@ -152,7 +152,7 @@ function FoundationDashboard() {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">
-                  Perros en Espera
+                  Caninos en Espera
                 </p>
                 <p className="text-2xl font-bold text-gray-900">
                   {statsData.waitingDogs}
