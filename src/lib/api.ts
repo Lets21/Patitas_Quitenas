@@ -646,6 +646,65 @@ async getAnimal(id: string) {
     });
     return res.data;
   }
+
+  // ===== Matching con KNN =====
+  async getRecommendations(limit?: number) {
+    const params = limit ? `?limit=${limit}` : "";
+    return request<{
+      matches: Array<{
+        animalId: string;
+        animalName: string;
+        matchScore: number;
+        distance: number;
+        matchReasons: string[];
+        compatibilityFactors: {
+          size: number;
+          energy: number;
+          coexistence: number;
+          personality: number;
+          lifestyle: number;
+        };
+        animal: Animal;
+      }>;
+      total: number;
+      preferences: any;
+    }>(`/matching/recommendations${params}`);
+  }
+
+  async calculateMatch(animalId: string) {
+    return request<{
+      match: {
+        animalId: string;
+        animalName: string;
+        matchScore: number;
+        distance: number;
+        matchReasons: string[];
+        compatibilityFactors: {
+          size: number;
+          energy: number;
+          coexistence: number;
+          personality: number;
+          lifestyle: number;
+        };
+        animal: Animal;
+      };
+    }>("/matching/calculate", {
+      method: "POST",
+      body: JSON.stringify({ animalId }),
+    });
+  }
+
+  async getMatchingStats() {
+    return request<{
+      hasPreferences: boolean;
+      totalAnimals: number;
+      highMatches: number;
+      mediumMatches: number;
+      lowMatches: number;
+      averageScore?: number;
+      message?: string;
+    }>("/matching/stats");
+  }
 }
 
 export const apiClient = new ApiClient();

@@ -24,6 +24,8 @@ import FAQPage from "@/pages/FAQPage";
 // Adoptante
 import AdoptApplyPage from "@/pages/AdoptApplyPage";
 import MyApplicationsPage from "@/pages/MyApplicationsPage";
+import RecommendationsPage from "@/pages/RecommendationsPage";
+// import OnboardingPreferencesPage from "@/pages/OnboardingPreferencesPage"; // Ya no se usa, preferencias integradas en registro
 
 // Fundación
 import FoundationDashboard from "@/features/foundation/FoundationDashboard";
@@ -84,6 +86,23 @@ export const router = createBrowserRouter([
           </ProtectedRoute>
         ),
       },
+      {
+        path: "/recommendations",
+        element: (
+          <ProtectedRoute allowed={["ADOPTANTE"]}>
+            <RecommendationsPage />
+          </ProtectedRoute>
+        ),
+      },
+      // NOTA: Onboarding de preferencias ahora está integrado en RegisterPage (Paso 2)
+      // {
+      //   path: "/onboarding/preferences",
+      //   element: (
+      //     <ProtectedRoute allowed={["ADOPTANTE"]}>
+      //       <OnboardingPreferencesPage />
+      //     </ProtectedRoute>
+      //   ),
+      // },
 
       // Logins / registro / info
       { path: "/login", element: <LoginPublicPage /> },

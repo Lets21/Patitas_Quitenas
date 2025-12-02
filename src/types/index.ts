@@ -11,6 +11,20 @@ export interface User {
   updatedAt: string;
 }
 
+export interface UserPreferences {
+  preferredSize?: "SMALL" | "MEDIUM" | "LARGE";
+  preferredEnergy?: "LOW" | "MEDIUM" | "HIGH";
+  hasChildren?: boolean;
+  otherPets?: "none" | "dog" | "cat" | "both";
+  dwelling?: string;
+  experienceLevel?: "NONE" | "BEGINNER" | "INTERMEDIATE" | "EXPERT";
+  activityLevel?: "LOW" | "MEDIUM" | "HIGH";
+  spaceSize?: "SMALL" | "MEDIUM" | "LARGE";
+  timeAvailable?: "LOW" | "MEDIUM" | "HIGH";
+  groomingCommitment?: "LOW" | "MEDIUM" | "HIGH";
+  completed?: boolean;
+}
+
 export interface UserProfile {
   firstName: string;
   lastName: string;
@@ -22,6 +36,7 @@ export interface UserProfile {
   hasYard?: boolean;
   hasChildren?: boolean;
   hasOtherPets?: boolean;
+  preferences?: UserPreferences; // Preferencias para matching KNN
 }
 
 // ---------- Animales ----------
