@@ -6,9 +6,23 @@ export interface User {
   email: string;
   role: UserRole;
   profile: UserProfile;
-  status: "ACTIVE" | "INACTIVE" | "PENDING_VERIFICATION";
+  status: "ACTIVE" | "INACTIVE" | "PENDING" | "PENDING_VERIFICATION";
   createdAt: string;
   updatedAt: string;
+}
+
+export interface UserPreferences {
+  preferredSize?: "SMALL" | "MEDIUM" | "LARGE";
+  preferredEnergy?: "LOW" | "MEDIUM" | "HIGH";
+  hasChildren?: boolean;
+  otherPets?: "none" | "dog" | "cat" | "both";
+  dwelling?: string;
+  experienceLevel?: "NONE" | "BEGINNER" | "INTERMEDIATE" | "EXPERT";
+  activityLevel?: "LOW" | "MEDIUM" | "HIGH";
+  spaceSize?: "SMALL" | "MEDIUM" | "LARGE";
+  timeAvailable?: "LOW" | "MEDIUM" | "HIGH";
+  groomingCommitment?: "LOW" | "MEDIUM" | "HIGH";
+  completed?: boolean;
 }
 
 export interface UserProfile {
@@ -22,6 +36,7 @@ export interface UserProfile {
   hasYard?: boolean;
   hasChildren?: boolean;
   hasOtherPets?: boolean;
+  preferences?: UserPreferences; // Preferencias para matching KNN
 }
 
 // ---------- Animales ----------
@@ -137,6 +152,24 @@ export interface ClinicalRecord {
   clinicUserId: string;
   approved?: boolean;
   updatedAt: string;
+}
+
+// Historial médico completo (nuevo modelo para clínica)
+export interface MedicalHistory {
+  id?: string;
+  _id?: string;
+  animalId: string;
+  lastVaccinationDate?: string | null; // ISO string
+  sterilized?: boolean;
+  conditions?: string;
+  treatments: string[];
+  vaccines: string[];
+  surgeries: string[];
+  nextAppointment?: string | null; // ISO string
+  notes?: string;
+  clinicUserId?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Vaccination {

@@ -101,7 +101,7 @@ function FoundationDashboard() {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">
-                  Perros Registrados
+                  Caninos Registrados
                 </p>
                 <p className="text-2xl font-bold text-gray-900">
                   {statsData.totalDogs}
@@ -152,7 +152,7 @@ function FoundationDashboard() {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">
-                  Perros en Espera
+                  Caninos en Espera
                 </p>
                 <p className="text-2xl font-bold text-gray-900">
                   {statsData.waitingDogs}
@@ -166,7 +166,7 @@ function FoundationDashboard() {
         <Card className="p-6 overflow-x-clip">
           <div className="mb-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              Perros registrados por la fundación
+              Caninos registrados por la fundación
             </h2>
 
             {/* Search and Filters */}

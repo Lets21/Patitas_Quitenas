@@ -5,6 +5,7 @@ import type {
   Application,
   ClinicalRecord,
   FilterOptions,
+  MedicalHistory,
 } from "../types";
 
 // === IMPORTA EL STORE PARA LEER EL TOKEN EN TIEMPO REAL ===
@@ -645,6 +646,92 @@ async getAnimal(id: string) {
       body: JSON.stringify({ active }),
     });
     return res.data;
+  }
+
+  // ===== Matching con KNN =====
+  async getRecommendations(limit?: number) {
+    const params = limit ? `?limit=${limit}` : "";
+    return request<{
+      matches: Array<{
+        animalId: string;
+        animalName: string;
+        matchScore: number;
+        distance: number;
+        matchReasons: string[];
+        compatibilityFactors: {
+          size: number;
+          energy: number;
+          coexistence: number;
+          personality: number;
+          lifestyle: number;
+        };
+        animal: Animal;
+      }>;
+      total: number;
+      preferences: any;
+    }>(`/matching/recommendations${params}`);
+  }
+
+  async calculateMatch(animalId: string) {
+    return request<{
+      match: {
+        animalId: string;
+        animalName: string;
+        matchScore: number;
+        distance: number;
+        matchReasons: string[];
+        compatibilityFactors: {
+          size: number;
+          energy: number;
+          coexistence: number;
+          personality: number;
+          lifestyle: number;
+        };
+        animal: Animal;
+      };
+    }>("/matching/calculate", {
+      method: "POST",
+      body: JSON.stringify({ animalId }),
+    });
+  }
+
+  async getMatchingStats() {
+    return request<{
+      hasPreferences: boolean;
+      totalAnimals: number;
+      highMatches: number;
+      mediumMatches: number;
+      lowMatches: number;
+      averageScore?: number;
+      message?: string;
+    }>("/matching/stats");
+  }
+
+  // ===== Clínica - Historial Médico =====
+  async getClinicAnimals() {
+    return request<{ ok: boolean; data: { animals: Animal[] } }>("/clinic/animals");
+  }
+
+  async getMedicalHistory(animalId: string) {
+    return request<{ ok: boolean; data: MedicalHistory | null }>(
+      `/clinic/animals/${animalId}/medical-history`
+    );
+  }
+
+  async saveMedicalHistory(animalId: string, data: Partial<MedicalHistory>) {
+    return request<{ ok: boolean; data: MedicalHistory }>(
+      `/clinic/animals/${animalId}/medical-history`,
+      {
+        method: "POST",
+        body: JSON.stringify(data),
+      }
+    );
+  }
+
+  async getPublicMedicalHistory(animalId: string) {
+    return request<{ ok: boolean; data: MedicalHistory | null }>(
+      `/animals/${animalId}/medical-history`
+    );
   }
 }
 

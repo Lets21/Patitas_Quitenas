@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Menu, X, User, LogOut, Settings, BarChart3, ListChecks, ChevronDown } from 'lucide-react';
+import { Menu, X, User, LogOut, Settings, BarChart3, ListChecks, ChevronDown, Sparkles } from 'lucide-react';
 import { useAuthStore } from '../../lib/auth';
 import { Button } from '../ui/Button';
 
@@ -13,14 +13,18 @@ function UserChip({
   avatarUrl,
   onProfile,
   onRequests,
+  onRecommendations,
   onLogout,
+  showRecommendations,
 }: {
   fullName: string;
   email?: string;
   avatarUrl?: string;
   onProfile: () => void;
   onRequests: () => void;
+  onRecommendations?: () => void;
   onLogout: () => void;
+  showRecommendations?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -84,6 +88,15 @@ function UserChip({
             <ListChecks className="h-4 w-4 text-gray-600" />
             Mis solicitudes
           </button>
+          {showRecommendations && onRecommendations && (
+            <button
+              onClick={() => { setOpen(false); onRecommendations(); }}
+              className="flex w-full items-center gap-2 px-3 py-2.5 text-sm hover:bg-primary-50 text-primary-700"
+            >
+              <Sparkles className="h-4 w-4" />
+              Mis recomendaciones
+            </button>
+          )}
           <div className="my-1 h-px bg-gray-100" />
           <button
             onClick={() => { setOpen(false); onLogout(); }}
@@ -116,6 +129,7 @@ export const Header: React.FC = () => {
     { to: '/', label: 'Inicio' },
     { to: '/catalog', label: 'Adoptar' },
     { to: '/about', label: 'Nosotros' },
+    { to: '/contact', label: 'Contacto' },
   ];
 
   const getNavItemsByRole = () => {
@@ -203,6 +217,8 @@ export const Header: React.FC = () => {
                 avatarUrl={avatarUrl}
                 onProfile={() => nav('/profile')}
                 onRequests={() => nav('/mis-solicitudes')}
+                onRecommendations={user?.role === 'ADOPTANTE' ? () => nav('/recommendations') : undefined}
+                showRecommendations={user?.role === 'ADOPTANTE'}
                 onLogout={handleLogout}
               />
             ) : (
@@ -267,6 +283,12 @@ export const Header: React.FC = () => {
                     <ListChecks className="h-4 w-4 mr-1" />
                     Mis solicitudes
                   </Button>
+                  {user?.role === 'ADOPTANTE' && (
+                    <Button variant="ghost" size="sm" onClick={() => { setIsMenuOpen(false); nav('/recommendations'); }} className="text-primary-600">
+                      <Sparkles className="h-4 w-4 mr-1" />
+                      Mis recomendaciones
+                    </Button>
+                  )}
                   <Button variant="ghost" size="sm" onClick={handleLogout}>
                     <LogOut className="h-4 w-4 mr-1" />
                     Salir

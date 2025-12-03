@@ -1,18 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-
-export interface User {
-  id: string;
-  email: string;
-  role: 'ADOPTANTE' | 'FUNDACION' | 'CLINICA' | 'ADMIN';
-  profile: {
-    firstName: string;
-    lastName: string;
-  };
-  status: 'ACTIVE' | 'INACTIVE' | 'PENDING';
-  createdAt: string;
-  updatedAt: string;
-}
+import type { User } from '@/types';
 
 interface AuthState {
   user: User | null;

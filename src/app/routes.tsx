@@ -7,12 +7,14 @@ import DashboardLayout from "@/layouts/DashboardLayout";
 
 // Público
 import HomePage from "@/pages/HomePage";
+import ProfilePage from "@/pages/ProfilePage";
 import CatalogPage from "@/pages/CatalogPage";
 import AnimalDetailPage from "@/pages/AnimalDetailPage";
 import LoginPublicPage from "@/pages/LoginPublic";
 import LoginAdminPage from "@/pages/LoginAdmin";
 import RegisterPage from "@/pages/RegisterPage";
 import AboutPage from "@/pages/AboutPage";
+import ContactPage from "@/pages/ContactPage";
 // Legal
 import TermsPage from "@/features/legal/TermsPage";
 import PrivacyPage from "@/features/legal/PrivacyPage";
@@ -22,6 +24,8 @@ import FAQPage from "@/pages/FAQPage";
 // Adoptante
 import AdoptApplyPage from "@/pages/AdoptApplyPage";
 import MyApplicationsPage from "@/pages/MyApplicationsPage";
+import RecommendationsPage from "@/pages/RecommendationsPage";
+// import OnboardingPreferencesPage from "@/pages/OnboardingPreferencesPage"; // Ya no se usa, preferencias integradas en registro
 
 // Fundación
 import FoundationDashboard from "@/features/foundation/FoundationDashboard";
@@ -31,11 +35,13 @@ import FoundationAnalytics from "@/features/foundation/FoundationAnalytics";
 
 // Clínica / Analítica / Admin
 import ClinicDashboard from "@/features/clinic/ClinicDashboard";
+import ClinicMedicalHistoryPage from "@/pages/ClinicMedicalHistoryPage";
 import AnalyticsDashboard from "@/features/analytics/AnalyticsDashboard";
 import AdminDashboard from "@/features/admin/AdminDashboard";
 import AdminOverview from "@/features/admin/AdminOverview";
 import UsersPage from "@/features/admin/UsersPage";
 import SettingsPage from "@/features/admin/SettingsPage";
+import ContactMessagesPage from "@/features/admin/ContactMessagesPage";
 import AdminLayout from "@/layouts/AdminLayout";
 
 // Notificaciones
@@ -62,6 +68,7 @@ export const router = createBrowserRouter([
       { path: "/catalogo", element: <CatalogPage /> },
       { path: "/adoptar", element: <CatalogPage /> },
       { path: "/adoptar/:animalId", element: <AnimalDetailPage /> },
+      { path: "/profile", element: <ProtectedRoute allowed={["ADOPTANTE","FUNDACION","ADMIN","CLINICA"]}><ProfilePage /></ProtectedRoute> },
 
       // Adoptante
       {
@@ -80,6 +87,23 @@ export const router = createBrowserRouter([
           </ProtectedRoute>
         ),
       },
+      {
+        path: "/recommendations",
+        element: (
+          <ProtectedRoute allowed={["ADOPTANTE"]}>
+            <RecommendationsPage />
+          </ProtectedRoute>
+        ),
+      },
+      // NOTA: Onboarding de preferencias ahora está integrado en RegisterPage (Paso 2)
+      // {
+      //   path: "/onboarding/preferences",
+      //   element: (
+      //     <ProtectedRoute allowed={["ADOPTANTE"]}>
+      //       <OnboardingPreferencesPage />
+      //     </ProtectedRoute>
+      //   ),
+      // },
 
       // Logins / registro / info
       { path: "/login", element: <LoginPublicPage /> },
@@ -99,6 +123,8 @@ export const router = createBrowserRouter([
       { path: "/proceso", element: <ProcessPage /> },
       { path: "/faq", element: <FAQPage /> },
       { path: "/preguntas", element: <FAQPage /> },
+      { path: "/contact", element: <ContactPage /> },
+      { path: "/contacto", element: <ContactPage /> },
     ],
   },
 
@@ -131,6 +157,15 @@ export const router = createBrowserRouter([
     element: (
       <ProtectedRoute allowed={["CLINICA", "ADMIN"]}>
         <ClinicDashboard />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/clinica/animals/:id/medical-history",
+    errorElement: <ErrorStub />,
+    element: (
+      <ProtectedRoute allowed={["CLINICA", "ADMIN"]}>
+        <ClinicMedicalHistoryPage />
       </ProtectedRoute>
     ),
   },
@@ -169,6 +204,7 @@ export const router = createBrowserRouter([
       { index: true, element: <AdminOverview /> },
       { path: "usuarios", element: <UsersPage /> },
       { path: "sistema", element: <SettingsPage /> },
+      { path: "contactos", element: <ContactMessagesPage /> },
     ],
   },
 
