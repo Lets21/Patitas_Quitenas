@@ -5,6 +5,7 @@ import type {
   Application,
   ClinicalRecord,
   FilterOptions,
+  MedicalHistory,
 } from "../types";
 
 // === IMPORTA EL STORE PARA LEER EL TOKEN EN TIEMPO REAL ===
@@ -704,6 +705,33 @@ async getAnimal(id: string) {
       averageScore?: number;
       message?: string;
     }>("/matching/stats");
+  }
+
+  // ===== Clínica - Historial Médico =====
+  async getClinicAnimals() {
+    return request<{ ok: boolean; data: { animals: Animal[] } }>("/clinic/animals");
+  }
+
+  async getMedicalHistory(animalId: string) {
+    return request<{ ok: boolean; data: MedicalHistory | null }>(
+      `/clinic/animals/${animalId}/medical-history`
+    );
+  }
+
+  async saveMedicalHistory(animalId: string, data: Partial<MedicalHistory>) {
+    return request<{ ok: boolean; data: MedicalHistory }>(
+      `/clinic/animals/${animalId}/medical-history`,
+      {
+        method: "POST",
+        body: JSON.stringify(data),
+      }
+    );
+  }
+
+  async getPublicMedicalHistory(animalId: string) {
+    return request<{ ok: boolean; data: MedicalHistory | null }>(
+      `/animals/${animalId}/medical-history`
+    );
   }
 }
 
