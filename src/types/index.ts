@@ -154,6 +154,24 @@ export interface ClinicalRecord {
   updatedAt: string;
 }
 
+// Historial médico completo (nuevo modelo para clínica)
+export interface MedicalHistory {
+  id?: string;
+  _id?: string;
+  animalId: string;
+  lastVaccinationDate?: string | null; // ISO string
+  sterilized?: boolean;
+  conditions?: string;
+  treatments: string[];
+  vaccines: string[];
+  surgeries: string[];
+  nextAppointment?: string | null; // ISO string
+  notes?: string;
+  clinicUserId?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface Vaccination {
   name: string;
   date: string;

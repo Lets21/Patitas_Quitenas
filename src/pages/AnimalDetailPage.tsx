@@ -13,12 +13,16 @@ import {
   Zap,
   CheckCircle,
   Stethoscope,
+  X,
+  FileText,
 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { apiClient, urlFromBackend } from "@/lib/api";
 import { useAuthStore } from "@/lib/auth";
+import { usePublicMedicalHistory } from "@/features/clinic/hooks/useMedicalHistory";
+import type { MedicalHistory } from "@/types";
 
 // Tipos
 type Size = "SMALL" | "MEDIUM" | "LARGE";
@@ -124,6 +128,10 @@ const AnimalDetailPage: React.FC = () => {
   const [animal, setAnimal] = useState<DisplayAnimal | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showFullHistory, setShowFullHistory] = useState(false);
+  
+  // Obtener historial médico público
+  const { data: medicalHistory } = usePublicMedicalHistory(animal?.id || "");
 
   useEffect(() => {
     if (!animalId) {
@@ -387,27 +395,226 @@ const AnimalDetailPage: React.FC = () => {
               <Stethoscope className="h-5 w-5 mr-2 text-primary-600" />
               <h3 className="text-lg font-semibold text-gray-900">Historial clínico</h3>
             </div>
-            <div className="space-y-3 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Última vacunación:</span>
-                <span className="text-gray-900">{animal.clinicalHistory?.lastVaccination || "—"}</span>
+            {medicalHistory ? (
+              <>
+                <div className="space-y-4 text-sm">
+                  {/* Campos cortos con formato horizontal - siempre visibles */}
+                  <div className="flex justify-between items-start">
+                    <span className="text-gray-600 font-medium min-w-[140px]">Última vacunación:</span>
+                    <span className="text-gray-900 text-right flex-1">
+                      {medicalHistory.lastVaccinationDate
+                        ? new Date(medicalHistory.lastVaccinationDate).toLocaleDateString("es-ES", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          })
+                        : "No especificado"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-start">
+                    <span className="text-gray-600 font-medium min-w-[140px]">Esterilización:</span>
+                    <span className="text-gray-900 text-right flex-1">
+                      {medicalHistory.sterilized === true
+                        ? "Sí"
+                        : medicalHistory.sterilized === false
+                        ? "No"
+                        : "No especificado"}
+                    </span>
+                  </div>
+                  
+                  {/* Condiciones - formato vertical para texto largo - siempre visible */}
+                  {medicalHistory.conditions && (
+                    <div className="pt-2 border-t border-gray-200">
+                      <span className="text-gray-600 font-medium block mb-2">Condiciones:</span>
+                      <p className="text-gray-900 leading-relaxed whitespace-pre-wrap line-clamp-3">
+                        {medicalHistory.conditions}
+                      </p>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Botón para ver historial completo */}
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowFullHistory(true)}
+                    className="w-full flex items-center justify-center gap-2 text-primary-600 border-primary-300 hover:bg-primary-50"
+                  >
+                    <FileText className="h-4 w-4" />
+                    Mostrar historial clínico completo
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Última vacunación:</span>
+                  <span className="text-gray-900">No especificado</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Esterilización:</span>
+                  <span className="text-gray-900">No especificado</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Condiciones:</span>
+                  <span className="text-gray-900">No especificado</span>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Esterilización:</span>
-                <span className="text-gray-900">
-                  {animal.clinicalHistory?.sterilized === true ? "Sí" : animal.clinicalHistory?.sterilized === false ? "No" : "—"}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Condiciones:</span>
-                <span className="text-gray-900">{animal.clinicalHistory?.conditions || "—"}</span>
-              </div>
-            </div>
+            )}
           </Card>
+          
+          {/* Modal de historial clínico completo */}
+          {showFullHistory && medicalHistory && (
+            <MedicalHistoryModal
+              medicalHistory={medicalHistory}
+              animalName={animal?.name || "Animal"}
+              onClose={() => setShowFullHistory(false)}
+            />
+          )}
         </div>
       </div>
     </div>
   );
 };
+
+// Componente Modal para historial clínico completo
+interface MedicalHistoryModalProps {
+  medicalHistory: MedicalHistory;
+  animalName: string;
+  onClose: () => void;
+}
+
+function MedicalHistoryModal({ medicalHistory, animalName, onClose }: MedicalHistoryModalProps) {
+  // Cerrar con ESC
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", handleEsc);
+    return () => document.removeEventListener("keydown", handleEsc);
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50 animate-in fade-in duration-200"
+      onClick={onClose}
+    >
+      <Card
+        className="w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col bg-white animate-in zoom-in-95 duration-200"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header del modal */}
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-primary-50 to-green-50">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-primary-600 rounded-lg">
+              <Stethoscope className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">Historial clínico completo</h2>
+              <p className="text-sm text-gray-600">{animalName}</p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            aria-label="Cerrar"
+          >
+            <X className="h-5 w-5 text-gray-600" />
+          </button>
+        </div>
+
+        {/* Contenido del modal - scrollable */}
+        <div className="overflow-y-auto p-6 space-y-4 text-sm">
+          {/* Última vacunación */}
+          <div className="flex justify-between items-start pb-3 border-b border-gray-100">
+            <span className="text-gray-600 font-medium min-w-[160px]">Última vacunación:</span>
+            <span className="text-gray-900 text-right flex-1">
+              {medicalHistory.lastVaccinationDate
+                ? new Date(medicalHistory.lastVaccinationDate).toLocaleDateString("es-ES", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })
+                : "No especificado"}
+            </span>
+          </div>
+
+          {/* Esterilización */}
+          <div className="flex justify-between items-start pb-3 border-b border-gray-100">
+            <span className="text-gray-600 font-medium min-w-[160px]">Esterilización:</span>
+            <span className="text-gray-900 text-right flex-1">
+              {medicalHistory.sterilized === true
+                ? "Sí"
+                : medicalHistory.sterilized === false
+                ? "No"
+                : "No especificado"}
+            </span>
+          </div>
+
+          {/* Condiciones */}
+          {medicalHistory.conditions && (
+            <div className="pt-2 pb-3 border-b border-gray-100">
+              <span className="text-gray-600 font-medium block mb-2">Condiciones:</span>
+              <p className="text-gray-900 leading-relaxed whitespace-pre-wrap">{medicalHistory.conditions}</p>
+            </div>
+          )}
+
+          {/* Tratamientos */}
+          {medicalHistory.treatments && medicalHistory.treatments.length > 0 && (
+            <div className="pt-2 pb-3 border-b border-gray-100">
+              <span className="text-gray-600 font-medium block mb-2">Tratamientos:</span>
+              <p className="text-gray-900 leading-relaxed">{medicalHistory.treatments.join(", ")}</p>
+            </div>
+          )}
+
+          {/* Vacunas aplicadas */}
+          {medicalHistory.vaccines && medicalHistory.vaccines.length > 0 && (
+            <div className="pt-2 pb-3 border-b border-gray-100">
+              <span className="text-gray-600 font-medium block mb-2">Vacunas aplicadas:</span>
+              <p className="text-gray-900 leading-relaxed">{medicalHistory.vaccines.join(", ")}</p>
+            </div>
+          )}
+
+          {/* Cirugías */}
+          {medicalHistory.surgeries && medicalHistory.surgeries.length > 0 && (
+            <div className="pt-2 pb-3 border-b border-gray-100">
+              <span className="text-gray-600 font-medium block mb-2">Cirugías:</span>
+              <p className="text-gray-900 leading-relaxed">{medicalHistory.surgeries.join(", ")}</p>
+            </div>
+          )}
+
+          {/* Próxima cita */}
+          {medicalHistory.nextAppointment && (
+            <div className="flex justify-between items-start pt-2 pb-3 border-b border-gray-100">
+              <span className="text-gray-600 font-medium min-w-[160px]">Próxima cita:</span>
+              <span className="text-gray-900 text-right flex-1">
+                {new Date(medicalHistory.nextAppointment).toLocaleDateString("es-ES", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })}
+              </span>
+            </div>
+          )}
+
+          {/* Notas adicionales */}
+          {medicalHistory.notes && (
+            <div className="pt-2">
+              <span className="text-gray-600 font-medium block mb-2">Notas adicionales:</span>
+              <p className="text-gray-900 leading-relaxed whitespace-pre-wrap">{medicalHistory.notes}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Footer del modal */}
+        <div className="p-6 border-t border-gray-200 bg-gray-50">
+          <Button onClick={onClose} className="w-full bg-primary-600 hover:bg-primary-700">
+            Cerrar
+          </Button>
+        </div>
+      </Card>
+    </div>
+  );
+}
 
 export default AnimalDetailPage;
