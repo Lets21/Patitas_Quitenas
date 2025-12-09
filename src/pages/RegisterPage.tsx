@@ -65,6 +65,20 @@ const registerSchema = z
       .min(1, "Dirección requerida")
       .min(10, "La dirección debe ser más específica")
       .max(200, "La dirección es demasiado larga"),
+    dateOfBirth: z
+      .string()
+      .min(1, "Fecha de nacimiento requerida")
+      .refine((date) => {
+        const birthDate = new Date(date);
+        const today = new Date();
+        const age = today.getFullYear() - birthDate.getFullYear();
+        const monthDiff = today.getMonth() - birthDate.getMonth();
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+          return age - 1 >= 18;
+        }
+        return age >= 18;
+      }, "Debes ser mayor de 18 años para adoptar")
+      .refine((date) => new Date(date) <= new Date(), "La fecha no puede ser futura"),
     terms: z.boolean().refine((v) => v === true, "Debes aceptar los términos y condiciones"),
     // Preferencias para matching con KNN
     preferredSize: z.enum(["SMALL", "MEDIUM", "LARGE"]),
@@ -161,6 +175,7 @@ export const RegisterPage: React.FC = () => {
         email: validation.normalized,
         password: data.password,
         role: ROLE_ADOPTANTE, // fijo
+        dateOfBirth: data.dateOfBirth, // Diferenciador para adoptantes
         profile: {
           firstName: data.firstName,
           lastName: data.lastName,
@@ -221,6 +236,7 @@ export const RegisterPage: React.FC = () => {
       "email",
       "phone",
       "address",
+      "dateOfBirth",
       "password",
       "confirmPassword",
       "terms",
@@ -367,6 +383,16 @@ export const RegisterPage: React.FC = () => {
                   error={errors.address?.message}
                   autoComplete="street-address"
                   aria-invalid={!!errors.address}
+                />
+
+                <Input
+                  {...register("dateOfBirth")}
+                  type="date"
+                  label="Fecha de nacimiento"
+                  error={errors.dateOfBirth?.message}
+                  autoComplete="bday"
+                  aria-invalid={!!errors.dateOfBirth}
+                  max={new Date().toISOString().split('T')[0]}
                 />
 
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">

@@ -6,6 +6,11 @@ export interface User {
   email: string;
   role: UserRole;
   profile: UserProfile;
+  organization?: {
+    name: string;
+    description?: string;
+  };
+  dateOfBirth?: string;  // Diferenciador para adoptantes
   status: "ACTIVE" | "INACTIVE" | "PENDING" | "PENDING_VERIFICATION";
   createdAt: string;
   updatedAt: string;

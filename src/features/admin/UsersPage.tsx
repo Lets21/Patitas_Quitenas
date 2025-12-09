@@ -37,6 +37,7 @@ interface AdminUser {
   organization?: {
     name: string;
   };
+  dateOfBirth?: string;  // Diferenciador para adoptantes
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -54,6 +55,7 @@ interface FormData {
   organization: {
     name: string;
   };
+  dateOfBirth?: string;  // Para adoptantes
 }
 
 export default function UsersPage() {
@@ -93,6 +95,7 @@ export default function UsersPage() {
     organization: {
       name: "",
     },
+    dateOfBirth: "",
   });
 
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
@@ -236,6 +239,7 @@ export default function UsersPage() {
       organization: {
         name: user.organization?.name || "",
       },
+      dateOfBirth: user.dateOfBirth ? new Date(user.dateOfBirth).toISOString().split('T')[0] : "",
     });
     setShowModal(true);
   };
@@ -266,6 +270,7 @@ export default function UsersPage() {
       organization: {
         name: "",
       },
+      dateOfBirth: "",
     });
   };
 
@@ -571,6 +576,16 @@ export default function UsersPage() {
                       <p className="mt-1 text-gray-900">{selectedUser.organization.name}</p>
                     </div>
                   )}
+                  {selectedUser.dateOfBirth && (
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Fecha de Nacimiento</label>
+                      <p className="mt-1 text-gray-900">{new Date(selectedUser.dateOfBirth).toLocaleDateString("es-EC", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })}</p>
+                    </div>
+                  )}
                   <div>
                     <label className="text-sm font-medium text-gray-600">Fecha de Registro</label>
                     <p className="mt-1 text-gray-900">
@@ -717,6 +732,27 @@ export default function UsersPage() {
                     />
                   </div>
                 </div>
+
+                {/* Date of Birth (solo para ADOPTANTE) */}
+                {formData.role === "ADOPTANTE" && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Fecha de Nacimiento
+                    </label>
+                    <Input
+                      type="date"
+                      value={formData.dateOfBirth || ""}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          dateOfBirth: e.target.value,
+                        })
+                      }
+                      max={new Date().toISOString().split('T')[0]}
+                      placeholder="dd/mm/aaaa"
+                    />
+                  </div>
+                )}
 
                 {/* Organization (solo para FUNDACION y CLINICA) */}
                 {(formData.role === "FUNDACION" || formData.role === "CLINICA") && (

@@ -58,6 +58,11 @@ export default function ProfilePage() {
         <div>
           <span className="font-semibold text-gray-700">Teléfono:</span> {profile.profile?.phone || "No registrado"}
         </div>
+        {profile.dateOfBirth && (
+          <div>
+            <span className="font-semibold text-gray-700">Fecha de nacimiento:</span> {new Date(profile.dateOfBirth).toLocaleDateString()}
+          </div>
+        )}
         <div>
           <span className="font-semibold text-gray-700">Fecha de registro:</span> {profile.createdAt ? new Date(profile.createdAt).toLocaleDateString() : "-"}
         </div>
