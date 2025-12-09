@@ -16,10 +16,6 @@ import {
   X,
   ChevronDown,
   ChevronUp,
-  Sparkles,
-  TrendingUp,
-  ArrowRight,
-  Award,
 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -104,6 +100,9 @@ const PLACEHOLDER =
 function normalizeAnimal(raw: any): DisplayAnimal | null {
   const realId = raw?.id ?? raw?._id;
   if (!realId) return null; // sin id, no mostramos esta tarjeta
+  
+  // Convertir ObjectId a string si es necesario
+  const stringId = String(realId);
 
   const attrs = raw?.attributes ?? {};
   const ageNumber = Number(attrs?.age ?? raw?.age ?? (raw?.health?.age as any) ?? 0);
@@ -120,7 +119,7 @@ function normalizeAnimal(raw: any): DisplayAnimal | null {
   };
 
   return {
-    id: String(realId),
+    id: stringId,
     name: String(raw?.name ?? "Sin nombre"),
     photos,
     clinicalSummary: String(raw?.clinicalSummary ?? ""),
@@ -168,9 +167,6 @@ const CatalogPage: React.FC = () => {
   const { user } = useAuthStore();
   const [userLoaded, setUserLoaded] = useState(false);
   
-  // DEBUG: Ver el usuario completo
-  console.log("👤 Usuario en CatalogPage:", user);
-  console.log("📋 Preferencias del usuario:", (user as any)?.profile?.preferences);
   
   const [searchTerm, setSearchTerm] = useState("");
   const [filters, setFilters] = useState<LocalFilters>({});
@@ -179,12 +175,10 @@ const CatalogPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [skipped, setSkipped] = useState(0);
-  const [showRecommendationBanner, setShowRecommendationBanner] = useState(false);
-  const [matchStats, setMatchStats] = useState<any>(null);
   const [hasUserPreferences, setHasUserPreferences] = useState(false);
   const [matchScores, setMatchScores] = useState<Map<string, number>>(new Map());
-  const [matchReasons, setMatchReasons] = useState<Map<string, string[]>>(new Map());
-  const [loadingRecommendations, setLoadingRecommendations] = useState(false);
+  const [matchDistances, setMatchDistances] = useState<Map<string, number>>(new Map());
+  const [matchRankings, setMatchRankings] = useState<Map<string, number>>(new Map());
 
   // Estados para secciones colapsables
   const [openSections, setOpenSections] = useState({
@@ -206,7 +200,6 @@ const CatalogPage: React.FC = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setUserLoaded(true);
-      console.log("⏰ Usuario cargado después de timeout:", user);
     }, 500);
     return () => clearTimeout(timer);
   }, [user]);
@@ -248,7 +241,6 @@ const CatalogPage: React.FC = () => {
         if (mounted) {
           setAnimals(normalized);
           setSkipped(skippedCount);
-          console.log("Animales cargados:", normalized.length, "IDs:", normalized.slice(0, 3).map(a => a.id));
         }
       } catch (e: any) {
         if (mounted) setError(e?.message || "Error cargando catálogo");
@@ -261,108 +253,66 @@ const CatalogPage: React.FC = () => {
     };
   }, []);
 
-  // Cargar recomendaciones KNN si el usuario tiene preferencias completadas
+  // Cargar recomendaciones KNN si el usuario tiene preferencias completadas (ordenamiento silencioso)
   useEffect(() => {
-    console.log("useEffect de matching ejecutado", {
-      hasUser: !!user,
-      role: user?.role,
-      animalsLength: animals.length,
-      userLoaded
-    });
-    
-    if (!userLoaded) {
-      console.log("⏳ Esperando a que el usuario se cargue...");
-      return;
-    }
-    
-    if (!user || user.role !== "ADOPTANTE") {
-      console.log("❌ No se cargan recomendaciones: usuario no es ADOPTANTE", user?.role);
-      return;
-    }
-    
-    if (animals.length === 0) {
-      console.log("⏳ Esperando a que se carguen los animales...");
-      return;
-    }
-    
-    console.log("✅ Iniciando carga de recomendaciones...");
+    if (!userLoaded) return;
+    if (!user || user.role !== "ADOPTANTE") return;
+    if (animals.length === 0) return;
     
     (async () => {
       try {
         // Verificar preferencias directamente del usuario
         const prefs = (user as any)?.profile?.preferences;
-        console.log("Preferencias del usuario:", prefs);
         
-        if (!prefs || !prefs.completed) {
-          console.warn("⚠️ Usuario no tiene preferencias completadas", prefs);
-          return;
-        }
+        if (!prefs || !prefs.completed) return;
         
         setHasUserPreferences(true);
-        console.log("🎯 Usuario tiene preferencias. Llamando al backend...");
         
-        // Cargar recomendaciones del sistema KNN
+        // Cargar recomendaciones del sistema KNN (para ordenamiento silencioso)
         try {
           const response = await apiClient.getRecommendations();
-          console.log("📦 Respuesta del backend:", response);
-          
           const matches = response?.matches || [];
-          console.log("🐕 Recomendaciones KNN cargadas:", matches.length);
           
           if (Array.isArray(matches) && matches.length > 0) {
-            setLoadingRecommendations(true);
-            
-            // Crear mapa de scores y razones por ID de animal
+            // Crear mapas de datos KNN por ID de animal (para ordenamiento silencioso)
             const scoresMap = new Map<string, number>();
-            const reasonsMap = new Map<string, string[]>();
+            const distancesMap = new Map<string, number>();
+            const rankingsMap = new Map<string, number>();
             
             matches.forEach((match: any) => {
-              const animalId = String(match.animal?._id || match.animal?.id);
-              const score = match.matchScore || 0;
-              const reasons = match.matchReasons || [];
+              // El backend devuelve animalId directamente, o dentro de animal
+              const animalId = String(match.animalId || match.animal?.id || match.animal?._id);
+              // Usar datos del nuevo KNN
+              const score = match.score || match.matchScore || 0;
+              const distance = match.distance || 0;
+              const rank = match.rank || 0;
               
               scoresMap.set(animalId, score);
-              reasonsMap.set(animalId, reasons);
-              
-              console.log(`  ✨ ${match.animalName} (ID: ${animalId}) -> ${score}%`);
+              distancesMap.set(animalId, distance);
+              rankingsMap.set(animalId, rank);
             });
             
-            // Simular delay para animación
-            setTimeout(() => {
-              setMatchScores(scoresMap);
-              setMatchReasons(reasonsMap);
-              setLoadingRecommendations(false);
-              console.log("✅ Scores y razones guardados en el estado:", scoresMap.size);
-            }, 300);
-            
-            // Cargar stats
-            const stats = await apiClient.getMatchingStats().catch(() => null);
-            if (stats) {
-              console.log("📊 Stats cargadas:", stats);
-              setMatchStats(stats);
-              if (stats.hasPreferences && stats.highMatches > 0) {
-                setShowRecommendationBanner(true);
-              }
-            }
-          } else {
-            console.warn("⚠️ No se encontraron matches en la respuesta");
+            // Guardar datos para ordenamiento silencioso (sin mostrar al usuario)
+            setMatchScores(scoresMap);
+            setMatchDistances(distancesMap);
+            setMatchRankings(rankingsMap);
           }
-        } catch (err: any) {
-          console.error("❌ Error cargando recomendaciones:", err);
-          console.error("Detalles del error:", err?.message, err?.response);
-          // Continuar mostrando catálogo sin scores
+        } catch (err) {
+          // Falló el matching, continuar mostrando catálogo sin ordenamiento
         }
       } catch (err) {
-        console.error("❌ Error general en matching:", err);
+        // Error general, continuar mostrando catálogo
       }
     })();
   }, [user, animals.length, userLoaded]);
 
-  // Filtro en memoria y aplicar scores de matching
+  // Filtro en memoria y aplicar datos de matching KNN
   const filteredAnimals = useMemo(() => {
     let list = animals.map(animal => ({
       ...animal,
-      matchScore: matchScores.get(animal.id)
+      matchScore: matchScores.get(animal.id),
+      matchDistance: matchDistances.get(animal.id),
+      matchRank: matchRankings.get(animal.id)
     }));
 
     if (searchTerm.trim()) {
@@ -421,23 +371,17 @@ const CatalogPage: React.FC = () => {
 
     // (personalityMin existe en el tipo, pero todavía no lo usas visualmente)
 
-    // Si el usuario tiene preferencias y hay scores, ordenar por compatibilidad
+    // Ordenamiento silencioso por compatibilidad (si el usuario tiene preferencias)
     if (hasUserPreferences && matchScores.size > 0) {
-      console.log("Ordenando por compatibilidad. Scores disponibles:", matchScores.size);
       list.sort((a, b) => {
         const scoreA = a.matchScore || 0;
         const scoreB = b.matchScore || 0;
         return scoreB - scoreA; // Mayor score primero
       });
-      console.log("Top 3 después de ordenar:", list.slice(0, 3).map(a => ({
-        name: a.name,
-        id: a.id,
-        score: a.matchScore
-      })));
     }
 
     return list;
-  }, [animals, searchTerm, filters, hasUserPreferences, matchScores]);
+  }, [animals, searchTerm, filters, hasUserPreferences, matchScores, matchDistances, matchRankings]);
 
   const toggleFilter = <T extends string>(key: keyof LocalFilters, value: T) => {
     setFilters((prev) => {
@@ -851,48 +795,10 @@ const CatalogPage: React.FC = () => {
               </p>
             )}
             
-            {/* Mensaje informativo sobre ordenamiento por IA */}
-            {loadingRecommendations && (
-              <div className="mt-3 flex items-center gap-2 text-sm text-blue-700 bg-blue-50 rounded-lg px-3 py-2 inline-flex animate-pulse">
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-700 border-t-transparent"></div>
-                Calculando compatibilidad con tu perfil...
-              </div>
-            )}
-            {!loadingRecommendations && hasUserPreferences && matchScores.size > 0 && (
-              <div className="mt-3 flex items-center gap-2 text-sm text-primary-700 bg-primary-50 rounded-lg px-3 py-2 inline-flex animate-fade-in">
-                <Sparkles className="h-4 w-4 flex-shrink-0" />
-                <span>
-                  Los caninos están ordenados por compatibilidad con tu perfil usando nuestro sistema de IA
-                </span>
-              </div>
-            )}
+
           </div>
 
-          {/* Banner compacto de Recomendaciones */}
-          {showRecommendationBanner && matchStats && (
-            <div className="mb-4 bg-gradient-to-r from-primary-50 to-primary-100 border border-primary-200 rounded-lg p-4 flex items-center justify-between animate-fade-in">
-              <div className="flex items-center gap-3">
-                <div className="bg-primary-500 rounded-full p-2">
-                  <Sparkles className="h-4 w-4 text-white" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-primary-900">
-                    {matchStats.highMatches} match{matchStats.highMatches !== 1 ? "es" : ""} excelentes encontrados
-                  </p>
-                  <p className="text-xs text-primary-700">
-                    Match promedio: {Math.round(matchStats.averageScore || 0)}% • {matchStats.totalAnimals} perros analizados
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowRecommendationBanner(false)}
-                className="p-1 hover:bg-primary-200 rounded-full transition-colors"
-                aria-label="Cerrar"
-              >
-                <X className="h-4 w-4 text-primary-700" />
-              </button>
-            </div>
-          )}
+
 
           {/* Botón de filtros en móvil */}
           <div className="lg:hidden mb-4">
@@ -967,22 +873,13 @@ const CatalogPage: React.FC = () => {
                   {filteredAnimals.map((animal, index) => {
                     const b = stateBadge(animal.state);
                     const { age, breed, size, energy } = animal.attributes;
-                    const isBestMatch = index === 0 && hasUserPreferences && matchScores.size > 0 && animal.matchScore && animal.matchScore >= 70;
 
                     return (
                       <Card
                         key={animal.id}
-                        className={`overflow-hidden hover:shadow-lg transition-all duration-300 ${
-                          isBestMatch ? 'ring-2 ring-primary-500 shadow-xl animate-pulse-subtle' : ''
-                        }`}
+                        className="overflow-hidden hover:shadow-lg transition-all duration-300"
                       >
                         <div className="aspect-square overflow-hidden rounded-t-2xl relative">
-                          {isBestMatch && (
-                            <div className="absolute top-3 left-3 z-10 bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5 font-bold text-sm animate-bounce-subtle">
-                              <Award className="h-4 w-4" />
-                              Mejor Match
-                            </div>
-                          )}
                           <img
                             src={urlFromBackend(animal.photos?.[0] || "")}
                             alt={`Foto de ${animal.name}`}
@@ -998,46 +895,7 @@ const CatalogPage: React.FC = () => {
                               </h3>
                               <p className="text-gray-600">{breed}</p>
                             </div>
-                            <div className="flex flex-col items-end gap-2">
-                              <Badge variant={b.variant}>{b.label}</Badge>
-                              {animal.matchScore !== undefined && (
-                                <div className="relative group">
-                                  <Badge 
-                                    variant={
-                                      animal.matchScore >= 80 ? "success" : 
-                                      animal.matchScore >= 60 ? "warning" : 
-                                      "default"
-                                    }
-                                    className="flex items-center gap-1 cursor-help transition-all hover:scale-105"
-                                  >
-                                    <Sparkles className="h-3 w-3" />
-                                    {Math.round(animal.matchScore)}% match
-                                  </Badge>
-                                  
-                                  {/* Tooltip explicativo */}
-                                  <div className="absolute right-0 top-full mt-2 w-64 bg-gray-900 text-white text-xs rounded-lg p-3 shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                                    <div className="font-semibold mb-1 flex items-center gap-1">
-                                      <TrendingUp className="h-3 w-3" />
-                                      Compatibilidad basada en IA
-                                    </div>
-                                    <p className="text-gray-300 mb-2">
-                                      Este porcentaje indica qué tan bien {animal.name} se adapta a tu estilo de vida y preferencias.
-                                    </p>
-                                    {matchReasons.get(animal.id) && matchReasons.get(animal.id)!.length > 0 && (
-                                      <div className="space-y-1 mt-2 border-t border-gray-700 pt-2">
-                                        {matchReasons.get(animal.id)!.slice(0, 3).map((reason, idx) => (
-                                          <div key={idx} className="flex items-start gap-1">
-                                            <span className="text-green-400">✓</span>
-                                            <span className="text-gray-200">{reason}</span>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    )}
-                                    <div className="absolute -top-1 right-4 w-2 h-2 bg-gray-900 transform rotate-45"></div>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
+                            <Badge variant={b.variant}>{b.label}</Badge>
                           </div>
 
                           <div className="space-y-2 mb-4">

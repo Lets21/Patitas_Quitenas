@@ -25,7 +25,7 @@ import FAQPage from "@/pages/FAQPage";
 import AdoptApplyPage from "@/pages/AdoptApplyPage";
 import MyApplicationsPage from "@/pages/MyApplicationsPage";
 import RecommendationsPage from "@/pages/RecommendationsPage";
-// import OnboardingPreferencesPage from "@/pages/OnboardingPreferencesPage"; // Ya no se usa, preferencias integradas en registro
+// import OnboardingPreferencesPage from "@/pages/OnboardingPreferencesPage"; // No se usa, preferencias integradas en RegisterPage Paso 2
 
 // Fundación
 import FoundationDashboard from "@/features/foundation/FoundationDashboard";
@@ -94,7 +94,7 @@ export const router = createBrowserRouter([
           </ProtectedRoute>
         ),
       },
-      // NOTA: Onboarding de preferencias ahora está integrado en RegisterPage (Paso 2)
+      // NOTA: Onboarding de preferencias integrado en RegisterPage (Paso 2)
       // {
       //   path: "/onboarding/preferences",
       //   element: (

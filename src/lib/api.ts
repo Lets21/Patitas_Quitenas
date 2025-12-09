@@ -654,10 +654,15 @@ async getAnimal(id: string) {
       matches: Array<{
         animalId: string;
         animalName: string;
-        matchScore: number;
+        // Nuevo formato KNN
         distance: number;
-        matchReasons: string[];
-        compatibilityFactors: {
+        score: number;
+        rank: number;
+        isTopK: boolean;
+        // Campos opcionales para retrocompatibilidad
+        matchScore?: number;
+        matchReasons?: string[];
+        compatibilityFactors?: {
           size: number;
           energy: number;
           coexistence: number;
@@ -667,6 +672,8 @@ async getAnimal(id: string) {
         animal: Animal;
       }>;
       total: number;
+      k?: number;
+      algorithm?: string;
       preferences: any;
     }>(`/matching/recommendations${params}`);
   }

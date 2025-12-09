@@ -20,17 +20,21 @@ import toast from "react-hot-toast";
 type MatchResult = {
   animalId: string;
   animalName: string;
-  matchScore: number;
-  distance: number;
-  matchReasons: string[];
-  compatibilityFactors: {
+  distance: number; // Distancia Manhattan del KNN
+  score: number; // Score 0-100 convertido de distancia
+  rank: number; // Posición en el ranking
+  isTopK: boolean; // Si está en los K mejores vecinos
+  animal: any;
+  // Campos legacy (compatibilidad con versión anterior)
+  matchScore?: number;
+  matchReasons?: string[];
+  compatibilityFactors?: {
     size: number;
     energy: number;
     coexistence: number;
     personality: number;
     lifestyle: number;
   };
-  animal: any;
 };
 
 const RecommendationsPage: React.FC = () => {
@@ -161,7 +165,7 @@ const RecommendationsPage: React.FC = () => {
             {matches.length} canino{matches.length !== 1 ? "s" : ""} seleccionado{matches.length !== 1 ? "s" : ""} especialmente para ti
           </p>
           <p className="text-sm text-gray-500 mt-1">
-            Basado en tu perfil de preferencias usando inteligencia artificial (KNN)
+            Basado en tu perfil usando K-Nearest Neighbors (K=15) entrenado con dataset real
           </p>
         </div>
 
@@ -175,7 +179,7 @@ const RecommendationsPage: React.FC = () => {
               <div>
                 <p className="text-sm text-gray-600">Matches excelentes</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {matches.filter((m) => m.matchScore >= 80).length}
+                  {matches.filter((m) => (m.score || m.matchScore || 0) >= 80).length}
                 </p>
               </div>
             </div>
@@ -186,11 +190,11 @@ const RecommendationsPage: React.FC = () => {
                 <TrendingUp className="h-5 w-5 text-blue-600" />
               </div>
               <div>
-                <p className="text-sm text-gray-600">Match promedio</p>
+                <p className="text-sm text-gray-600">Score promedio</p>
                 <p className="text-2xl font-bold text-gray-900">
                   {matches.length > 0
                     ? Math.round(
-                        matches.reduce((sum, m) => sum + m.matchScore, 0) / matches.length
+                        matches.reduce((sum, m) => sum + (m.score || m.matchScore || 0), 0) / matches.length
                       )
                     : 0}
                   %
@@ -229,7 +233,8 @@ const RecommendationsPage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {matches.map((match) => {
               const { animal } = match;
-              const scoreBadge = getScoreBadge(match.matchScore);
+              const finalScore = match.score || match.matchScore || 0;
+              const scoreBadge = getScoreBadge(finalScore);
               const { age, breed, size, energy } = animal.attributes;
 
               return (
@@ -239,11 +244,18 @@ const RecommendationsPage: React.FC = () => {
                 >
                   {/* Match Score Badge */}
                   <div className="absolute top-4 right-4 z-10">
-                    <div className="bg-white rounded-full px-3 py-1 shadow-lg flex items-center gap-1">
-                      <Sparkles className="h-4 w-4 text-primary-600" />
-                      <span className={`font-bold ${getScoreColor(match.matchScore)}`}>
-                        {Math.round(match.matchScore)}%
-                      </span>
+                    <div className="bg-white rounded-full px-3 py-1 shadow-lg flex flex-col items-center gap-0.5">
+                      <div className="flex items-center gap-1">
+                        <Sparkles className="h-4 w-4 text-primary-600" />
+                        <span className={`font-bold ${getScoreColor(finalScore)}`}>
+                          {Math.round(finalScore)}%
+                        </span>
+                      </div>
+                      {match.rank && (
+                        <span className="text-[10px] text-gray-500">
+                          #{match.rank}
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -255,7 +267,10 @@ const RecommendationsPage: React.FC = () => {
                       className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                     />
                     <div className="absolute top-4 left-4">
-                      <Badge variant={scoreBadge.variant}>{scoreBadge.label}</Badge>
+                      <Badge variant={scoreBadge.variant}>
+                        {scoreBadge.label}
+                        {match.isTopK && " • Top K"}
+                      </Badge>
                     </div>
                   </div>
 
@@ -279,53 +294,82 @@ const RecommendationsPage: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Razones del match */}
-                    <div className="mb-4">
-                      <p className="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1">
+                    {/* Información del KNN */}
+                    <div className="mb-4 p-3 bg-gradient-to-r from-primary-50 to-blue-50 rounded-lg border border-primary-200">
+                      <p className="text-xs font-semibold text-primary-900 mb-1 flex items-center gap-1">
                         <Info className="h-3 w-3" />
-                        Por qué es tu match:
+                        Match KNN
                       </p>
-                      <ul className="space-y-1">
-                        {match.matchReasons.slice(0, 3).map((reason, idx) => (
-                          <li key={idx} className="text-xs text-gray-600 flex items-start gap-1">
-                            <CheckCircle2 className="h-3 w-3 text-green-500 flex-shrink-0 mt-0.5" />
-                            <span>{reason}</span>
-                          </li>
-                        ))}
-                      </ul>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div>
+                          <span className="text-gray-600">Distancia:</span>
+                          <span className="font-medium text-gray-900 ml-1">
+                            {match.distance?.toFixed(2) || 'N/A'}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Ranking:</span>
+                          <span className="font-medium text-gray-900 ml-1">
+                            #{match.rank || '?'}
+                          </span>
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-gray-500 mt-1">
+                        Calculado con K-Nearest Neighbors (distancia Manhattan)
+                      </p>
                     </div>
 
-                    {/* Factores de compatibilidad visuales */}
-                    <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                      <p className="text-xs font-medium text-gray-700 mb-2">
-                        Factores de compatibilidad:
-                      </p>
-                      <div className="grid grid-cols-5 gap-1">
-                        {Object.entries(match.compatibilityFactors).map(([key, value]) => {
-                          const score = Math.max(0, 100 - value * 100);
-                          const color =
-                            score >= 80
-                              ? "bg-green-500"
-                              : score >= 60
-                              ? "bg-blue-500"
-                              : score >= 40
-                              ? "bg-orange-500"
-                              : "bg-gray-400";
-                          return (
-                            <div key={key} className="text-center">
-                              <div
-                                className={`h-10 ${color} rounded`}
-                                style={{ opacity: score / 100 }}
-                                title={`${key}: ${Math.round(score)}%`}
-                              />
-                              <p className="text-[10px] text-gray-500 mt-1 capitalize">
-                                {key.substring(0, 4)}
-                              </p>
-                            </div>
-                          );
-                        })}
+                    {/* Razones del match (si existen - legacy) */}
+                    {match.matchReasons && match.matchReasons.length > 0 && (
+                      <div className="mb-4">
+                        <p className="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1">
+                          <CheckCircle2 className="h-3 w-3" />
+                          Razones del match:
+                        </p>
+                        <ul className="space-y-1">
+                          {match.matchReasons.slice(0, 3).map((reason, idx) => (
+                            <li key={idx} className="text-xs text-gray-600 flex items-start gap-1">
+                              <CheckCircle2 className="h-3 w-3 text-green-500 flex-shrink-0 mt-0.5" />
+                              <span>{reason}</span>
+                            </li>
+                          ))}
+                        </ul>
                       </div>
-                    </div>
+                    )}
+
+                    {/* Factores de compatibilidad visuales (si existen - legacy) */}
+                    {match.compatibilityFactors && (
+                      <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                        <p className="text-xs font-medium text-gray-700 mb-2">
+                          Factores de compatibilidad:
+                        </p>
+                        <div className="grid grid-cols-5 gap-1">
+                          {Object.entries(match.compatibilityFactors).map(([key, value]) => {
+                            const score = Math.max(0, 100 - value * 100);
+                            const color =
+                              score >= 80
+                                ? "bg-green-500"
+                                : score >= 60
+                                ? "bg-blue-500"
+                                : score >= 40
+                                ? "bg-orange-500"
+                                : "bg-gray-400";
+                            return (
+                              <div key={key} className="text-center">
+                                <div
+                                  className={`h-10 ${color} rounded`}
+                                  style={{ opacity: score / 100 }}
+                                  title={`${key}: ${Math.round(score)}%`}
+                                />
+                                <p className="text-[10px] text-gray-500 mt-1 capitalize">
+                                  {key.substring(0, 4)}
+                                </p>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
 
                     {/* Botones */}
                     <div className="flex gap-2">

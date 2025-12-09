@@ -60,8 +60,8 @@ export default function OnboardingPreferencesPage() {
       await apiClient.updateProfile({
         preferences: { ...pref, completed: true },
       } as any);
-      toast.success("¡Preferencias guardadas! Descubre tu match perfecto 🐾");
-      nav("/catalog?personalized=1", { replace: true });
+      toast.success("¡Preferencias guardadas! Conoce a tus mejores matches 🐾");
+      nav("/recommendations", { replace: true });
     } catch (error: any) {
       toast.error(error?.message || "Error al guardar preferencias");
     } finally {

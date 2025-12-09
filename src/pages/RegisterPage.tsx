@@ -193,11 +193,11 @@ export const RegisterPage: React.FC = () => {
         console.log("📋 Preferencias guardadas:", loginRes.user?.profile?.preferences);
         
         login(loginRes.user, loginRes.token);
-        toast.success("¡Registro exitoso! Bienvenido/a");
+        toast.success("¡Registro exitoso! Conoce a tus mejores matches 🐾");
         
         // Esperar un momento para que el estado se actualice
         await new Promise(resolve => setTimeout(resolve, 100));
-        navigate("/catalog");
+        navigate("/recommendations");
       } catch (loginError: any) {
         console.error("❌ Error en login automático:", loginError);
         toast.error("La cuenta se creó pero no se pudo iniciar sesión automáticamente. Inicia sesión manualmente.");
