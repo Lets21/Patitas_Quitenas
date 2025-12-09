@@ -35,6 +35,7 @@ import FoundationAnalytics from "@/features/foundation/FoundationAnalytics";
 
 // Clínica / Analítica / Admin
 import ClinicDashboard from "@/features/clinic/ClinicDashboard";
+import ClinicMedicalHistoryPage from "@/pages/ClinicMedicalHistoryPage";
 import AnalyticsDashboard from "@/features/analytics/AnalyticsDashboard";
 import AdminDashboard from "@/features/admin/AdminDashboard";
 import AdminOverview from "@/features/admin/AdminOverview";
@@ -156,6 +157,15 @@ export const router = createBrowserRouter([
     element: (
       <ProtectedRoute allowed={["CLINICA", "ADMIN"]}>
         <ClinicDashboard />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/clinica/animals/:id/medical-history",
+    errorElement: <ErrorStub />,
+    element: (
+      <ProtectedRoute allowed={["CLINICA", "ADMIN"]}>
+        <ClinicMedicalHistoryPage />
       </ProtectedRoute>
     ),
   },
