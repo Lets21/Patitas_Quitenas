@@ -381,6 +381,11 @@ async getAnimal(id: string) {
     );
   }
 
+  // Para clínica: obtener todas las solicitudes (sin filtro de fundación)
+  async getClinicApplications() {
+    return request<{ applications: Application[]; total: number }>("/applications");
+  }
+
   async getApplicationsRanking(animalId?: string, minScore?: number) {
     const params = new URLSearchParams();
     if (animalId) params.append("animalId", animalId);
