@@ -134,17 +134,17 @@ function ClinicDashboard() {
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
                           <span className="text-6xl">🐕</span>
-                        </div>
+                    </div>
                       )}
                       {/* Badge de estado */}
                       <div className="absolute top-3 left-3">
                         <Badge variant="success" size="sm" className="bg-green-600 text-white font-semibold shadow-lg">
                           <Heart className="h-3 w-3 mr-1" />
                           ADÓPTAME
-                        </Badge>
-                      </div>
-                    </div>
-                    
+                    </Badge>
+                  </div>
+                </div>
+                
                     {/* Contenido */}
                     <div className="p-5">
                       {/* Nombre y edad */}
@@ -158,8 +158,8 @@ function ClinicDashboard() {
                           <span>•</span>
                           <span>{breed}</span>
                         </div>
-                      </div>
-                      
+                </div>
+
                       {/* Información detallada */}
                       <div className="space-y-2 mb-4">
                         <div className="flex items-center gap-2 text-sm text-gray-700">
@@ -193,12 +193,12 @@ function ClinicDashboard() {
                       >
                         <FileText className="h-4 w-4" />
                         <span>Editar historia clínica</span>
-                      </Button>
+                </Button>
                     </div>
-                  </Card>
+              </Card>
                 );
               })}
-            </div>
+          </div>
           )}
         </div>
       </div>
