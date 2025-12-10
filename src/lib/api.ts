@@ -745,6 +745,23 @@ async getAnimal(id: string) {
       `/animals/${animalId}/medical-history`
     );
   }
+
+  // ===== Notificaciones =====
+  async getNotifications() {
+    return request<{ notifications: any[] }>("/notifications");
+  }
+
+  async markNotificationAsRead(notificationId: string) {
+    return request<{ notification: any }>(`/notifications/${notificationId}`, {
+      method: "PATCH",
+    });
+  }
+
+  async markAllNotificationsAsRead() {
+    return request<{ message: string; modifiedCount: number }>("/notifications/mark-all-read", {
+      method: "PATCH",
+    });
+  }
 }
 
 export const apiClient = new ApiClient();
