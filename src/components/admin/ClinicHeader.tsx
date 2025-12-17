@@ -1,5 +1,5 @@
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
-import { Bell, Stethoscope } from "lucide-react";
+import { Bell, Stethoscope, Calendar } from "lucide-react";
 import { useAuthStore } from "@/lib/auth";
 import { Button } from "@/components/ui/Button";
 
@@ -136,6 +136,18 @@ export default function ClinicHeader() {
                 >
                   Solicitudes de Adopción
                 </NavLink>
+
+                <NavLink
+                  to="/clinica/citas"
+                  className={({ isActive }) =>
+                    `inline-flex items-center gap-2 text-sm leading-6 ${tabLine} ${
+                      isActive ? active : inactive
+                    } text-gray-600 hover:text-primary-700`
+                  }
+                >
+                  <Calendar className="h-4 w-4" />
+                  Citas
+                </NavLink>
               </nav>
             )}
           </div>
@@ -188,6 +200,18 @@ export default function ClinicHeader() {
                     }
                   >
                     Solicitudes de Adopción
+                  </NavLink>
+
+                  <NavLink
+                    to="/clinica/citas"
+                    className={({ isActive }) =>
+                      `inline-flex items-center gap-2 text-sm leading-6 ${tabLine} whitespace-nowrap ${
+                        isActive ? active : inactive
+                      } text-gray-600 hover:text-primary-700`
+                    }
+                  >
+                    <Calendar className="h-4 w-4" />
+                    Citas
                   </NavLink>
                 </>
               )}

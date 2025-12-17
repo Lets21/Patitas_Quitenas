@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import { Plus, Trash2, Edit, Upload, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Trash2, Edit, Upload, Search, ChevronLeft, ChevronRight, CheckCircle, XCircle } from "lucide-react";
 import { apiClient, urlFromBackend } from "@/lib/api";
 import type { Animal } from "@/types";
 import toast from "react-hot-toast";
@@ -201,6 +201,26 @@ export default function AnimalsCrud() {
     }
   }
 
+  // Función para cambiar el estado del animal (ADOPTED <-> AVAILABLE)
+  async function toggleAnimalState(animalId: string | undefined, currentState: string, animalName?: string) {
+    if (!animalId) return;
+    
+    const newState = currentState === "ADOPTED" ? "AVAILABLE" : "ADOPTED";
+    const stateLabel = newState === "ADOPTED" ? "adoptado" : "disponible";
+    
+    try {
+      // Crear FormData para actualizar solo el estado
+      const fd = new FormData();
+      fd.append("state", newState);
+      
+      await apiClient.foundationUpdateAnimal(animalId, fd);
+      toast.success(`${animalName || "Animal"} marcado como ${stateLabel}`);
+      await load(currentPage);
+    } catch (err: any) {
+      toast.error(err?.message || "Error al actualizar el estado del animal");
+    }
+  }
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     try {
@@ -386,6 +406,24 @@ export default function AnimalsCrud() {
                       <Button variant="outline" onClick={() => openEdit(a)}>
                         <Edit className="w-4 h-4 mr-1" />
                         Editar
+                      </Button>
+                      <Button
+                        variant={a?.state === "ADOPTED" ? "outline" : "default"}
+                        onClick={() => toggleAnimalState(id, a?.state || "AVAILABLE", a?.name)}
+                        className={a?.state === "ADOPTED" ? "" : "bg-green-600 hover:bg-green-700 text-white"}
+                        title={a?.state === "ADOPTED" ? "Marcar como disponible" : "Marcar como adoptado"}
+                      >
+                        {a?.state === "ADOPTED" ? (
+                          <>
+                            <XCircle className="w-4 h-4 mr-1" />
+                            Disponible
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle className="w-4 h-4 mr-1" />
+                            Adoptado
+                          </>
+                        )}
                       </Button>
                       <Button
                         variant="outline"
