@@ -6,6 +6,7 @@ import type {
   ClinicalRecord,
   FilterOptions,
   MedicalHistory,
+  Appointment,
 } from "../types";
 
 // === IMPORTA EL STORE PARA LEER EL TOKEN EN TIEMPO REAL ===
@@ -761,6 +762,84 @@ async getAnimal(id: string) {
     return request<{ message: string; modifiedCount: number }>("/notifications/mark-all-read", {
       method: "PATCH",
     });
+  }
+
+  // ===== Appointments (Citas) =====
+  async createAppointment(data: {
+    applicationId: string;
+    requestedDateTime: string;
+    notes?: string;
+  }) {
+    return request<{ appointment: Appointment }>("/appointments", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getMyAppointments() {
+    return request<{ appointments: Appointment[] }>("/appointments/my");
+  }
+
+  async getClinicAppointments() {
+    return request<{ appointments: Appointment[] }>("/appointments/clinic");
+  }
+
+  async acceptAppointment(appointmentId: string) {
+    return request<{ appointment: Appointment }>(
+      `/appointments/clinic/${appointmentId}/accept`,
+      {
+        method: "PATCH",
+      }
+    );
+  }
+
+  async rejectAppointment(appointmentId: string, data: { message?: string }) {
+    return request<{ appointment: Appointment }>(
+      `/appointments/clinic/${appointmentId}/reject`,
+      {
+        method: "PATCH",
+        body: JSON.stringify(data),
+      }
+    );
+  }
+
+  async rescheduleAppointment(
+    appointmentId: string,
+    data: { proposedNewDateTime: string; message?: string }
+  ) {
+    return request<{ appointment: Appointment }>(
+      `/appointments/clinic/${appointmentId}/reschedule`,
+      {
+        method: "PATCH",
+        body: JSON.stringify(data),
+      }
+    );
+  }
+
+  async respondToReschedule(
+    appointmentId: string,
+    data: {
+      response: "ACCEPTED" | "REJECTED" | "PROPOSED_NEW";
+      proposedNewDateTime?: string;
+      message?: string;
+    }
+  ) {
+    return request<{ appointment: Appointment }>(
+      `/appointments/${appointmentId}/respond-reschedule`,
+      {
+        method: "PATCH",
+        body: JSON.stringify(data),
+      }
+    );
+  }
+
+  async acceptAdopterProposal(appointmentId: string) {
+    return request<{ appointment: Appointment }>(
+      `/appointments/clinic/${appointmentId}/accept-adopter-proposal`,
+      {
+        method: "PATCH",
+      }
+    );
   }
 }
 

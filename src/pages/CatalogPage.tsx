@@ -971,6 +971,8 @@ const CatalogPage: React.FC = () => {
                               size="sm" 
                               className="flex-1 h-9 text-xs"
                               onClick={() => handleAdoptClick(animal.id)}
+                              disabled={animal.state === "ADOPTED"}
+                              title={animal.state === "ADOPTED" ? "Este animal ya ha sido adoptado" : "Adoptar"}
                             >
                               <Heart className="h-4 w-4 mr-2" />
                               Adoptar

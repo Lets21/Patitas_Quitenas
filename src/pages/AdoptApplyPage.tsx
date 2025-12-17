@@ -36,6 +36,13 @@ export default function AdoptApplyPage() {
         setLoadingAnimal(true);
         const animalData = await apiClient.getAnimal(animalId);
         setAnimal(animalData);
+        
+        // Validar que el animal no esté adoptado
+        if (animalData.state === "ADOPTED") {
+          toast.error("Este animal ya ha sido adoptado y no está disponible para nuevas solicitudes");
+          nav(`/adoptar/${animalId}`, { replace: true });
+          return;
+        }
       } catch (e: any) {
         const errorMsg = e?.message || "Error cargando información del animal";
         setErr(errorMsg);
@@ -44,7 +51,7 @@ export default function AdoptApplyPage() {
         setLoadingAnimal(false);
       }
     })();
-  }, [animalId]);
+  }, [animalId, nav]);
 
   // Determinar si es cachorro (<= 1 año)
   const isPuppy = animal?.attributes?.age !== undefined && animal.attributes.age <= 1;

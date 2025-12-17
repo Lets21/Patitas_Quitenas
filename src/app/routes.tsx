@@ -24,6 +24,8 @@ import FAQPage from "@/pages/FAQPage";
 // Adoptante
 import AdoptApplyPage from "@/pages/AdoptApplyPage";
 import MyApplicationsPage from "@/pages/MyApplicationsPage";
+import MyAppointmentsPage from "@/pages/MyAppointmentsPage";
+import ScheduleAppointmentPage from "@/pages/ScheduleAppointmentPage";
 import RecommendationsPage from "@/pages/RecommendationsPage";
 // import OnboardingPreferencesPage from "@/pages/OnboardingPreferencesPage"; // No se usa, preferencias integradas en RegisterPage Paso 2
 
@@ -37,6 +39,7 @@ import FoundationAnalytics from "@/features/foundation/FoundationAnalytics";
 import ClinicDashboard from "@/features/clinic/ClinicDashboard";
 import ClinicMedicalHistoryPage from "@/pages/ClinicMedicalHistoryPage";
 import ClinicApplicationsPage from "@/features/clinic/ClinicApplicationsPage";
+import ClinicAppointmentsPage from "@/features/clinic/ClinicAppointmentsPage";
 import AnalyticsDashboard from "@/features/analytics/AnalyticsDashboard";
 import AdminDashboard from "@/features/admin/AdminDashboard";
 import AdminOverview from "@/features/admin/AdminOverview";
@@ -85,6 +88,22 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute allowed={["ADOPTANTE"]}>
             <MyApplicationsPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/mis-citas",
+        element: (
+          <ProtectedRoute allowed={["ADOPTANTE"]}>
+            <MyAppointmentsPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/mis-solicitudes/:applicationId/agendar-cita",
+        element: (
+          <ProtectedRoute allowed={["ADOPTANTE"]}>
+            <ScheduleAppointmentPage />
           </ProtectedRoute>
         ),
       },
@@ -176,6 +195,15 @@ export const router = createBrowserRouter([
     element: (
       <ProtectedRoute allowed={["CLINICA", "ADMIN"]}>
         <ClinicApplicationsPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/clinica/citas",
+    errorElement: <ErrorStub />,
+    element: (
+      <ProtectedRoute allowed={["CLINICA", "ADMIN"]}>
+        <ClinicAppointmentsPage />
       </ProtectedRoute>
     ),
   },

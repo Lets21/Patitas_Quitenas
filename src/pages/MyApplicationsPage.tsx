@@ -4,8 +4,9 @@ import { apiClient, urlFromBackend } from "@/lib/api";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { PawPrint, CheckCircle2, Clock4, Home, MailWarning, ListChecks } from "lucide-react";
+import { PawPrint, CheckCircle2, Clock4, Home, MailWarning, ListChecks, Calendar, CalendarCheck } from "lucide-react";
 import MyApplicationResponsesModal from "@/features/application/MyApplicationResponsesModal";
+import type { Appointment } from "@/types";
 
 type AppRow = {
   _id: string;
@@ -93,6 +94,7 @@ export default function MyApplicationsPage() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   const [viewingAppId, setViewingAppId] = useState<string | null>(null);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
 
   useEffect(() => {
     (async () => {
@@ -102,6 +104,15 @@ export default function MyApplicationsPage() {
         const r = await apiClient.getMyApplications();
         const list = (r as any)?.applications ?? r ?? [];
         setRows(list);
+
+        // Cargar citas para mostrar estado
+        try {
+          const appointmentsData = await apiClient.getMyAppointments();
+          setAppointments(appointmentsData.appointments || []);
+        } catch (e) {
+          // Si falla, continuar sin citas
+          console.log("No se pudieron cargar las citas");
+        }
       } catch (e: any) {
         setErr(e?.message || "No se pudieron cargar tus solicitudes");
       } finally {
@@ -134,16 +145,26 @@ export default function MyApplicationsPage() {
     <div className="min-h-screen bg-[#f8f3ef] py-10">
       <div className="max-w-5xl mx-auto px-4">
         <div className="mb-10 rounded-3xl bg-white shadow-sm p-6 flex flex-col gap-3 border border-amber-50">
-          <div className="inline-flex items-center gap-3 text-primary-600">
-            <PawPrint className="h-5 w-5" />
-            <span className="text-sm font-semibold uppercase tracking-widest">
-              Seguimiento personal
-            </span>
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <div className="inline-flex items-center gap-3 text-primary-600">
+                <PawPrint className="h-5 w-5" />
+                <span className="text-sm font-semibold uppercase tracking-widest">
+                  Seguimiento personal
+                </span>
+              </div>
+              <h1 className="text-4xl font-bold text-gray-900 mt-2">Mis solicitudes</h1>
+              <p className="text-gray-600 text-lg mt-2">
+                Revisa el avance de cada postulación y mantente atento a los mensajes de la fundación.
+              </p>
+            </div>
+            <Link to="/mis-citas">
+              <Button variant="outline" className="flex items-center gap-2 whitespace-nowrap">
+                <CalendarCheck className="h-4 w-4" />
+                Ver mis citas
+              </Button>
+            </Link>
           </div>
-          <h1 className="text-4xl font-bold text-gray-900">Mis solicitudes</h1>
-          <p className="text-gray-600 text-lg">
-            Revisa el avance de cada postulación y mantente atento a los mensajes de la fundación.
-          </p>
         </div>
 
         {rows.length === 0 ? (
@@ -231,11 +252,67 @@ export default function MyApplicationsPage() {
                     </div>
                   )}
 
-                  {a.status === "APPROVED" && (
-                    <div className="text-sm text-emerald-900 bg-emerald-50 border border-emerald-100 rounded-2xl p-4">
-                      ¡Felicitaciones! La fundación aprobó tu solicitud, te contactarán para los siguientes pasos.
-                    </div>
-                  )}
+                  {a.status === "APPROVED" && (() => {
+                    const appointment = appointments.find(
+                      (apt) => apt.applicationId === a._id
+                    );
+                    const activeStatuses = ["REQUESTED", "ACCEPTED", "RESCHEDULE_PROPOSED", "RESCHEDULED"];
+                    const hasActiveAppointment = appointment && activeStatuses.includes(appointment.status);
+
+                    const statusLabels: Record<string, string> = {
+                      REQUESTED: "Cita solicitada",
+                      ACCEPTED: "Cita aceptada",
+                      REJECTED: "Cita rechazada",
+                      RESCHEDULE_PROPOSED: "Reagendamiento propuesto",
+                      RESCHEDULED: "Cita reagendada",
+                      CANCELLED: "Cita cancelada",
+                    };
+
+                    return (
+                      <>
+                        <div className="text-sm text-emerald-900 bg-emerald-50 border border-emerald-100 rounded-2xl p-4">
+                          ¡Felicitaciones! La fundación aprobó tu solicitud, te contactarán para los siguientes pasos.
+                        </div>
+                        {hasActiveAppointment && (
+                          <div className="text-sm text-blue-900 bg-blue-50 border border-blue-100 rounded-2xl p-4">
+                            <div className="font-semibold flex items-center gap-2 mb-1">
+                              <Calendar className="h-4 w-4" />
+                              {statusLabels[appointment.status] || "Cita"}
+                            </div>
+                            <p className="text-gray-700">
+                              Fecha solicitada:{" "}
+                              {new Date(appointment.requestedDateTime).toLocaleString("es-ES", {
+                                weekday: "long",
+                                year: "numeric",
+                                month: "long",
+                                day: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </p>
+                            {appointment.proposedNewDateTime && (
+                              <p className="text-gray-700 mt-1">
+                                Nueva fecha propuesta:{" "}
+                                {new Date(appointment.proposedNewDateTime).toLocaleString("es-ES", {
+                                  weekday: "long",
+                                  year: "numeric",
+                                  month: "long",
+                                  day: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </p>
+                            )}
+                            {appointment.clinicResponseMessage && (
+                              <p className="text-gray-700 mt-1 italic">
+                                {appointment.clinicResponseMessage}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
 
                   {a.status === "IN_REVIEW" && (
                     <div className="text-sm text-amber-900 bg-amber-50 border border-amber-100 rounded-2xl p-4">
@@ -243,7 +320,7 @@ export default function MyApplicationsPage() {
                     </div>
                   )}
 
-                  <div className="flex justify-end">
+                  <div className="flex justify-between items-center gap-4">
                     <Button
                       variant="outline"
                       size="sm"
@@ -253,6 +330,41 @@ export default function MyApplicationsPage() {
                       <ListChecks className="h-4 w-4" />
                       Ver cuestionario
                     </Button>
+                    {a.status === "APPROVED" && (() => {
+                      const appointment = appointments.find(
+                        (apt) => apt.applicationId === a._id
+                      );
+                      const activeStatuses = ["REQUESTED", "ACCEPTED", "RESCHEDULE_PROPOSED", "RESCHEDULED"];
+                      const hasActiveAppointment = appointment && activeStatuses.includes(appointment.status);
+
+                      if (hasActiveAppointment) {
+                        return (
+                          <Link to={`/mis-solicitudes/${a._id}/agendar-cita`}>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="flex items-center gap-2"
+                              disabled
+                            >
+                              <Calendar className="h-4 w-4" />
+                              Cita ya solicitada
+                            </Button>
+                          </Link>
+                        );
+                      }
+
+                      return (
+                        <Link to={`/mis-solicitudes/${a._id}/agendar-cita`}>
+                          <Button
+                            size="sm"
+                            className="flex items-center gap-2 bg-primary-500 hover:bg-primary-600"
+                          >
+                            <Calendar className="h-4 w-4" />
+                            Agendar cita en Clínica UDLA
+                          </Button>
+                        </Link>
+                      );
+                    })()}
                   </div>
                 </Card>
               );
