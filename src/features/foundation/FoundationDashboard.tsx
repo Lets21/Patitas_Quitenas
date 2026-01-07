@@ -284,11 +284,15 @@ function FoundationDashboard() {
                         </td>
                         <td className="px-3 sm:px-6 py-4 hidden lg:table-cell">
                           <div className="flex flex-wrap gap-1">
-                            {dog.health.map((health, index) => (
-                              <Badge key={index} variant="info" size="sm">
-                                {health}
-                              </Badge>
-                            ))}
+                            {dog.health && Array.isArray(dog.health) && dog.health.length > 0 ? (
+                              dog.health.map((health, index) => (
+                                <Badge key={index} variant="info" size="sm">
+                                  {health}
+                                </Badge>
+                              ))
+                            ) : (
+                              <span className="text-xs text-gray-500">Sin datos</span>
+                            )}
                           </div>
                         </td>
                         <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
