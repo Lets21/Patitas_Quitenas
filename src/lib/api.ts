@@ -405,6 +405,12 @@ async getAnimal(id: string) {
     });
   }
 
+  async deleteApplication(id: string) {
+    return request<{ message: string; id: string }>(`/applications/${id}`, {
+      method: "DELETE",
+    });
+  }
+
   async rejectApplication(id: string, data: { reason: string }) {
     return request<{ ok: boolean; message: string }>(`/applications/${id}/reject`, {
       method: "PATCH",

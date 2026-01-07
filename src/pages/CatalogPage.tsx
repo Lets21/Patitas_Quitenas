@@ -64,10 +64,10 @@ type LocalFilters = {
 const SIZE_OPTIONS: Size[] = ["SMALL", "MEDIUM", "LARGE"];
 const ENERGY_OPTIONS: Energy[] = ["LOW", "MEDIUM", "HIGH"];
 const AGE_GROUPS = [
-  { value: "PUPPY", label: "Cachorro (< 1 año)", min: 0, max: 0.99 },
-  { value: "YOUNG", label: "Joven (1-2 años)", min: 1, max: 2.99 },
-  { value: "ADULT", label: "Adulto (3-6 años)", min: 3, max: 6.99 },
-  { value: "SENIOR", label: "Senior (7+ años)", min: 7, max: 100 },
+  { value: "PUPPY", label: "Cachorro (< 1 año)", min: 0, max: 11 },     // 0-11 meses
+  { value: "YOUNG", label: "Joven (1-2 años)", min: 12, max: 35 },      // 12-35 meses
+  { value: "ADULT", label: "Adulto (3-6 años)", min: 36, max: 83 },     // 36-83 meses
+  { value: "SENIOR", label: "Senior (7+ años)", min: 84, max: 300 },    // 84+ meses
 ];
 const COMPATIBILITY_OPTIONS = [
   { value: "kids", label: "Niños" },
@@ -78,7 +78,27 @@ const COMPATIBILITY_OPTIONS = [
 
 const sizeLabel = (s: Size) => (s === "SMALL" ? "Pequeño" : s === "MEDIUM" ? "Mediano" : "Grande");
 const energyLabel = (e: Energy) => (e === "LOW" ? "Tranquilo" : e === "MEDIUM" ? "Moderado" : "Activo");
-const ageBucket = (years: number) => (years < 1 ? "Cachorro" : years < 3 ? "Joven" : years < 7 ? "Adulto" : "Senior");
+
+// Convertir meses a formato legible
+const formatAge = (months: number): string => {
+  if (months < 12) {
+    return `${months} ${months === 1 ? "mes" : "meses"}`;
+  }
+  const years = Math.floor(months / 12);
+  const remainingMonths = months % 12;
+  if (remainingMonths === 0) {
+    return `${years} ${years === 1 ? "año" : "años"}`;
+  }
+  return `${years} ${years === 1 ? "año" : "años"} y ${remainingMonths} ${remainingMonths === 1 ? "mes" : "meses"}`;
+};
+
+// Bucket de edad basado en meses
+const ageBucket = (months: number): string => {
+  if (months < 12) return "Cachorro";
+  if (months < 36) return "Joven";
+  if (months < 84) return "Adulto";
+  return "Senior";
+};
 
 const stateBadge = (state: AState) => {
   switch (state) {
@@ -105,8 +125,21 @@ function normalizeAnimal(raw: any): DisplayAnimal | null {
   const stringId = String(realId);
 
   const attrs = raw?.attributes ?? {};
-  const ageNumber = Number(attrs?.age ?? raw?.age ?? (raw?.health?.age as any) ?? 0);
-  if (!Number.isFinite(ageNumber) || ageNumber < 0) return null;
+  
+  // CORRECCIÓN: Priorizar ageMonths (edad real en meses) sobre attributes.age (años)
+  let ageInMonths: number;
+  if (raw?.ageMonths !== undefined && raw.ageMonths !== null) {
+    // Usar ageMonths directamente si existe
+    ageInMonths = Number(raw.ageMonths);
+  } else if (attrs?.age !== undefined && attrs.age !== null) {
+    // Convertir años a meses si solo tenemos años
+    ageInMonths = Number(attrs.age) * 12;
+  } else {
+    // Fallback a 0 meses
+    ageInMonths = 0;
+  }
+  
+  if (!Number.isFinite(ageInMonths) || ageInMonths < 0) return null;
 
   const photos: string[] =
     Array.isArray(raw?.photos) && raw.photos.length ? raw.photos : [PLACEHOLDER];
@@ -125,7 +158,7 @@ function normalizeAnimal(raw: any): DisplayAnimal | null {
     clinicalSummary: String(raw?.clinicalSummary ?? ""),
     state: (raw?.state ?? "AVAILABLE") as AState,
     attributes: {
-      age: ageNumber,
+      age: ageInMonths, // Ahora en meses, no años
       size: (attrs?.size ?? raw?.size ?? "MEDIUM") as Size,
       breed: String(attrs?.breed ?? raw?.breed ?? "Mestizo"),
       gender: (attrs?.gender ?? raw?.gender ?? "FEMALE") as "MALE" | "FEMALE",
@@ -900,12 +933,18 @@ const CatalogPage: React.FC = () => {
 
                           <div className="space-y-2 mb-4">
                             <div className="flex items-center text-sm text-gray-600">
-                              <Calendar className="h-4 w-4 mr-2 text-gray-400" />
-                              {age} {age === 1 ? "año" : "años"} • {ageBucket(age)}
+                              <Cake className="h-4 w-4 mr-2 text-primary-500" />
+                              <span className="font-medium">{formatAge(age)}</span>
+                              <span className="mx-2">•</span>
+                              <span className="text-gray-500">{ageBucket(age)}</span>
                             </div>
                             <div className="flex items-center text-sm text-gray-600">
-                              <MapPin className="h-4 w-4 mr-2 text-gray-400" />
-                              {sizeLabel(size)} • {energyLabel(energy)}
+                              <Ruler className="h-4 w-4 mr-2 text-primary-500" />
+                              <span className="font-medium">{sizeLabel(size)}</span>
+                            </div>
+                            <div className="flex items-center text-sm text-gray-600">
+                              <Zap className="h-4 w-4 mr-2 text-primary-500" />
+                              <span className="font-medium">{energyLabel(energy)}</span>
                             </div>
                           </div>
 

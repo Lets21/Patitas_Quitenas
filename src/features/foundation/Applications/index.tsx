@@ -42,6 +42,10 @@ type AppRow = {
       }
     | string;
   form?: any;
+  // Campos ML Prediction
+  propensityPred?: 0 | 1;        // 0 = No propenso, 1 = Propenso a adoptar
+  propensityProba?: number;      // Probabilidad 0-1
+  mlVersion?: string;            // Versión del modelo
 };
 
 const STATUS_LABEL: Record<AppRow["status"], string> = {
@@ -175,6 +179,28 @@ export default function FoundationApplicationsPage() {
   async function updateStatus(id: string, next: AppRow["status"]) {
     await apiClient.updateApplicationStatus(id, next);
     await load();
+  }
+
+  async function deleteApplication(id: string) {
+    if (!confirm("¿Estás seguro de eliminar esta solicitud? Esta acción no se puede deshacer.")) {
+      return;
+    }
+    
+    try {
+      await apiClient.deleteApplication(id);
+      
+      // Recargar la vista actual
+      if (viewMode === "ranking") {
+        await loadRanking();
+      } else {
+        await load();
+      }
+      
+      console.log("✅ Solicitud eliminada exitosamente");
+    } catch (error) {
+      console.error("❌ Error eliminando solicitud:", error);
+      alert("Error al eliminar la solicitud. Por favor intenta nuevamente.");
+    }
   }
 
   function handleRejectClick(app: AppRow) {
@@ -311,6 +337,90 @@ export default function FoundationApplicationsPage() {
                             <span className="text-red-600">❌ No elegible</span>
                           )}
                         </div>
+                        {/* ML Prediction Display - Diseño Profesional */}
+                        {a.propensityPred !== undefined && (
+                          <div className="mb-3 p-4 bg-gradient-to-br from-indigo-50 to-blue-50 rounded-lg border-2 border-indigo-200 shadow-sm">
+                            <div className="flex items-start gap-3">
+                              <div className="flex-shrink-0 w-12 h-12 bg-indigo-600 rounded-lg flex items-center justify-center">
+                                <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                              </div>
+                              <div className="flex-1">
+                                <div className="text-sm font-semibold text-indigo-900 mb-1">
+                                  Análisis Predictivo de Adopción
+                                </div>
+                                <div className="flex items-center gap-2 mb-3">
+                                  <span
+                                    className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-bold ${
+                                      a.propensityPred === 1
+                                        ? "bg-green-100 text-green-800 border border-green-300"
+                                        : "bg-amber-100 text-amber-800 border border-amber-300"
+                                    }`}
+                                  >
+                                    {a.propensityPred === 1 ? "✓ Favorable" : "⚠ Atención Requerida"}
+                                  </span>
+                                </div>
+                                
+                                {/* Explicación KNN */}
+                                {(a as any).mlExplanation && (
+                                  <div className="space-y-2">
+                                    <div className="bg-white/60 backdrop-blur-sm rounded-md p-3 border border-indigo-100">
+                                      <div className="text-xs font-semibold text-indigo-800 mb-2 flex items-center gap-1">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                        </svg>
+                                        Casos Similares Analizados (K={((a as any).mlExplanation.k_neighbors || 15)})
+                                      </div>
+                                      <div className="grid grid-cols-2 gap-2 text-xs">
+                                        <div className="flex items-center gap-2 bg-green-50 rounded px-2 py-1.5 border border-green-200">
+                                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                          <span className="text-green-900 font-medium">
+                                            {(a as any).mlExplanation.adopted_neighbors || 0} Adoptados
+                                          </span>
+                                        </div>
+                                        <div className="flex items-center gap-2 bg-red-50 rounded px-2 py-1.5 border border-red-200">
+                                          <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                                          <span className="text-red-900 font-medium">
+                                            {(a as any).mlExplanation.not_adopted_neighbors || 0} No Adoptados
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    
+                                    {(a as any).mlExplanation.key_factors && (a as any).mlExplanation.key_factors.length > 0 && (
+                                      <div className="bg-white/60 backdrop-blur-sm rounded-md p-3 border border-indigo-100">
+                                        <div className="text-xs font-semibold text-indigo-800 mb-2 flex items-center gap-1">
+                                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                                          </svg>
+                                          Factores Determinantes
+                                        </div>
+                                        <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                                          {(a as any).mlExplanation.key_factors.slice(0, 5).map((factor: any, idx: number) => (
+                                            <div 
+                                              key={idx}
+                                              className={`text-xs p-2 rounded-md border ${
+                                                factor.impact === 'positivo' 
+                                                  ? 'bg-green-50 border-green-200 text-green-900' 
+                                                  : factor.impact === 'negativo'
+                                                  ? 'bg-red-50 border-red-200 text-red-900'
+                                                  : 'bg-gray-50 border-gray-200 text-gray-800'
+                                              }`}
+                                            >
+                                              <div className="font-semibold mb-0.5">{factor.factor}</div>
+                                              <div className="text-xs opacity-90">{factor.reason}</div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )}
                         <div className="text-sm text-gray-600">
                           Fecha: {new Date(a.createdAt).toLocaleString()}
                         </div>
@@ -371,6 +481,15 @@ export default function FoundationApplicationsPage() {
                               Rechazar
                             </Button>
                           )}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => deleteApplication(a._id)}
+                            className="border-gray-400 text-gray-700 hover:bg-gray-100"
+                            title="Eliminar solicitud"
+                          >
+                            🗑️
+                          </Button>
                         </div>
                       </div>
                     </div>
@@ -418,6 +537,90 @@ export default function FoundationApplicationsPage() {
                       {scorePct > 0 && (
                         <div className="my-2">
                           <ScoreIndicator pct={scorePct} />
+                        </div>
+                      )}
+                      {/* ML Prediction Display - Diseño Profesional */}
+                      {a.propensityPred !== undefined && (
+                        <div className="my-3 p-4 bg-gradient-to-br from-indigo-50 to-blue-50 rounded-lg border-2 border-indigo-200 shadow-sm">
+                          <div className="flex items-start gap-3">
+                            <div className="flex-shrink-0 w-12 h-12 bg-indigo-600 rounded-lg flex items-center justify-center">
+                              <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                            </div>
+                            <div className="flex-1">
+                              <div className="text-sm font-semibold text-indigo-900 mb-1">
+                                Análisis Predictivo de Adopción
+                              </div>
+                              <div className="flex items-center gap-2 mb-3">
+                                <span
+                                  className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-bold ${
+                                    a.propensityPred === 1
+                                      ? "bg-green-100 text-green-800 border border-green-300"
+                                      : "bg-amber-100 text-amber-800 border border-amber-300"
+                                  }`}
+                                >
+                                  {a.propensityPred === 1 ? "✓ Favorable" : "⚠ Atención Requerida"}
+                                </span>
+                              </div>
+                              
+                              {/* Explicación KNN */}
+                              {(a as any).mlExplanation && (
+                                <div className="space-y-2">
+                                  <div className="bg-white/60 backdrop-blur-sm rounded-md p-3 border border-indigo-100">
+                                    <div className="text-xs font-semibold text-indigo-800 mb-2 flex items-center gap-1">
+                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                      </svg>
+                                      Casos Similares Analizados (K={((a as any).mlExplanation.k_neighbors || 15)})
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2 text-xs">
+                                      <div className="flex items-center gap-2 bg-green-50 rounded px-2 py-1.5 border border-green-200">
+                                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                        <span className="text-green-900 font-medium">
+                                          {(a as any).mlExplanation.adopted_neighbors || 0} Adoptados
+                                        </span>
+                                      </div>
+                                      <div className="flex items-center gap-2 bg-red-50 rounded px-2 py-1.5 border border-red-200">
+                                        <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                                        <span className="text-red-900 font-medium">
+                                          {(a as any).mlExplanation.not_adopted_neighbors || 0} No Adoptados
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  
+                                  {(a as any).mlExplanation.key_factors && (a as any).mlExplanation.key_factors.length > 0 && (
+                                    <div className="bg-white/60 backdrop-blur-sm rounded-md p-3 border border-indigo-100">
+                                      <div className="text-xs font-semibold text-indigo-800 mb-2 flex items-center gap-1">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                                        </svg>
+                                        Factores Determinantes
+                                      </div>
+                                      <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                                        {(a as any).mlExplanation.key_factors.slice(0, 5).map((factor: any, idx: number) => (
+                                          <div 
+                                            key={idx}
+                                            className={`text-xs p-2 rounded-md border ${
+                                              factor.impact === 'positivo' 
+                                                ? 'bg-green-50 border-green-200 text-green-900' 
+                                                : factor.impact === 'negativo'
+                                                ? 'bg-red-50 border-red-200 text-red-900'
+                                                : 'bg-gray-50 border-gray-200 text-gray-800'
+                                            }`}
+                                          >
+                                            <div className="font-semibold mb-0.5">{factor.factor}</div>
+                                            <div className="text-xs opacity-90">{factor.reason}</div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       )}
                       <div className="text-sm text-gray-600">
@@ -480,6 +683,15 @@ export default function FoundationApplicationsPage() {
                             Rechazar
                           </Button>
                         )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => deleteApplication(a._id)}
+                          className="border-gray-400 text-gray-700 hover:bg-gray-100"
+                          title="Eliminar solicitud"
+                        >
+                          🗑️
+                        </Button>
                       </div>
                     </div>
                   </div>

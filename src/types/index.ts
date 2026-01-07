@@ -84,6 +84,18 @@ export interface Animal {
       cats: boolean;
       dogs: boolean;
     };
+    // ========== CAMPOS ML LEGIBLES ==========
+    breed2?: string | null;
+    color1?: string;
+    color2?: string | null;
+    color3?: string | null;
+    maturitySize?: "Small" | "Medium" | "Large" | "Extra Large";
+    furLength?: "Short" | "Medium" | "Long";
+    vaccinated?: "Yes" | "No" | "Not Sure";
+    dewormed?: "Yes" | "No" | "Not Sure";
+    sterilized?: "Yes" | "No" | "Not Sure";
+    health?: "Healthy" | "Minor Injury" | "Serious Injury";
+    fee?: number;
   };
   clinicalSummary: string;
   state: AnimalState;
@@ -133,6 +145,10 @@ export interface Application {
   clinicApproval?: boolean;
   knnScore?: number;
   knnFactors?: string[];
+  // Campos ML Prediction
+  propensityPred?: 0 | 1;        // 0 = No propenso, 1 = Propenso a adoptar
+  propensityProba?: number;      // Probabilidad 0-1
+  mlVersion?: string;            // Versión del modelo (ej. "knn-v1")
   createdAt: string;
   updatedAt: string;
 }

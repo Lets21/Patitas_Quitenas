@@ -1,10 +1,33 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { Heart, Shield, Users, Award, ArrowRight, Star } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 
 export const HomePage: React.FC = () => {
+  // Si el usuario está autenticado, redirigir a su dashboard correspondiente
+  const token = localStorage.getItem('token');
+  const userStr = localStorage.getItem('user');
+  
+  if (token && userStr) {
+    try {
+      const user = JSON.parse(userStr);
+      if (user?.role) {
+        // Redirigir según el rol
+        const paths: Record<string, string> = {
+          'FUNDACION': '/fundacion',
+          'ADOPTANTE': '/catalog',
+          'CLINICA': '/clinica',
+          'ADMIN': '/admin'
+        };
+        const redirectPath = paths[user.role] || '/catalog';
+        return <Navigate to={redirectPath} replace />;
+      }
+    } catch (error) {
+      console.error('Error parsing user data:', error);
+    }
+  }
+
   const benefits = [
     {
       icon: Shield,

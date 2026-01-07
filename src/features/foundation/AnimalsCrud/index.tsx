@@ -10,16 +10,15 @@ import { Plus, Trash2, Edit, Upload, Search, ChevronLeft, ChevronRight, CheckCir
 import { apiClient, urlFromBackend } from "@/lib/api";
 import type { Animal } from "@/types";
 import toast from "react-hot-toast";
+import { getBreedLabelByCode } from "@/utils/breedCodes";
 
 type Draft = {
   id?: string;
   name: string;
-  age: number;
+  ageMonths: number; // Edad en MESES (como el dataset)
   size: "SMALL" | "MEDIUM" | "LARGE";
-  breed: string;
   gender: "MALE" | "FEMALE";
   energy: "LOW" | "MEDIUM" | "HIGH";
-  coexistence: { children: boolean; cats: boolean; dogs: boolean };
   clinicalSummary: string;
   state: "AVAILABLE" | "RESERVED" | "ADOPTED";
   photos: File[];
@@ -28,16 +27,27 @@ type Draft = {
   personality: { sociability?: number; energy?: number; training?: number; adaptability?: number };
   compatibility: { kids?: boolean; cats?: boolean; dogs?: boolean; apartment?: boolean };
   clinicalHistory: { lastVaccination?: string; sterilized?: boolean; conditions?: string };
+  // Campos ML
+  breed1Code?: number; // Código de raza principal (para ML)
+  breed2Code?: number; // Código de raza secundaria (para mestizos)
+  color1?: string;
+  color2?: string;
+  color3?: string;
+  maturitySize?: "Small" | "Medium" | "Large" | "Extra Large";
+  furLength?: "Short" | "Medium" | "Long";
+  vaccinated?: "Yes" | "No" | "Not Sure";
+  dewormed?: "Yes" | "No" | "Not Sure";
+  sterilized?: "Yes" | "No" | "Not Sure";
+  health?: "Healthy" | "Minor Injury" | "Serious Injury";
+  fee?: number;
 };
 
 const emptyDraft: Draft = {
   name: "",
-  age: 1,
+  ageMonths: 12, // 12 meses = 1 año por defecto
   size: "MEDIUM",
-  breed: "",
   gender: "FEMALE",
   energy: "MEDIUM",
-  coexistence: { children: true, cats: false, dogs: true },
   clinicalSummary: "",
   state: "AVAILABLE",
   photos: [],
@@ -45,6 +55,19 @@ const emptyDraft: Draft = {
   personality: {},
   compatibility: {},
   clinicalHistory: {},
+  // Campos ML
+  breed1Code: 307, // Mestizo por defecto
+  breed2Code: 0,   // Sin segunda raza por defecto
+  color1: "Brown",
+  color2: "",
+  color3: "",
+  maturitySize: "Medium",
+  furLength: "Short",
+  vaccinated: "Not Sure",
+  dewormed: "Not Sure",
+  sterilized: "Not Sure",
+  health: "Healthy",
+  fee: 0,
 };
 
 // Normaliza id para documentos que vienen con id o _id
@@ -155,16 +178,10 @@ export default function AnimalsCrud() {
     setDraft({
       id,
       name: a?.name ?? "",
-      age: a?.attributes?.age ?? 1,
+      ageMonths: a?.ageMonths ?? 12,
       size: a?.attributes?.size ?? "MEDIUM",
-      breed: a?.attributes?.breed ?? "",
       gender: a?.attributes?.gender ?? "FEMALE",
       energy: a?.attributes?.energy ?? "MEDIUM",
-      coexistence: a?.attributes?.coexistence ?? {
-        children: true,
-        cats: false,
-        dogs: true,
-      },
       clinicalSummary: a?.clinicalSummary ?? "",
       state: a?.state ?? "AVAILABLE",
       photos: [],
@@ -172,6 +189,19 @@ export default function AnimalsCrud() {
       personality: a?.personality ?? {},
       compatibility: a?.compatibility ?? {},
       clinicalHistory: a?.clinicalHistory ?? {},
+      // Campos ML
+      breed1Code: a?.breed1Code ?? 307, // Mestizo por defecto
+      breed2Code: a?.breed2Code ?? 0,
+      color1: a?.attributes?.color1 ?? "Brown",
+      color2: a?.attributes?.color2 ?? "",
+      color3: a?.attributes?.color3 ?? "",
+      maturitySize: a?.attributes?.maturitySize ?? "Medium",
+      furLength: a?.attributes?.furLength ?? "Short",
+      vaccinated: a?.attributes?.vaccinated ?? "Not Sure",
+      dewormed: a?.attributes?.dewormed ?? "Not Sure",
+      sterilized: a?.attributes?.sterilized ?? "Not Sure",
+      health: a?.attributes?.health ?? "Healthy",
+      fee: a?.attributes?.fee ?? 0,
     });
     setShowForm(true);
   }
@@ -230,15 +260,39 @@ export default function AnimalsCrud() {
       fd.append("name", draft.name.trim());
       fd.append("clinicalSummary", draft.clinicalSummary.trim());
       fd.append("state", draft.state);
+      // Calcular edad en años para compatibilidad
+      const ageInYears = Math.floor((draft.ageMonths || 0) / 12);
+      
+      fd.append("ageMonths", String(draft.ageMonths || 0));
+      
+      // Enviar códigos de raza directamente
+      fd.append("breed1Code", String(draft.breed1Code || 0));
+      fd.append("breed2Code", String(draft.breed2Code || 0));
+      
+      // Generar nombre de raza basado en los códigos
+      const breedName = draft.breed2Code && draft.breed2Code !== 0
+        ? `${getBreedLabelByCode(draft.breed1Code || 307)} + ${getBreedLabelByCode(draft.breed2Code)}`
+        : getBreedLabelByCode(draft.breed1Code || 307);
+      
       fd.append(
         "attributes",
         JSON.stringify({
-          age: Number(draft.age) || 0,
+          age: ageInYears,
           size: draft.size,
-          breed: draft.breed.trim(),
+          breed: breedName,
           gender: draft.gender,
           energy: draft.energy,
-          coexistence: draft.coexistence,
+          // Campos ML
+          color1: draft.color1 || "Brown",
+          color2: draft.color2 || null,
+          color3: draft.color3 || null,
+          maturitySize: draft.maturitySize || "Medium",
+          furLength: draft.furLength || "Short",
+          vaccinated: draft.vaccinated || "Not Sure",
+          dewormed: draft.dewormed || "Not Sure",
+          sterilized: draft.sterilized || "Not Sure",
+          health: draft.health || "Healthy",
+          fee: Number(draft.fee) || 0,
         })
       );
 
@@ -367,7 +421,18 @@ export default function AnimalsCrud() {
 
                       <div className="flex flex-wrap gap-2 text-xs text-gray-600">
                         <span className="inline-flex items-center px-2 py-1 bg-gray-100 rounded">
-                          🎂 {a?.attributes?.age || a?.age || 0} años
+                          🎂 {(() => {
+                            const months = a?.ageMonths || 0;
+                            if (months < 12) {
+                              return `${months} ${months === 1 ? 'mes' : 'meses'}`;
+                            }
+                            const years = Math.floor(months / 12);
+                            const remainingMonths = months % 12;
+                            if (remainingMonths === 0) {
+                              return `${years} ${years === 1 ? 'año' : 'años'}`;
+                            }
+                            return `${years} ${years === 1 ? 'año' : 'años'} y ${remainingMonths} ${remainingMonths === 1 ? 'mes' : 'meses'}`;
+                          })()}
                         </span>
                         <span className="inline-flex items-center px-2 py-1 bg-gray-100 rounded">
                           📏 {a?.attributes?.size === "SMALL" ? "Pequeño" : a?.attributes?.size === "MEDIUM" ? "Mediano" : a?.attributes?.size === "LARGE" ? "Grande" : "Mediano"}
@@ -387,16 +452,19 @@ export default function AnimalsCrud() {
                       )}
 
                       {/* Compatibilidad */}
-                      {a?.attributes?.coexistence && (
+                      {a?.compatibility && (
                         <div className="flex flex-wrap gap-1 text-xs">
-                          {a.attributes.coexistence.children && (
+                          {a.compatibility.kids && (
                             <span className="px-2 py-0.5 bg-green-50 text-green-700 rounded">👶 Niños</span>
                           )}
-                          {a.attributes.coexistence.dogs && (
+                          {a.compatibility.dogs && (
                             <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded">🐕 Perros</span>
                           )}
-                          {a.attributes.coexistence.cats && (
+                          {a.compatibility.cats && (
                             <span className="px-2 py-0.5 bg-purple-50 text-purple-700 rounded">🐈 Gatos</span>
+                          )}
+                          {a.compatibility.apartment && (
+                            <span className="px-2 py-0.5 bg-orange-50 text-orange-700 rounded">🏢 Apartamento</span>
                           )}
                         </div>
                       )}
@@ -503,17 +571,14 @@ export default function AnimalsCrud() {
                       onChange={(e) => setDraft({ ...draft, name: e.target.value })}
                     />
                     <Input
-                      label="Raza"
-                      value={draft.breed}
-                      onChange={(e) => setDraft({ ...draft, breed: e.target.value })}
-                    />
-                    <Input
-                      label="Edad (años)"
+                      label="Edad (meses)"
                       type="number"
-                      value={draft.age}
+                      min="1"
+                      value={draft.ageMonths}
                       onChange={(e) =>
-                        setDraft({ ...draft, age: Number(e.target.value) || 0 })
+                        setDraft({ ...draft, ageMonths: Number(e.target.value) || 1 })
                       }
+                      placeholder="Ej: 12 meses = 1 año"
                     />
                     <div>
                       <label className="block text-xs text-gray-600 mb-1">Tamaño</label>
@@ -558,49 +623,223 @@ export default function AnimalsCrud() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                    <label className="flex items-center gap-2 text-sm">
-                      <input
-                        type="checkbox"
-                        checked={draft.coexistence.children}
-                        onChange={(e) =>
-                          setDraft({
-                            ...draft,
-                            coexistence: {
-                              ...draft.coexistence,
-                              children: e.target.checked,
-                            },
-                          })
-                        }
-                      />
-                      Con niños
-                    </label>
-                    <label className="flex items-center gap-2 text-sm">
-                      <input
-                        type="checkbox"
-                        checked={draft.coexistence.cats}
-                        onChange={(e) =>
-                          setDraft({
-                            ...draft,
-                            coexistence: { ...draft.coexistence, cats: e.target.checked },
-                          })
-                        }
-                      />
-                      Con gatos
-                    </label>
-                    <label className="flex items-center gap-2 text-sm">
-                      <input
-                        type="checkbox"
-                        checked={draft.coexistence.dogs}
-                        onChange={(e) =>
-                          setDraft({
-                            ...draft,
-                            coexistence: { ...draft.coexistence, dogs: e.target.checked },
-                          })
-                        }
-                      />
-                      Con perros
-                    </label>
+                  {/* Características Físicas ML */}
+                  <div className="border-t pt-3">
+                    <h3 className="text-sm font-semibold mb-2">🎨 Características Físicas (ML)</h3>
+                    
+                    {/* RAZAS - IMPORTANTE PARA ML */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <div className="md:col-span-2">
+                        <p className="text-xs text-yellow-800 mb-2">
+                          ⚠️ <strong>Importante:</strong> Aunque sea mestizo, selecciona las razas que lo componen (ej: Labrador + Beagle). 
+                          Esto mejora significativamente la predicción del modelo ML.
+                        </p>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1 font-semibold">
+                          Raza principal *
+                        </label>
+                        <select
+                          value={draft.breed1Code || 307}
+                          onChange={(e) => setDraft({ ...draft, breed1Code: Number(e.target.value) })}
+                          className="w-full px-3 py-2 border rounded-lg bg-white"
+                          required
+                        >
+                          <option value={307}>Mestizo (Mixed Breed)</option>
+                          <option value={265}>Labrador Retriever</option>
+                          <option value={232}>Golden Retriever</option>
+                          <option value={94}>Pastor Alemán (German Shepherd)</option>
+                          <option value={158}>Chihuahua</option>
+                          <option value={76}>Beagle</option>
+                          <option value={125}>Bulldog</option>
+                          <option value={173}>Dachshund/Salchicha</option>
+                          <option value={103}>Boxer</option>
+                          <option value={250}>Husky</option>
+                          <option value={287}>Rottweiler</option>
+                          <option value={294}>Schnauzer</option>
+                          <option value={174}>Dálmata</option>
+                          <option value={295}>Shih Tzu</option>
+                          <option value={273}>Pomerania</option>
+                          <option value={277}>Pug/Carlino</option>
+                          <option value={162}>Cocker Spaniel</option>
+                          <option value={218}>Maltés</option>
+                          <option value={268}>Pitbull</option>
+                          <option value={99}>Border Collie</option>
+                          <option value={178}>Doberman</option>
+                          <option value={234}>Gran Danés</option>
+                          <option value={91}>Terrier</option>
+                          <option value={0}>Desconocida</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">
+                          Raza secundaria (para mestizos)
+                        </label>
+                        <select
+                          value={draft.breed2Code || 0}
+                          onChange={(e) => setDraft({ ...draft, breed2Code: Number(e.target.value) })}
+                          className="w-full px-3 py-2 border rounded-lg bg-white"
+                        >
+                          <option value={0}>Ninguna / Desconocida</option>
+                          <option value={307}>Mestizo</option>
+                          <option value={265}>Labrador Retriever</option>
+                          <option value={232}>Golden Retriever</option>
+                          <option value={94}>Pastor Alemán</option>
+                          <option value={158}>Chihuahua</option>
+                          <option value={76}>Beagle</option>
+                          <option value={125}>Bulldog</option>
+                          <option value={173}>Dachshund/Salchicha</option>
+                          <option value={103}>Boxer</option>
+                          <option value={250}>Husky</option>
+                          <option value={287}>Rottweiler</option>
+                          <option value={294}>Schnauzer</option>
+                          <option value={174}>Dálmata</option>
+                          <option value={295}>Shih Tzu</option>
+                          <option value={273}>Pomerania</option>
+                          <option value={277}>Pug/Carlino</option>
+                          <option value={162}>Cocker Spaniel</option>
+                          <option value={218}>Maltés</option>
+                          <option value={268}>Pitbull</option>
+                          <option value={99}>Border Collie</option>
+                          <option value={178}>Doberman</option>
+                          <option value={234}>Gran Danés</option>
+                          <option value={91}>Terrier</option>
+                        </select>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">Color principal</label>
+                        <select
+                          value={draft.color1 || "Brown"}
+                          onChange={(e) => setDraft({ ...draft, color1: e.target.value })}
+                          className="w-full px-3 py-2 border rounded-lg"
+                        >
+                          <option value="Black">Negro</option>
+                          <option value="Brown">Marrón</option>
+                          <option value="White">Blanco</option>
+                          <option value="Yellow">Amarillo</option>
+                          <option value="Gray">Gris</option>
+                          <option value="Cream">Crema</option>
+                          <option value="Golden">Dorado</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">Color secundario (opcional)</label>
+                        <select
+                          value={draft.color2 || ""}
+                          onChange={(e) => setDraft({ ...draft, color2: e.target.value })}
+                          className="w-full px-3 py-2 border rounded-lg"
+                        >
+                          <option value="">Ninguno</option>
+                          <option value="Black">Negro</option>
+                          <option value="Brown">Marrón</option>
+                          <option value="White">Blanco</option>
+                          <option value="Yellow">Amarillo</option>
+                          <option value="Gray">Gris</option>
+                          <option value="Cream">Crema</option>
+                          <option value="Golden">Dorado</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">Color terciario (opcional)</label>
+                        <select
+                          value={draft.color3 || ""}
+                          onChange={(e) => setDraft({ ...draft, color3: e.target.value })}
+                          className="w-full px-3 py-2 border rounded-lg"
+                        >
+                          <option value="">Ninguno</option>
+                          <option value="Black">Negro</option>
+                          <option value="Brown">Marrón</option>
+                          <option value="White">Blanco</option>
+                          <option value="Yellow">Amarillo</option>
+                          <option value="Gray">Gris</option>
+                          <option value="Cream">Crema</option>
+                          <option value="Golden">Dorado</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">Tamaño adulto</label>
+                        <select
+                          value={draft.maturitySize || "Medium"}
+                          onChange={(e) => setDraft({ ...draft, maturitySize: e.target.value as any })}
+                          className="w-full px-3 py-2 border rounded-lg"
+                        >
+                          <option value="Small">Pequeño</option>
+                          <option value="Medium">Mediano</option>
+                          <option value="Large">Grande</option>
+                          <option value="Extra Large">Extra Grande</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">Largo de pelo</label>
+                        <select
+                          value={draft.furLength || "Short"}
+                          onChange={(e) => setDraft({ ...draft, furLength: e.target.value as any })}
+                          className="w-full px-3 py-2 border rounded-lg"
+                        >
+                          <option value="Short">Corto</option>
+                          <option value="Medium">Mediano</option>
+                          <option value="Long">Largo</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Estado de Salud ML */}
+                  <div className="border-t pt-3">
+                    <h3 className="text-sm font-semibold mb-2">🏥 Estado de Salud (ML)</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">Vacunado</label>
+                        <select
+                          value={draft.vaccinated || "Not Sure"}
+                          onChange={(e) => setDraft({ ...draft, vaccinated: e.target.value as any })}
+                          className="w-full px-3 py-2 border rounded-lg"
+                        >
+                          <option value="Yes">Sí</option>
+                          <option value="No">No</option>
+                          <option value="Not Sure">No seguro</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">Desparasitado</label>
+                        <select
+                          value={draft.dewormed || "Not Sure"}
+                          onChange={(e) => setDraft({ ...draft, dewormed: e.target.value as any })}
+                          className="w-full px-3 py-2 border rounded-lg"
+                        >
+                          <option value="Yes">Sí</option>
+                          <option value="No">No</option>
+                          <option value="Not Sure">No seguro</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">Esterilizado</label>
+                        <select
+                          value={draft.sterilized || "Not Sure"}
+                          onChange={(e) => setDraft({ ...draft, sterilized: e.target.value as any })}
+                          className="w-full px-3 py-2 border rounded-lg"
+                        >
+                          <option value="Yes">Sí</option>
+                          <option value="No">No</option>
+                          <option value="Not Sure">No seguro</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">Estado de salud</label>
+                        <select
+                          value={draft.health || "Healthy"}
+                          onChange={(e) => setDraft({ ...draft, health: e.target.value as any })}
+                          className="w-full px-3 py-2 border rounded-lg"
+                        >
+                          <option value="Healthy">Saludable</option>
+                          <option value="Minor Injury">Lesión menor</option>
+                          <option value="Serious Injury">Lesión grave</option>
+                        </select>
+                      </div>
+                    </div>
                   </div>
 
                   <div>
