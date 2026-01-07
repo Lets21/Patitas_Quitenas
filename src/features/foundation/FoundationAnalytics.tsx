@@ -15,6 +15,21 @@ import { useFoundationAnalytics } from "./useFoundationAnalytics";
 import { urlFromBackend } from "@/lib/api";
 import FoundationHeader from "@/components/admin/FoundationHeader";
 
+// Función para formatear edad
+const formatAge = (ageMonths: number | undefined): string => {
+  const months = ageMonths || 0;
+  if (months < 12) {
+    return `${months} ${months === 1 ? 'mes' : 'meses'}`;
+  }
+  const years = Math.floor(months / 12);
+  const remainingMonths = months % 12;
+  
+  if (remainingMonths === 0) {
+    return `${years} ${years === 1 ? 'año' : 'años'}`;
+  }
+  return `${years} ${years === 1 ? 'año' : 'años'} y ${remainingMonths} ${remainingMonths === 1 ? 'mes' : 'meses'}`;
+};
+
 function FoundationAnalytics() {
   const { data, isLoading, isError } = useFoundationAnalytics();
 
@@ -300,7 +315,7 @@ function FoundationAnalytics() {
                         {animal.breed}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                        {animal.age} {animal.age === 1 ? "año" : "años"}
+                        {formatAge(animal.ageMonths)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <Badge
@@ -463,8 +478,7 @@ function FoundationAnalytics() {
                       </p>
                       <p className="text-xs text-gray-600">
                         {adoption.attributes.breed} •{" "}
-                        {adoption.attributes.age}{" "}
-                        {adoption.attributes.age === 1 ? "año" : "años"}
+                        {formatAge(adoption.ageMonths)}
                       </p>
                     </div>
                   </div>

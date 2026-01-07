@@ -9,18 +9,21 @@ import {
   Activity,
   CheckCircle,
   AlertCircle,
+  X,
 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Input } from "@/components/ui/Input";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import FoundationHeader from "@/components/admin/FoundationHeader";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 
 // 🔽 IMPORTAMOS LOS HOOKS
 import { useFoundationStats } from "./useFoundationStats";
 import { useFoundationAnimals } from "./useFoundationAnimals";
-import { urlFromBackend } from "@/lib/api";
+import { urlFromBackend, apiClient } from "@/lib/api";
 
 function FoundationDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -28,6 +31,20 @@ function FoundationDashboard() {
   const [filterStatus, setFilterStatus] = useState("todos");
   const [currentPage, setCurrentPage] = useState(1);
   const navigate = useNavigate();
+  
+  // Estado para confirmación de eliminación
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    animalId?: string;
+    animalName?: string;
+  }>({ isOpen: false });
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  
+  // Estado para modal de vista rápida
+  const [viewModal, setViewModal] = useState<{
+    isOpen: boolean;
+    animal?: any;
+  }>({ isOpen: false });
 
   // Debounce del search term
   useEffect(() => {
@@ -85,6 +102,41 @@ function FoundationDashboard() {
   // Datos de animales (con loading y error handling)
   const animals = animalsData?.animals || [];
   const pagination = animalsData?.pagination || { page: 1, limit: 10, total: 0, totalPages: 1 };
+
+  // Funciones para manejar acciones
+  const handleViewAnimal = (animalId: string) => {
+    const animal = animals.find(a => a.id === animalId);
+    if (animal) {
+      setViewModal({ isOpen: true, animal });
+    }
+  };
+
+  const handleEditAnimal = (animalId: string) => {
+    // Navegar al CRUD de animales con scroll al animal específico
+    navigate(`/fundacion/animales`, { state: { editAnimalId: animalId } });
+  };
+
+  const handleDeleteAnimal = (animalId: string, animalName: string) => {
+    setConfirmDialog({ isOpen: true, animalId, animalName });
+  };
+
+  const confirmDelete = async () => {
+    const { animalId, animalName } = confirmDialog;
+    if (!animalId) return;
+    
+    try {
+      setDeletingId(animalId);
+      await apiClient.foundationDeleteAnimal(animalId);
+      toast.success(`${animalName || "El animal"} ha sido eliminado correctamente`);
+      setConfirmDialog({ isOpen: false });
+      // Recargar la lista
+      window.location.reload();
+    } catch (err: any) {
+      toast.error(err?.message || "Error al eliminar el animal");
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 overflow-x-hidden">
@@ -270,14 +322,14 @@ function FoundationDashboard() {
                                 {dog.name}
                               </span>
                               <span className="text-xs text-gray-500 sm:hidden">
-                                {dog.age} {dog.age === 1 ? "año" : "años"} •{" "}
+                                {dog.ageDisplay} •{" "}
                                 {dog.breed}
                               </span>
                             </div>
                           </div>
                         </td>
                         <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900 hidden sm:table-cell">
-                          {dog.age} {dog.age === 1 ? "año" : "años"}
+                          {dog.ageDisplay}
                         </td>
                         <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900 hidden md:table-cell">
                           {dog.breed} / {dog.size}
@@ -302,13 +354,26 @@ function FoundationDashboard() {
                         </td>
                         <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <div className="flex space-x-1 sm:space-x-2">
-                            <button className="text-blue-600 hover:text-blue-900 p-1">
+                            <button 
+                              className="text-blue-600 hover:text-blue-900 p-1"
+                              onClick={() => handleViewAnimal(dog.id)}
+                              title="Ver detalles"
+                            >
                               <Eye className="h-4 w-4" />
                             </button>
-                            <button className="text-green-600 hover:text-green-900 p-1">
+                            <button 
+                              className="text-green-600 hover:text-green-900 p-1"
+                              onClick={() => handleEditAnimal(dog.id)}
+                              title="Editar"
+                            >
                               <Edit className="h-4 w-4" />
                             </button>
-                            <button className="text-red-600 hover:text-red-900 p-1">
+                            <button 
+                              className="text-red-600 hover:text-red-900 p-1"
+                              onClick={() => handleDeleteAnimal(dog.id, dog.name)}
+                              title="Eliminar"
+                              disabled={!!deletingId}
+                            >
                               <Trash2 className="h-4 w-4" />
                             </button>
                           </div>
@@ -365,6 +430,129 @@ function FoundationDashboard() {
           </div>
         </Card>
       </div>
+
+      {/* Modal de vista rápida del animal */}
+      {viewModal.isOpen && viewModal.animal && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+          onClick={() => setViewModal({ isOpen: false })}
+        >
+          <div 
+            className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6">
+              {/* Header */}
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">{viewModal.animal.name}</h2>
+                  <p className="text-sm text-gray-600 mt-1">{viewModal.animal.breed}</p>
+                </div>
+                <button
+                  onClick={() => setViewModal({ isOpen: false })}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+
+              {/* Foto */}
+              {viewModal.animal.photo && (
+                <div className="mb-4 rounded-lg overflow-hidden">
+                  <img
+                    src={urlFromBackend(viewModal.animal.photo)}
+                    alt={viewModal.animal.name}
+                    className="w-full h-64 object-cover"
+                  />
+                </div>
+              )}
+
+              {/* Información básica */}
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div className="bg-gray-50 p-3 rounded-lg">
+                  <p className="text-xs text-gray-600 mb-1">Edad</p>
+                  <p className="font-semibold text-gray-900">{viewModal.animal.ageDisplay}</p>
+                </div>
+                <div className="bg-gray-50 p-3 rounded-lg">
+                  <p className="text-xs text-gray-600 mb-1">Tamaño</p>
+                  <p className="font-semibold text-gray-900">{viewModal.animal.size}</p>
+                </div>
+                <div className="bg-gray-50 p-3 rounded-lg">
+                  <p className="text-xs text-gray-600 mb-1">Género</p>
+                  <p className="font-semibold text-gray-900">{viewModal.animal.gender === 'MALE' ? 'Macho' : 'Hembra'}</p>
+                </div>
+                <div className="bg-gray-50 p-3 rounded-lg">
+                  <p className="text-xs text-gray-600 mb-1">Energía</p>
+                  <p className="font-semibold text-gray-900">{viewModal.animal.energy}</p>
+                </div>
+              </div>
+
+              {/* Estado de salud */}
+              <div className="mb-4">
+                <h3 className="font-semibold text-gray-900 mb-2">Estado de salud</h3>
+                <div className="flex flex-wrap gap-2">
+                  {viewModal.animal.health && Array.isArray(viewModal.animal.health) && viewModal.animal.health.length > 0 ? (
+                    viewModal.animal.health.map((h: string, i: number) => (
+                      <Badge key={i} variant="info" size="sm">{h}</Badge>
+                    ))
+                  ) : (
+                    <span className="text-sm text-gray-500">Sin datos</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Estado */}
+              <div className="mb-4">
+                <h3 className="font-semibold text-gray-900 mb-2">Disponibilidad</h3>
+                <Badge variant={viewModal.animal.statusColor as any} size="sm">
+                  {viewModal.animal.statusLabel}
+                </Badge>
+              </div>
+
+              {/* Resumen clínico */}
+              {viewModal.animal.clinicalSummary && (
+                <div className="mb-4">
+                  <h3 className="font-semibold text-gray-900 mb-2">Resumen clínico</h3>
+                  <p className="text-sm text-gray-700">{viewModal.animal.clinicalSummary}</p>
+                </div>
+              )}
+
+              {/* Acciones */}
+              <div className="flex gap-3 pt-4 border-t">
+                <Button
+                  className="flex-1"
+                  onClick={() => {
+                    setViewModal({ isOpen: false });
+                    handleEditAnimal(viewModal.animal.id);
+                  }}
+                >
+                  <Edit className="h-4 w-4 mr-2" />
+                  Editar
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setViewModal({ isOpen: false })}
+                >
+                  Cerrar
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Diálogo de confirmación para eliminar */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={() => setConfirmDialog({ isOpen: false })}
+        onConfirm={confirmDelete}
+        title="Eliminar animal"
+        message={`¿Estás seguro de que deseas eliminar a ${confirmDialog.animalName || "este animal"}? Esta acción no se puede deshacer.`}
+        confirmText="Sí, eliminar"
+        cancelText="Cancelar"
+        variant="danger"
+        isLoading={!!deletingId}
+      />
     </div>
   );
 }

@@ -15,6 +15,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import FoundationHeader from '@/components/admin/FoundationHeader';
+import { apiClient } from '@/lib/api';
 
 interface Notification {
   id: string;
@@ -40,10 +41,8 @@ function NotificationsPage() {
   useEffect(() => {
     async function fetchNotifications() {
       try {
-        const res = await fetch("/api/v1/notifications", {
-          credentials: "include"
-        });
-        const data = await res.json();
+        const data = await apiClient.getNotifications();
+        console.log('[NotificationsPage] Fetched notifications:', data);
         if (Array.isArray(data.notifications)) {
           setNotifications(data.notifications.map((n: any) => ({
             id: n._id,
@@ -58,7 +57,7 @@ function NotificationsPage() {
           })));
         }
       } catch (err) {
-        // Puedes mostrar un error o fallback
+        console.error('[NotificationsPage] Error fetching notifications:', err);
       }
     }
     fetchNotifications();
@@ -107,21 +106,32 @@ function NotificationsPage() {
     }
   };
 
-  const markAsRead = (id: string) => {
-    setNotifications(prev => 
-      prev.map(notif => 
-        notif.id === id ? { ...notif, isRead: true } : notif
-      )
-    );
+  const markAsRead = async (id: string) => {
+    try {
+      await apiClient.markNotificationAsRead(id);
+      setNotifications(prev => 
+        prev.map(notif => 
+          notif.id === id ? { ...notif, isRead: true } : notif
+        )
+      );
+    } catch (err) {
+      console.error('[NotificationsPage] Error marking as read:', err);
+    }
   };
 
-  const markAllAsRead = () => {
-    setNotifications(prev => 
-      prev.map(notif => ({ ...notif, isRead: true }))
-    );
+  const markAllAsRead = async () => {
+    try {
+      await apiClient.markAllNotificationsAsRead();
+      setNotifications(prev => 
+        prev.map(notif => ({ ...notif, isRead: true }))
+      );
+    } catch (err) {
+      console.error('[NotificationsPage] Error marking all as read:', err);
+    }
   };
 
   const deleteNotification = (id: string) => {
+    // Esta funcionalidad no está implementada en el backend, solo actualiza el estado local
     setNotifications(prev => prev.filter(notif => notif.id !== id));
   };
 

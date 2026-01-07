@@ -1,5 +1,6 @@
 // src/features/foundation/AnimalsCrud/index.tsx
 import React, { useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 import FoundationHeader from "@/components/admin/FoundationHeader";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -76,6 +77,7 @@ function normId(a: any): string | undefined {
 }
 
 export default function AnimalsCrud() {
+  const location = useLocation();
   const [items, setItems] = useState<Animal[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -138,6 +140,20 @@ export default function AnimalsCrud() {
       console.log("[AnimalsCrud] Component unmounting...");
     };
   }, []);
+
+  // Detectar si viene un animal para editar desde la navegación
+  useEffect(() => {
+    const state = location.state as { editAnimalId?: string } | null;
+    if (state?.editAnimalId && items.length > 0) {
+      console.log("[AnimalsCrud] Auto-opening edit for animal:", state.editAnimalId);
+      const animalToEdit = items.find(a => normId(a) === state.editAnimalId);
+      if (animalToEdit) {
+        openEdit(animalToEdit);
+        // Limpiar el state para evitar que se abra de nuevo
+        window.history.replaceState({}, document.title);
+      }
+    }
+  }, [location.state, items]);
 
   // Funciones de navegación
   const goToPage = (page: number) => {

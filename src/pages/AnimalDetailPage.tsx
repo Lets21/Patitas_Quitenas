@@ -10,7 +10,8 @@ import {
   Users,
   Home,
   Syringe,
-  Zap,
+  Pill,
+  Scissors,
   CheckCircle,
   Stethoscope,
   X,
@@ -35,6 +36,7 @@ type DisplayAnimal = {
   photos: string[];
   clinicalSummary: string;
   state: AState;
+  ageMonths: number;
   attributes: {
     age: number;
     size: Size;
@@ -62,6 +64,20 @@ const toBool = (v: any) => {
 
 const sizeLabel = (s: Size) => (s === "SMALL" ? "Pequeño" : s === "MEDIUM" ? "Mediano" : "Grande");
 const genderLabel = (g: "MALE" | "FEMALE") => (g === "MALE" ? "Macho" : "Hembra");
+
+// Función para formatear edad
+const formatAge = (ageMonths: number): string => {
+  if (ageMonths < 12) {
+    return `${ageMonths} ${ageMonths === 1 ? 'mes' : 'meses'}`;
+  }
+  const years = Math.floor(ageMonths / 12);
+  const remainingMonths = ageMonths % 12;
+  
+  if (remainingMonths === 0) {
+    return `${years} ${years === 1 ? 'año' : 'años'}`;
+  }
+  return `${years} ${years === 1 ? 'año' : 'años'} y ${remainingMonths} ${remainingMonths === 1 ? 'mes' : 'meses'}`;
+};
 
 type BadgeVariant = "success" | "warning" | "info" | "default" | "danger";
 
@@ -153,6 +169,7 @@ const AnimalDetailPage: React.FC = () => {
           photos: Array.isArray(dto.photos) ? dto.photos : [],
           clinicalSummary: dto.clinicalSummary ?? "",
           state: (dto.state as AState) ?? "AVAILABLE",
+          ageMonths: Number(dto.ageMonths ?? 0),
           attributes: {
             age: Number(dto.attributes?.age ?? 0),
             size: (dto.attributes?.size as Size) ?? "MEDIUM",
@@ -291,7 +308,7 @@ const AnimalDetailPage: React.FC = () => {
                   <div className="flex items-center space-x-4 text-sm text-gray-600">
                     <div className="flex items-center">
                       <Calendar className="h-4 w-4 mr-1" />
-                      {attributes.age} {attributes.age === 1 ? "año" : "años"}
+                      {formatAge(animal.ageMonths)}
                     </div>
                     <div className="flex items-center">
                       <User className="h-4 w-4 mr-1" />
@@ -317,20 +334,20 @@ const AnimalDetailPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Salud (placeholder estático por ahora) */}
+              {/* Estado de salud */}
               <div className="mb-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">Estado de salud</h3>
                 <div className="grid grid-cols-3 gap-4">
                   <div className="flex items-center text-sm">
-                    <Syringe className="h-4 w-4 mr-2 text-green-600" />
+                    <Syringe className={`h-4 w-4 mr-2 ${animal.clinicalHistory?.lastVaccination ? 'text-green-600' : 'text-gray-400'}`} />
                     <span className="text-gray-700">Vacunado</span>
                   </div>
                   <div className="flex items-center text-sm">
-                    <Zap className="h-4 w-4 mr-2 text-green-600" />
+                    <Pill className="h-4 w-4 mr-2 text-green-600" />
                     <span className="text-gray-700">Desparasitado</span>
                   </div>
                   <div className="flex items-center text-sm">
-                    <HeartIcon className="h-4 w-4 mr-2 text-green-600" />
+                    <Scissors className={`h-4 w-4 mr-2 ${animal.clinicalHistory?.sterilized ? 'text-green-600' : 'text-gray-400'}`} />
                     <span className="text-gray-700">Esterilizado</span>
                   </div>
                 </div>

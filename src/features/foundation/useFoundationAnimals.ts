@@ -5,6 +5,8 @@ interface FoundationAnimal {
   id: string;
   name: string;
   age: number;
+  ageMonths: number;
+  ageDisplay: string;
   breed: string;
   size: string;
   gender: string;

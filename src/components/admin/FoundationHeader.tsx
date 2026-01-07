@@ -140,7 +140,7 @@ export default function FoundationHeader() {
                     } text-gray-600 hover:text-primary-700`
                   }
                 >
-                  📊 Datos Estadísticos
+                   Datos Estadísticos
                 </NavLink>
               </nav>
             )}
