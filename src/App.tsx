@@ -13,6 +13,8 @@ import { HomePage } from "./pages/HomePage";
 import CatalogPage from "./pages/CatalogPage";
 import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 
 // Admin
 import AdminLayout from "./layouts/AdminLayout"; // <- el layout que renderiza <AdminHeader />
@@ -45,6 +47,10 @@ function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
           </Route>
+
+          {/* Recuperación de contraseña (sin Header/Footer) */}
+          <Route path="/olvide" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
 
           {/* Login del panel admin (sin Header/Footer públicos) */}
           <Route path="/admin/login" element={<LoginAdmin />} />

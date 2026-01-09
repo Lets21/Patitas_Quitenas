@@ -13,6 +13,8 @@ import AnimalDetailPage from "@/pages/AnimalDetailPage";
 import LoginPublicPage from "@/pages/LoginPublic";
 import LoginAdminPage from "@/pages/LoginAdmin";
 import RegisterPage from "@/pages/RegisterPage";
+import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
+import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import AboutPage from "@/pages/AboutPage";
 import ContactPage from "@/pages/ContactPage";
 // Legal
@@ -129,6 +131,8 @@ export const router = createBrowserRouter([
       { path: "/login", element: <LoginPublicPage /> },
       { path: "/admin/login", element: <LoginAdminPage /> },
       { path: "/register", element: <RegisterPage /> },
+      { path: "/olvide", element: <ForgotPasswordPage /> },
+      { path: "/reset-password", element: <ResetPasswordPage /> },
       { path: "/sobre-nosotros", element: <AboutPage /> },
       { path: "/about", element: <AboutPage /> },
       

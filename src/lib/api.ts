@@ -257,6 +257,20 @@ class ApiClient {
     });
   }
 
+  async forgotPassword(email: string) {
+    return request<{ message: string }>("/auth/forgot-password", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    });
+  }
+
+  async resetPassword(token: string, newPassword: string) {
+    return request<{ message: string }>("/auth/reset-password", {
+      method: "POST",
+      body: JSON.stringify({ token, newPassword }),
+    });
+  }
+
   // ===== Animals (Catálogo público) =====
   async getAnimals(filters?: FilterOptions) {
     if (USE_MOCK) {
