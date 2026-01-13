@@ -342,7 +342,7 @@ const FAQPage: React.FC = () => {
               </div>
               <div>
                 <div className="text-sm text-gray-500">Escríbenos</div>
-                <div className="font-semibold text-lg">contacto@huellitasquito.ec</div>
+                <div className="font-semibold text-lg">lets.crp@outlook.com</div>
                 <div className="text-xs text-gray-500">Respuesta en 24-48 horas</div>
               </div>
             </div>

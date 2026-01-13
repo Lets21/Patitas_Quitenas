@@ -452,7 +452,7 @@ const ProcessPage: React.FC = () => {
               </div>
               <div>
                 <div className="text-sm text-gray-500">Escríbenos</div>
-                <div className="font-semibold">contacto@huellitasquito.ec</div>
+                <div className="font-semibold">lets.crp@outlook.com</div>
               </div>
             </div>
           </div>

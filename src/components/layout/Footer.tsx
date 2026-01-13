@@ -50,7 +50,7 @@ export const Footer: React.FC = () => {
             <ul className="space-y-3 text-primary-200">
               <li className="flex items-center space-x-2">
                 <Mail className="h-4 w-4 flex-shrink-0" />
-                <span className="text-sm">contacto@huellitasquito.ec</span>
+                <span className="text-sm">lets.crp@outlook.com</span>
               </li>
               <li className="flex items-center space-x-2">
                 <Phone className="h-4 w-4 flex-shrink-0" />

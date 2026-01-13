@@ -345,7 +345,7 @@ const TermsPage: React.FC = () => {
             Si tiene preguntas sobre estos Términos y Condiciones, puede contactarnos:
           </p>
           <div className="space-y-2 text-gray-700">
-            <p><strong>Email:</strong> contacto@huellitasquito.ec</p>
+            <p><strong>Email:</strong> lets.crp@outlook.com</p>
             <p><strong>Teléfono:</strong> +593 960152853</p>
             <p><strong>Dirección:</strong> Quito, Ecuador</p>
           </div>

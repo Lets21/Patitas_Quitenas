@@ -48,7 +48,7 @@ const PrivacyPage: React.FC = () => {
             <p><strong className="text-gray-900">Organización:</strong> Protección Animal Ecuador (PAE)</p>
             <p><strong className="text-gray-900">Plataforma:</strong> Huellitas Quiteñas</p>
             <p><strong className="text-gray-900">Ubicación:</strong> Quito, Ecuador</p>
-            <p><strong className="text-gray-900">Email de contacto:</strong> contacto@huellitasquito.ec</p>
+            <p><strong className="text-gray-900">Email de contacto:</strong>lets.crp@outlook.com</p>
             <p><strong className="text-gray-900">Teléfono:</strong> +593 960152853</p>
           </div>
         </Card>
@@ -287,7 +287,7 @@ const PrivacyPage: React.FC = () => {
                 Para ejercer cualquiera de estos derechos, puede contactarnos:
               </p>
               <ul className="list-disc list-inside space-y-1 text-gray-700 ml-4">
-                <li>Por correo electrónico: contacto@huellitasquito.ec</li>
+                <li>Por correo electrónico: lets.crp@outlook.com</li>
                 <li>Por teléfono: +593 960152853</li>
                 <li>A través de su perfil en la plataforma (sección "Mi Cuenta")</li>
               </ul>
@@ -390,7 +390,7 @@ const PrivacyPage: React.FC = () => {
             </p>
             <div className="space-y-2 text-gray-700">
               <p><strong>Responsable de Protección de Datos:</strong></p>
-              <p><strong>Email:</strong> contacto@huellitasquito.ec</p>
+              <p><strong>Email:</strong> lets.crp@outlook.com</p>
               <p><strong>Teléfono:</strong> +593 960152853</p>
               <p><strong>Dirección:</strong> Quito, Ecuador</p>
             </div>
