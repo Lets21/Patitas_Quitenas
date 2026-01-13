@@ -5,9 +5,11 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Input } from "@/components/ui/Input";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import ScoreIndicator from "@/components/ScoreIndicator";
 import RejectApplicationModal from "../RejectApplicationModal";
 import ApplicationDetailsModal from "../ApplicationDetailsModal";
+import toast from "react-hot-toast";
 
 // >>> IMPORTA TU HEADER DE FUNDACIÓN <<<
 import FoundationHeader from "@/components/admin/FoundationHeader";
@@ -88,6 +90,12 @@ export default function FoundationApplicationsPage() {
   const [rejectingAppId, setRejectingAppId] = useState<string | null>(null);
   const [rejectingAppIsPuppy, setRejectingAppIsPuppy] = useState(false);
   const [viewingAppId, setViewingAppId] = useState<string | null>(null);
+  const [deleteConfirmDialog, setDeleteConfirmDialog] = useState<{
+    isOpen: boolean;
+    applicationId: string | null;
+    animalName: string;
+  }>({ isOpen: false, applicationId: null, animalName: "" });
+  const [isDeleting, setIsDeleting] = useState(false);
   
   // Score mínimo fijo para ranking: 70%
   const RANKING_MIN_SCORE = 70;
@@ -177,17 +185,49 @@ export default function FoundationApplicationsPage() {
   );
 
   async function updateStatus(id: string, next: AppRow["status"]) {
-    await apiClient.updateApplicationStatus(id, next);
-    await load();
+    try {
+      await apiClient.updateApplicationStatus(id, next);
+      
+      const statusMessages: Record<AppRow["status"], string> = {
+        RECEIVED: "Solicitud marcada como recibida",
+        IN_REVIEW: "Solicitud en evaluación",
+        HOME_VISIT: "Visita domiciliaria programada",
+        APPROVED: "¡Solicitud aprobada!",
+        REJECTED: "Solicitud rechazada",
+      };
+      
+      toast.success(statusMessages[next]);
+      
+      // Recargar la vista actual
+      if (viewMode === "ranking") {
+        await loadRanking();
+      } else {
+        await load();
+      }
+    } catch (error) {
+      console.error("❌ Error actualizando estado:", error);
+      toast.error("Error al actualizar el estado. Por favor intenta nuevamente.");
+    }
   }
 
-  async function deleteApplication(id: string) {
-    if (!confirm("¿Estás seguro de eliminar esta solicitud? Esta acción no se puede deshacer.")) {
-      return;
-    }
-    
+  function openDeleteConfirm(app: AppRow) {
+    const animalName = formatAnimalName(app);
+    setDeleteConfirmDialog({
+      isOpen: true,
+      applicationId: app._id,
+      animalName: animalName,
+    });
+  }
+
+  async function confirmDelete() {
+    const { applicationId } = deleteConfirmDialog;
+    if (!applicationId) return;
+
+    setIsDeleting(true);
     try {
-      await apiClient.deleteApplication(id);
+      await apiClient.deleteApplication(applicationId);
+      
+      toast.success("Solicitud eliminada exitosamente");
       
       // Recargar la vista actual
       if (viewMode === "ranking") {
@@ -196,10 +236,12 @@ export default function FoundationApplicationsPage() {
         await load();
       }
       
-      console.log("✅ Solicitud eliminada exitosamente");
+      setDeleteConfirmDialog({ isOpen: false, applicationId: null, animalName: "" });
     } catch (error) {
       console.error("❌ Error eliminando solicitud:", error);
-      alert("Error al eliminar la solicitud. Por favor intenta nuevamente.");
+      toast.error("Error al eliminar la solicitud. Por favor intenta nuevamente.");
+    } finally {
+      setIsDeleting(false);
     }
   }
 
@@ -484,7 +526,7 @@ export default function FoundationApplicationsPage() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => deleteApplication(a._id)}
+                            onClick={() => openDeleteConfirm(a)}
                             className="border-gray-400 text-gray-700 hover:bg-gray-100"
                             title="Eliminar solicitud"
                           >
@@ -686,7 +728,7 @@ export default function FoundationApplicationsPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => deleteApplication(a._id)}
+                          onClick={() => openDeleteConfirm(a)}
                           className="border-gray-400 text-gray-700 hover:bg-gray-100"
                           title="Eliminar solicitud"
                         >
@@ -719,6 +761,19 @@ export default function FoundationApplicationsPage() {
           onClose={() => setViewingAppId(null)}
         />
       )}
+
+      {/* Diálogo de confirmación para eliminar */}
+      <ConfirmDialog
+        isOpen={deleteConfirmDialog.isOpen}
+        onClose={() => setDeleteConfirmDialog({ isOpen: false, applicationId: null, animalName: "" })}
+        onConfirm={confirmDelete}
+        title="Eliminar solicitud"
+        message={`¿Estás seguro de que deseas eliminar la solicitud para ${deleteConfirmDialog.animalName}? Esta acción no se puede deshacer.`}
+        confirmText="Sí, eliminar"
+        cancelText="Cancelar"
+        variant="danger"
+        isLoading={isDeleting}
+      />
     </>
   );
 }

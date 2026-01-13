@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { apiClient, uploadAnimalPhoto } from "@/lib/api";
 import type { Animal } from "@/types";
+import toast from "react-hot-toast";
 
 type Props = {
   open: boolean;
@@ -72,10 +73,12 @@ export default function AnimalFormModal({ open, onClose, editing, onSaved }: Pro
         ? await apiClient.updateAnimal(editing.id ?? (editing as any)._id, payload)
         : await apiClient.createAnimal(payload);
 
+      toast.success(editing ? "Perro actualizado exitosamente" : "Perro creado exitosamente");
       onSaved(saved as any);
       onClose();
     } catch (err: any) {
-      alert(err?.message || "Error al guardar");
+      console.error("Error al guardar perro:", err);
+      toast.error(err?.message || "Error al guardar el perro. Por favor intenta nuevamente.");
     } finally {
       setSaving(false);
     }

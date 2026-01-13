@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Download, Eye } from "lucide-react";
+import toast from "react-hot-toast";
 // @ts-ignore - jsPDF no tiene tipos perfectos
 import jsPDF from "jspdf";
 
@@ -222,9 +223,10 @@ export default function ApplicationDocumentViewer({
     // Guardar PDF
     const fileName = `solicitud_${animalName || "adopcion"}_${adopterName || "adoptante"}_${Date.now()}.pdf`;
     doc.save(fileName);
+    toast.success("PDF descargado exitosamente");
     } catch (error) {
       console.error("Error generando PDF:", error);
-      alert("Error al generar el PDF. Por favor, intenta nuevamente.");
+      toast.error("Error al generar el PDF. Por favor, intenta nuevamente.");
     }
   };
 

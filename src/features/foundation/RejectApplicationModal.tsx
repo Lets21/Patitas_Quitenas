@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { collectSuggestionEntries } from "./applicationSuggestions";
 import { scoreApplication } from "@/utils/evaluationUtils";
+import toast from "react-hot-toast";
 
 interface RejectApplicationModalProps {
   applicationId: string;
@@ -118,10 +119,14 @@ export default function RejectApplicationModal({
     setIsSubmitting(true);
     try {
       await apiClient.rejectApplication(applicationId, { reason: finalReason });
+      toast.success("Solicitud rechazada exitosamente");
       onSuccess();
       onClose();
     } catch (err: any) {
-      setError(err?.message || "Error al rechazar la solicitud");
+      console.error("Error al rechazar solicitud:", err);
+      const errorMessage = err?.message || "Error al rechazar la solicitud";
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
