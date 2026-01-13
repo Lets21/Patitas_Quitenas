@@ -279,11 +279,13 @@ export default function FoundationApplicationsPage() {
 
       {/* Padding top para que el contenido no quede oculto bajo el header sticky */}
       <div className="max-w-7xl mx-auto p-6 pt-20">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-6">
-          <h1 className="text-2xl font-semibold">Solicitudes de adopción</h1>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-8">
+          <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+            📋 Solicitudes de Adopción
+          </h1>
 
           <div className="flex flex-col gap-3 items-start sm:items-end w-full sm:w-auto">
-            <div className="inline-flex w-full sm:w-auto items-center rounded-full border border-primary-200 bg-white p-1 shadow-sm min-w-[280px]">
+            <div className="inline-flex w-full sm:w-auto items-center rounded-full border border-purple-200 bg-white p-1 shadow-sm min-w-[280px]">
               {VIEW_MODE_TABS.map((tab) => {
                 const isActive = viewMode === tab.id;
                 return (
@@ -292,10 +294,10 @@ export default function FoundationApplicationsPage() {
                     type="button"
                     onClick={() => setViewMode(tab.id)}
                     aria-pressed={isActive}
-                    className={`flex-1 rounded-full px-5 py-2 text-sm font-medium text-center transition-all duration-200 ${
+                    className={`flex-1 rounded-full px-5 py-2 text-sm font-semibold text-center transition-all duration-200 ${
                       isActive
-                        ? "bg-primary-600 text-white shadow-md ring-1 ring-primary-500"
-                        : "text-primary-700 hover:bg-primary-50"
+                        ? "bg-purple-600 text-white shadow-md"
+                        : "text-purple-700 hover:bg-purple-50"
                     }`}
                   >
                     {tab.label}
@@ -304,8 +306,8 @@ export default function FoundationApplicationsPage() {
               })}
             </div>
             {viewMode === "ranking" && (
-              <p className="text-xs text-gray-500 text-left sm:text-right w-full">
-                Mostrando solo solicitudes con score ≥ {RANKING_MIN_SCORE}%
+              <p className="text-xs text-purple-700 bg-purple-50 px-3 py-1 rounded-full border border-purple-200 text-left sm:text-right w-full">
+                Score mínimo: {RANKING_MIN_SCORE}%
               </p>
             )}
             <div className="w-full sm:w-auto">
@@ -318,7 +320,7 @@ export default function FoundationApplicationsPage() {
                 />
 
                 <select
-                  className="border rounded-md px-3 py-2 w-full sm:w-48"
+                  className="border rounded-lg px-3 py-2 w-full sm:w-48 text-sm font-medium text-gray-700 bg-white focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-200 transition-all"
                   value={status}
                   onChange={(e) => setStatus(e.target.value)}
                 >
@@ -336,47 +338,54 @@ export default function FoundationApplicationsPage() {
 
         {viewMode === "ranking" ? (
           loadingRanking ? (
-            <Card className="p-6 text-gray-500">Cargando ranking…</Card>
+            <Card className="p-8 text-gray-500 text-lg font-semibold text-center">⏳ Cargando ranking…</Card>
           ) : filteredRanking.length === 0 ? (
-            <Card className="p-6 text-gray-500">
-              No hay solicitudes con score ≥ {RANKING_MIN_SCORE}%.
+            <Card className="p-8 text-gray-500 text-lg font-semibold text-center">
+              📊 No hay solicitudes con score ≥ {RANKING_MIN_SCORE}%.
             </Card>
           ) : (
-            <div className="grid gap-4">
+            <div className="grid gap-5">
               {filteredRanking.map((a) => {
                 const animalName = formatAnimalName(a);
                 const adopterName = formatAdopterName(a);
                 const scorePct = a.scorePct ?? 0;
 
                 return (
-                  <Card key={a._id} className="p-4">
+                  <Card key={a._id} className="p-6 hover:shadow-2xl transition-all duration-300 border-2 border-gray-100 hover:border-purple-200 bg-gradient-to-br from-white to-purple-50/30">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="text-lg font-semibold">{animalName}</div>
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="text-2xl font-bold text-gray-800">🐕 {animalName}</div>
                           <span
-                            className={`text-lg font-bold ${
+                            className={`text-2xl font-black px-4 py-1 rounded-full ${
                               scorePct >= 85
-                                ? "text-green-600"
+                                ? "bg-green-100 text-green-700 border-2 border-green-300"
                                 : scorePct >= 70
-                                ? "text-yellow-600"
-                                : "text-red-600"
+                                ? "bg-yellow-100 text-yellow-700 border-2 border-yellow-300"
+                                : "bg-red-100 text-red-700 border-2 border-red-300"
                             }`}
                           >
                             {scorePct}%
                           </span>
                         </div>
-                        <div className="text-sm text-gray-600 mb-2">
-                          Adoptante: {adopterName}
+                        <div className="text-base text-gray-700 font-semibold mb-3 flex items-center gap-2">
+                          <span className="inline-flex items-center justify-center w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full">
+                            <span className="text-white text-sm">👤</span>
+                          </span>
+                          {adopterName}
                         </div>
                         <div className="mb-3">
                           <ScoreIndicator pct={scorePct} />
                         </div>
-                        <div className="text-sm text-gray-600 mb-2">
+                        <div className="mb-3 flex items-center gap-2">
                           {a.eligible ? (
-                            <span className="text-green-600">✅ Elegible</span>
+                            <span className="inline-flex items-center gap-1.5 bg-green-100 text-green-800 px-3 py-1.5 rounded-full text-sm font-bold border-2 border-green-300">
+                              ✅ Elegible para adopción
+                            </span>
                           ) : (
-                            <span className="text-red-600">❌ No elegible</span>
+                            <span className="inline-flex items-center gap-1.5 bg-red-100 text-red-800 px-3 py-1.5 rounded-full text-sm font-bold border-2 border-red-300">
+                              ❌ No cumple requisitos
+                            </span>
                           )}
                         </div>
                         {/* ML Prediction Display - Diseño Profesional */}
@@ -473,25 +482,25 @@ export default function FoundationApplicationsPage() {
                         </div>
                       </div>
 
-                      <div className="flex flex-col items-end gap-2">
-                        <div className="text-xs text-gray-500">ID: {a._id}</div>
+                      <div className="flex flex-col items-end gap-3">
+                        <div className="text-xs font-semibold text-gray-500 bg-gray-100 px-3 py-1 rounded-full">ID: {a._id.slice(-8)}</div>
                         <div className="flex flex-wrap gap-2 justify-end">
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => setViewingAppId(a._id)}
-                            className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                            className="border-2 border-gray-300 text-gray-700 hover:bg-gray-50 font-semibold hover:border-gray-400 transition-all"
                           >
-                            Ver respuestas
+                            📄 Ver respuestas
                           </Button>
                           {a.status !== "IN_REVIEW" && (
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={() => updateStatus(a._id, "IN_REVIEW")}
-                              className="border-blue-300 text-blue-700 hover:bg-blue-50"
+                              className="border-2 border-blue-300 text-blue-700 hover:bg-blue-50 font-semibold hover:border-blue-400 transition-all"
                             >
-                              Pasar a evaluación
+                              🔍 Evaluar
                             </Button>
                           )}
                           {a.status !== "HOME_VISIT" && (
@@ -499,18 +508,18 @@ export default function FoundationApplicationsPage() {
                               variant="outline"
                               size="sm"
                               onClick={() => updateStatus(a._id, "HOME_VISIT")}
-                              className="border-purple-300 text-purple-700 hover:bg-purple-50"
+                              className="border-2 border-purple-300 text-purple-700 hover:bg-purple-50 font-semibold hover:border-purple-400 transition-all"
                             >
-                              Visita domiciliaria
+                              🏠 Visita
                             </Button>
                           )}
                           {a.status !== "APPROVED" && (
                             <Button 
                               size="sm"
                               onClick={() => updateStatus(a._id, "APPROVED")}
-                              className="bg-green-600 hover:bg-green-700 text-white"
+                              className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-bold shadow-md hover:shadow-lg transition-all"
                             >
-                              Aprobar
+                              ✅ Aprobar
                             </Button>
                           )}
                           {a.status !== "REJECTED" && (
@@ -518,16 +527,16 @@ export default function FoundationApplicationsPage() {
                               variant="danger"
                               size="sm"
                               onClick={() => handleRejectClick(a)}
-                              className="bg-red-600 hover:bg-red-700 text-white"
+                              className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold shadow-md hover:shadow-lg transition-all"
                             >
-                              Rechazar
+                              ❌ Rechazar
                             </Button>
                           )}
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => openDeleteConfirm(a)}
-                            className="border-gray-400 text-gray-700 hover:bg-gray-100"
+                            className="border-2 border-gray-400 text-gray-700 hover:bg-gray-100 font-semibold hover:border-gray-500 transition-all"
                             title="Eliminar solicitud"
                           >
                             🗑️
@@ -554,26 +563,26 @@ export default function FoundationApplicationsPage() {
               const scorePct = a.scorePct ?? 0;
 
               return (
-                <Card key={a._id} className="p-4">
+                <Card key={a._id} className="p-5 hover:shadow-lg transition-all duration-300 border border-gray-200">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-2">
-                        <div className="text-lg font-semibold">{animalName}</div>
+                        <div className="text-lg font-bold text-gray-800">{animalName}</div>
                         {scorePct > 0 && (
                           <span
-                            className={`text-sm font-semibold ${
+                            className={`text-lg font-bold px-3 py-1 rounded-full ${
                               scorePct >= 85
-                                ? "text-green-600"
+                                ? "bg-green-100 text-green-700 border border-green-300"
                                 : scorePct >= 70
-                                ? "text-yellow-600"
-                                : "text-red-600"
+                                ? "bg-yellow-100 text-yellow-700 border border-yellow-300"
+                                : "bg-red-100 text-red-700 border border-red-300"
                             }`}
                           >
                             {scorePct}%
                           </span>
                         )}
                       </div>
-                      <div className="text-sm text-gray-600">
+                      <div className="text-sm text-gray-600 mb-2">
                         Adoptante: {adopterName}
                       </div>
                       {scorePct > 0 && (
@@ -693,7 +702,7 @@ export default function FoundationApplicationsPage() {
                             onClick={() => updateStatus(a._id, "IN_REVIEW")}
                             className="border-blue-300 text-blue-700 hover:bg-blue-50"
                           >
-                            Pasar a evaluación
+                            Evaluar
                           </Button>
                         )}
                         {a.status !== "HOME_VISIT" && (
@@ -703,7 +712,7 @@ export default function FoundationApplicationsPage() {
                             onClick={() => updateStatus(a._id, "HOME_VISIT")}
                             className="border-purple-300 text-purple-700 hover:bg-purple-50"
                           >
-                            Visita domiciliaria
+                            Visita
                           </Button>
                         )}
                         {a.status !== "APPROVED" && (

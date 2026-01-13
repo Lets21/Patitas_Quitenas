@@ -105,20 +105,20 @@ function FoundationAnalytics() {
   return (
     <div className="min-h-screen bg-gray-50 overflow-x-hidden">
       <FoundationHeader />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-24">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
-            📊 Datos Estadísticos de la Fundación
+          <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
+            📊 Estadísticas y Análisis
           </h1>
-          <p className="text-gray-600">
-            Análisis completo del desempeño y métricas clave
+          <p className="text-base text-gray-600">
+            Análisis completo del desempeño y métricas clave de la fundación
           </p>
         </div>
 
         {/* Métricas Principales */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card className="p-6">
+          <Card className="p-6 hover:shadow-md transition-shadow">
             <div className="flex items-center">
               <div className="p-3 rounded-lg bg-blue-100">
                 <TrendingUp className="h-6 w-6 text-blue-600" />
@@ -134,7 +134,7 @@ function FoundationAnalytics() {
             </div>
           </Card>
 
-          <Card className="p-6">
+          <Card className="p-6 hover:shadow-md transition-shadow">
             <div className="flex items-center">
               <div className="p-3 rounded-lg bg-green-100">
                 <Users className="h-6 w-6 text-green-600" />
@@ -150,32 +150,32 @@ function FoundationAnalytics() {
             </div>
           </Card>
 
-          <Card className="p-6">
+          <Card className="p-6 hover:shadow-xl transition-all duration-300 border-2 border-gray-100 hover:border-purple-200 bg-gradient-to-br from-white to-purple-50">
             <div className="flex items-center">
-              <div className="p-3 rounded-lg bg-purple-100">
-                <Award className="h-6 w-6 text-purple-600" />
+              <div className="p-4 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 shadow-lg">
+                <Award className="h-7 w-7 text-white" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">
+                <p className="text-xs font-bold text-gray-600 uppercase tracking-wide">
                   Perros Adoptados
                 </p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-3xl font-extrabold text-purple-600">
                   {summary.adoptedDogs}
                 </p>
               </div>
             </div>
           </Card>
 
-          <Card className="p-6">
+          <Card className="p-6 hover:shadow-xl transition-all duration-300 border-2 border-gray-100 hover:border-orange-200 bg-gradient-to-br from-white to-orange-50">
             <div className="flex items-center">
-              <div className="p-3 rounded-lg bg-orange-100">
-                <Clock className="h-6 w-6 text-orange-600" />
+              <div className="p-4 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 shadow-lg">
+                <Clock className="h-7 w-7 text-white" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">
+                <p className="text-xs font-bold text-gray-600 uppercase tracking-wide">
                   Tiempo Promedio
                 </p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-3xl font-extrabold text-orange-600">
                   {avgDaysToAdoption} días
                 </p>
               </div>
@@ -186,26 +186,28 @@ function FoundationAnalytics() {
         {/* Gráficos y Tablas */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           {/* Adopciones por mes */}
-          <Card className="p-6">
-            <div className="flex items-center mb-4">
-              <Calendar className="h-5 w-5 text-primary-600 mr-2" />
-              <h3 className="text-lg font-semibold text-gray-900">
-                Adopciones por Mes
+          <Card className="p-6 hover:shadow-xl transition-all duration-300 border-2 border-gray-100">
+            <div className="flex items-center mb-6">
+              <div className="p-2 rounded-lg bg-gradient-to-br from-green-500 to-green-600 mr-3">
+                <Calendar className="h-6 w-6 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900">
+                📅 Adopciones por Mes
               </h3>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-4">
               {adoptionsTimeline.length === 0 ? (
-                <p className="text-sm text-gray-500">
-                  No hay datos de adopciones en los últimos 6 meses
+                <p className="text-sm text-gray-500 font-semibold">
+                  📭 No hay datos de adopciones en los últimos 6 meses
                 </p>
               ) : (
                 adoptionsTimeline.map((item, idx) => (
                   <div key={idx} className="flex items-center justify-between">
-                    <span className="text-sm text-gray-700">{item.month}</span>
-                    <div className="flex items-center space-x-2">
-                      <div className="w-32 h-4 bg-gray-200 rounded-full overflow-hidden">
+                    <span className="text-sm font-semibold text-gray-700">{item.month}</span>
+                    <div className="flex items-center space-x-3">
+                      <div className="w-40 h-5 bg-gray-200 rounded-full overflow-hidden shadow-inner">
                         <div
-                          className="h-full bg-green-500"
+                          className="h-full bg-gradient-to-r from-green-500 to-green-600 transition-all duration-500"
                           style={{
                             width: `${Math.min(
                               (item.count / Math.max(...adoptionsTimeline.map((a) => a.count), 1)) * 100,
@@ -214,7 +216,7 @@ function FoundationAnalytics() {
                           }}
                         />
                       </div>
-                      <span className="text-sm font-semibold text-gray-900 w-8 text-right">
+                      <span className="text-base font-bold text-gray-900 w-10 text-right">
                         {item.count}
                       </span>
                     </div>
@@ -225,26 +227,28 @@ function FoundationAnalytics() {
           </Card>
 
           {/* Registro de perros por mes */}
-          <Card className="p-6">
-            <div className="flex items-center mb-4">
-              <BarChart3 className="h-5 w-5 text-primary-600 mr-2" />
-              <h3 className="text-lg font-semibold text-gray-900">
-                Registro de Perros por Mes
+          <Card className="p-6 hover:shadow-xl transition-all duration-300 border-2 border-gray-100">
+            <div className="flex items-center mb-6">
+              <div className="p-2 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 mr-3">
+                <BarChart3 className="h-6 w-6 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900">
+                📈 Registro de Perros por Mes
               </h3>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-4">
               {registrationTimeline.length === 0 ? (
-                <p className="text-sm text-gray-500">
-                  No hay datos de registros en los últimos 6 meses
+                <p className="text-sm text-gray-500 font-semibold">
+                  📋 No hay datos de registros en los últimos 6 meses
                 </p>
               ) : (
                 registrationTimeline.map((item, idx) => (
                   <div key={idx} className="flex items-center justify-between">
-                    <span className="text-sm text-gray-700">{item.month}</span>
-                    <div className="flex items-center space-x-2">
-                      <div className="w-32 h-4 bg-gray-200 rounded-full overflow-hidden">
+                    <span className="text-sm font-semibold text-gray-700">{item.month}</span>
+                    <div className="flex items-center space-x-3">
+                      <div className="w-40 h-5 bg-gray-200 rounded-full overflow-hidden shadow-inner">
                         <div
-                          className="h-full bg-blue-500"
+                          className="h-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-500"
                           style={{
                             width: `${Math.min(
                               (item.count / Math.max(...registrationTimeline.map((r) => r.count), 1)) * 100,
@@ -253,7 +257,7 @@ function FoundationAnalytics() {
                           }}
                         />
                       </div>
-                      <span className="text-sm font-semibold text-gray-900 w-8 text-right">
+                      <span className="text-base font-bold text-gray-900 w-10 text-right">
                         {item.count}
                       </span>
                     </div>
@@ -265,34 +269,36 @@ function FoundationAnalytics() {
         </div>
 
         {/* Top Perros con Más Solicitudes */}
-        <Card className="p-6 mb-8">
-          <div className="flex items-center mb-4">
-            <Award className="h-5 w-5 text-primary-600 mr-2" />
-            <h3 className="text-lg font-semibold text-gray-900">
-              Perros con Más Solicitudes de Adopción
+        <Card className="p-6 mb-8 hover:shadow-xl transition-all duration-300 border-2 border-gray-100">
+          <div className="flex items-center mb-6">
+            <div className="p-2 rounded-lg bg-gradient-to-br from-yellow-500 to-yellow-600 mr-3">
+              <Award className="h-6 w-6 text-white" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900">
+              🏆 Perros con Más Solicitudes de Adopción
             </h3>
           </div>
           {topAnimalsWithApplications.length === 0 ? (
-            <p className="text-sm text-gray-500">No hay datos disponibles</p>
+            <p className="text-sm text-gray-500 font-semibold">📊 No hay datos disponibles</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+                <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Perro
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                      🐶 Perro
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Raza
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                      🧒 Raza
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Edad
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                      🎂 Edad
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Estado
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                      📊 Estado
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Solicitudes
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                      📝 Solicitudes
                     </th>
                   </tr>
                 </thead>

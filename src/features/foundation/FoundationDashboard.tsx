@@ -146,16 +146,16 @@ function FoundationDashboard() {
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {/* Perros Registrados */}
-          <Card className="p-6">
+          <Card className="p-6 hover:shadow-xl transition-all duration-300 border-2 border-gray-100 hover:border-green-200 bg-gradient-to-br from-white to-green-50">
             <div className="flex items-center">
-              <div className={`p-3 rounded-lg bg-gray-100 text-green-600`}>
-                <Dog className="h-6 w-6" />
+              <div className="p-4 rounded-xl bg-gradient-to-br from-green-500 to-green-600 shadow-lg">
+                <Dog className="h-7 w-7 text-white" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">
                   Caninos Registrados
                 </p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-3xl font-extrabold text-gray-900 mt-1">
                   {statsData.totalDogs}
                 </p>
               </div>
@@ -163,16 +163,16 @@ function FoundationDashboard() {
           </Card>
 
           {/* Solicitudes Activas */}
-          <Card className="p-6">
+          <Card className="p-6 hover:shadow-xl transition-all duration-300 border-2 border-gray-100 hover:border-yellow-200 bg-gradient-to-br from-white to-yellow-50">
             <div className="flex items-center">
-              <div className={`p-3 rounded-lg bg-gray-100 text-yellow-600`}>
-                <Activity className="h-6 w-6" />
+              <div className="p-4 rounded-xl bg-gradient-to-br from-yellow-500 to-yellow-600 shadow-lg">
+                <Activity className="h-7 w-7 text-white" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">
                   Solicitudes Activas
                 </p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-3xl font-extrabold text-gray-900 mt-1">
                   {statsData.activeRequests}
                 </p>
               </div>
@@ -180,16 +180,16 @@ function FoundationDashboard() {
           </Card>
 
           {/* Adopciones Completadas */}
-          <Card className="p-6">
+          <Card className="p-6 hover:shadow-xl transition-all duration-300 border-2 border-gray-100 hover:border-blue-200 bg-gradient-to-br from-white to-blue-50">
             <div className="flex items-center">
-              <div className={`p-3 rounded-lg bg-gray-100 text-blue-600`}>
-                <CheckCircle className="h-6 w-6" />
+              <div className="p-4 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg">
+                <CheckCircle className="h-7 w-7 text-white" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">
                   Adopciones Completadas
                 </p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-3xl font-extrabold text-gray-900 mt-1">
                   {statsData.adoptedDogs}
                 </p>
               </div>
@@ -197,16 +197,16 @@ function FoundationDashboard() {
           </Card>
 
           {/* Perros en Espera */}
-          <Card className="p-6">
+          <Card className="p-6 hover:shadow-xl transition-all duration-300 border-2 border-gray-100 hover:border-red-200 bg-gradient-to-br from-white to-red-50">
             <div className="flex items-center">
-              <div className={`p-3 rounded-lg bg-gray-100 text-red-600`}>
-                <AlertCircle className="h-6 w-6" />
+              <div className="p-4 rounded-xl bg-gradient-to-br from-red-500 to-red-600 shadow-lg">
+                <AlertCircle className="h-7 w-7 text-white" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">
                   Caninos en Espera
                 </p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-3xl font-extrabold text-gray-900 mt-1">
                   {statsData.waitingDogs}
                 </p>
               </div>
@@ -215,22 +215,22 @@ function FoundationDashboard() {
         </div>
 
         {/* Main Content */}
-        <Card className="p-6 overflow-x-clip">
+        <Card className="p-8 overflow-x-clip shadow-lg border-2 border-gray-100">
           <div className="mb-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              Caninos registrados por la fundación
+            <h2 className="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-primary-600 to-primary-800 mb-6">
+              🐾 Caninos registrados por la fundación
             </h2>
 
             {/* Search and Filters */}
             <div className="flex flex-col sm:flex-row gap-4 mb-6">
               <div className="flex-1">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
                   <Input
                     placeholder="Buscar por nombre..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
+                    className="pl-11 h-12 text-base border-2 focus:border-primary-400"
                   />
                 </div>
               </div>
@@ -238,10 +238,10 @@ function FoundationDashboard() {
               {/* Botón que navega a /fundacion/animales */}
               <Button
                 type="button"
-                className="bg-green-600 hover:bg-green-700"
+                className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 shadow-md hover:shadow-xl transition-all font-bold h-12 text-base"
                 onClick={() => navigate("/fundacion/animales")}
               >
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="h-5 w-5 mr-2" />
                 Añadir nuevo perro
               </Button>
 

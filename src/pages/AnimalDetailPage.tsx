@@ -96,11 +96,21 @@ const stateBadge = (state: AState): { label: string; variant: BadgeVariant } => 
 };
 
 const ProgressBar: React.FC<{ label: string; value: number; max?: number }> = ({ label, value, max = 5 }) => (
-  <div className="flex items-center justify-between mb-2">
-    <span className="text-sm font-medium text-gray-700">{label}</span>
-    <div className="flex space-x-1">
+  <div className="space-y-2">
+    <div className="flex items-center justify-between">
+      <span className="text-sm font-bold text-gray-800">{label}</span>
+      <span className="text-xs font-semibold text-primary-600">{value}/{max}</span>
+    </div>
+    <div className="flex space-x-1.5">
       {Array.from({ length: max }, (_, i) => (
-        <div key={i} className={`w-3 h-3 rounded-full ${i < value ? "bg-primary-500" : "bg-gray-200"}`} />
+        <div 
+          key={i} 
+          className={`h-3 flex-1 rounded-full transition-all duration-300 ${
+            i < value 
+              ? "bg-gradient-to-r from-primary-500 to-primary-600 shadow-sm" 
+              : "bg-gray-200"
+          }`} 
+        />
       ))}
     </div>
   </div>
@@ -265,26 +275,20 @@ const AnimalDetailPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-surface-50">
-      {/* Top bar */}
-      <div className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <Link to="/catalog" className="flex items-center text-gray-600 hover:text-gray-900">
-              <ArrowLeft className="h-5 w-5 mr-2" />
-              Volver al catálogo
-            </Link>
-            <div className="flex items-center space-x-4 text-sm text-gray-600">
-              <span>Inicio</span>
-              <span>Catálogo</span>
-              <span>Sobre Nosotros</span>
-            </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Botón de volver - limpio y moderno */}
+        <Link 
+          to="/catalog" 
+          className="inline-flex items-center gap-2 text-gray-600 hover:text-primary-600 transition-colors mb-6 group"
+        >
+          <div className="p-2 rounded-full bg-white shadow-sm group-hover:shadow-md group-hover:bg-primary-50 transition-all">
+            <ArrowLeft className="h-5 w-5" />
           </div>
-        </div>
-      </div>
+          <span className="font-semibold">Volver al catálogo</span>
+        </Link>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Tarjeta principal */}
-        <Card className="overflow-hidden mb-8">
+        <Card className="overflow-hidden mb-8 shadow-lg">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Imagen */}
             <div className="relative">
@@ -304,23 +308,25 @@ const AnimalDetailPage: React.FC = () => {
             <div className="p-8">
               <div className="flex items-start justify-between mb-6">
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900 mb-2">{animal.name}</h1>
-                  <div className="flex items-center space-x-4 text-sm text-gray-600">
-                    <div className="flex items-center">
-                      <Calendar className="h-4 w-4 mr-1" />
-                      {formatAge(animal.ageMonths)}
+                  <h1 className="text-4xl lg:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-primary-600 to-primary-800 mb-3">{animal.name}</h1>
+                  <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
+                    <div className="flex items-center bg-primary-50 px-3 py-1.5 rounded-full">
+                      <Calendar className="h-4 w-4 mr-1.5 text-primary-600" />
+                      <span className="font-semibold text-gray-800">{formatAge(animal.ageMonths)}</span>
                     </div>
-                    <div className="flex items-center">
-                      <User className="h-4 w-4 mr-1" />
-                      {sizeLabel(attributes.size)} • {genderLabel(attributes.gender)}
+                    <div className="flex items-center bg-primary-50 px-3 py-1.5 rounded-full">
+                      <User className="h-4 w-4 mr-1.5 text-primary-600" />
+                      <span className="font-semibold text-gray-800">{sizeLabel(attributes.size)} • {genderLabel(attributes.gender)}</span>
                     </div>
-                    <div className="flex items-center">
-                      <HeartIcon className="h-4 w-4 mr-1 text-purple-600" />
-                      <span className="text-purple-600">{attributes.breed}</span>
+                    <div className="flex items-center bg-purple-50 px-3 py-1.5 rounded-full">
+                      <HeartIcon className="h-4 w-4 mr-1.5 text-purple-600" />
+                      <span className="font-semibold text-purple-700">{attributes.breed}</span>
                     </div>
                   </div>
                 </div>
-                <Heart className="h-6 w-6 text-gray-400 hover:text-red-500 cursor-pointer" />
+                <button className="p-3 rounded-full hover:bg-red-50 transition-colors group">
+                  <Heart className="h-7 w-7 text-gray-300 group-hover:text-red-500 group-hover:fill-red-500 transition-all" />
+                </button>
               </div>
 
               {/* Estado */}
@@ -335,20 +341,23 @@ const AnimalDetailPage: React.FC = () => {
               </div>
 
               {/* Estado de salud */}
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">Estado de salud</h3>
+              <div className="mb-6 bg-gradient-to-br from-green-50 to-primary-50 p-5 rounded-2xl">
+                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+                  <Stethoscope className="h-5 w-5 mr-2 text-primary-600" />
+                  Estado de salud
+                </h3>
                 <div className="grid grid-cols-3 gap-4">
-                  <div className="flex items-center text-sm">
-                    <Syringe className={`h-4 w-4 mr-2 ${animal.clinicalHistory?.lastVaccination ? 'text-green-600' : 'text-gray-400'}`} />
-                    <span className="text-gray-700">Vacunado</span>
+                  <div className="flex flex-col items-center justify-center bg-white p-4 rounded-xl shadow-sm">
+                    <Syringe className={`h-6 w-6 mb-2 ${animal.clinicalHistory?.lastVaccination ? 'text-green-500' : 'text-gray-400'}`} />
+                    <span className="text-xs font-semibold text-gray-700">Vacunado</span>
                   </div>
-                  <div className="flex items-center text-sm">
-                    <Pill className="h-4 w-4 mr-2 text-green-600" />
-                    <span className="text-gray-700">Desparasitado</span>
+                  <div className="flex flex-col items-center justify-center bg-white p-4 rounded-xl shadow-sm">
+                    <Pill className="h-6 w-6 mb-2 text-green-500" />
+                    <span className="text-xs font-semibold text-gray-700">Desparasitado</span>
                   </div>
-                  <div className="flex items-center text-sm">
-                    <Scissors className={`h-4 w-4 mr-2 ${animal.clinicalHistory?.sterilized ? 'text-green-600' : 'text-gray-400'}`} />
-                    <span className="text-gray-700">Esterilizado</span>
+                  <div className="flex flex-col items-center justify-center bg-white p-4 rounded-xl shadow-sm">
+                    <Scissors className={`h-6 w-6 mb-2 ${animal.clinicalHistory?.sterilized ? 'text-green-500' : 'text-gray-400'}`} />
+                    <span className="text-xs font-semibold text-gray-700">Esterilizado</span>
                   </div>
                 </div>
               </div>
@@ -379,12 +388,14 @@ const AnimalDetailPage: React.FC = () => {
         {/* Otras tarjetas */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Personalidad */}
-          <Card className="p-6">
-            <div className="flex items-center mb-4">
-              <User className="h-5 w-5 mr-2 text-primary-600" />
-              <h3 className="text-lg font-semibold text-gray-900">Personalidad</h3>
+          <Card className="p-6 hover:shadow-xl transition-shadow duration-300 border-2 border-gray-100 hover:border-primary-200">
+            <div className="flex items-center mb-5 pb-4 border-b-2 border-gray-100">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center mr-3">
+                <User className="h-5 w-5 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900">Personalidad</h3>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-4">
               <ProgressBar label="Sociabilidad" value={clamp5(animal.personality?.sociability)} />
               <ProgressBar label="Energía" value={clamp5(animal.personality?.energy)} />
               <ProgressBar label="Entrenamiento" value={clamp5(animal.personality?.training)} />
@@ -393,12 +404,14 @@ const AnimalDetailPage: React.FC = () => {
           </Card>
 
           {/* Compatibilidad */}
-          <Card className="p-6">
-            <div className="flex items-center mb-4">
-              <Users className="h-5 w-5 mr-2 text-primary-600" />
-              <h3 className="text-lg font-semibold text-gray-900">Compatibilidad</h3>
+          <Card className="p-6 hover:shadow-xl transition-shadow duration-300 border-2 border-gray-100 hover:border-primary-200">
+            <div className="flex items-center mb-5 pb-4 border-b-2 border-gray-100">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center mr-3">
+                <Users className="h-5 w-5 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900">Compatibilidad</h3>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-3">
               <CompatibilityItem label="Niños" value={animal.compatibility?.kids} icon={<Users className="h-4 w-4 text-gray-500" />} />
               <CompatibilityItem label="Otros perros" value={animal.compatibility?.dogs} icon={<Users className="h-4 w-4 text-gray-500" />} />
               <CompatibilityItem label="Gatos" value={animal.compatibility?.cats} icon={<Users className="h-4 w-4 text-gray-500" />} />
@@ -407,10 +420,12 @@ const AnimalDetailPage: React.FC = () => {
           </Card>
 
           {/* Historial clínico */}
-          <Card className="p-6">
-            <div className="flex items-center mb-4">
-              <Stethoscope className="h-5 w-5 mr-2 text-primary-600" />
-              <h3 className="text-lg font-semibold text-gray-900">Historial clínico</h3>
+          <Card className="p-6 hover:shadow-xl transition-shadow duration-300 border-2 border-gray-100 hover:border-primary-200">
+            <div className="flex items-center mb-5 pb-4 border-b-2 border-gray-100">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center mr-3">
+                <Stethoscope className="h-5 w-5 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900">Historial clínico</h3>
             </div>
             {medicalHistory ? (
               <>
@@ -451,13 +466,13 @@ const AnimalDetailPage: React.FC = () => {
                 </div>
                 
                 {/* Botón para ver historial completo */}
-                <div className="mt-4 pt-4 border-t border-gray-200">
+                <div className="mt-5 pt-5 border-t-2 border-gray-100">
                   <Button
                     variant="outline"
                     onClick={() => setShowFullHistory(true)}
-                    className="w-full flex items-center justify-center gap-2 text-primary-600 border-primary-300 hover:bg-primary-50"
+                    className="w-full flex items-center justify-center gap-2 text-primary-700 border-2 border-primary-300 hover:bg-primary-50 hover:border-primary-400 font-bold shadow-sm hover:shadow-md transition-all"
                   >
-                    <FileText className="h-4 w-4" />
+                    <FileText className="h-5 w-5" />
                     Mostrar historial clínico completo
                   </Button>
                 </div>
@@ -624,8 +639,8 @@ function MedicalHistoryModal({ medicalHistory, animalName, onClose }: MedicalHis
         </div>
 
         {/* Footer del modal */}
-        <div className="p-6 border-t border-gray-200 bg-gray-50">
-          <Button onClick={onClose} className="w-full bg-primary-600 hover:bg-primary-700">
+        <div className="p-6 border-t-2 border-gray-200 bg-gradient-to-r from-gray-50 to-primary-50">
+          <Button onClick={onClose} className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 font-bold shadow-md hover:shadow-lg transition-all">
             Cerrar
           </Button>
         </div>

@@ -813,22 +813,20 @@ const CatalogPage: React.FC = () => {
       <div className="min-h-screen bg-surface-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Encabezado */}
-          <div className="mb-4">
-            <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-2">
-              Encuentra tu compañero perfecto
+          <div className="mb-8">
+            <h1 className="text-4xl lg:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-primary-600 to-primary-800 mb-3 tracking-tight">
+              Encuentra tu compañero perfecto 🐾
             </h1>
 
-            <p className="text-xl text-gray-600 mb-1">
-              {filteredAnimals.length} caninos esperando un hogar lleno de amor
+            <p className="text-xl lg:text-2xl text-gray-700 font-medium mb-1">
+              {filteredAnimals.length} canino{filteredAnimals.length !== 1 ? 's' : ''} esperando un hogar lleno de amor ❤️
             </p>
 
             {skipped > 0 && (
-              <p className="text-sm text-amber-600">
+              <p className="text-sm text-amber-600 font-medium">
                 Nota: {skipped} registro{skipped === 1 ? "" : "s"} se omitieron por datos incompletos.
               </p>
             )}
-            
-
           </div>
 
 
@@ -907,56 +905,88 @@ const CatalogPage: React.FC = () => {
                     const b = stateBadge(animal.state);
                     const { age, breed, size, energy } = animal.attributes;
 
+                    // Función para truncar razas largas inteligentemente
+                    const formatBreed = (breedName: string) => {
+                      if (breedName.length <= 30) return breedName;
+                      
+                      // Si tiene paréntesis, mostrar solo la parte antes del paréntesis
+                      const withoutParens = breedName.split('(')[0].trim();
+                      if (withoutParens.length <= 30) return withoutParens;
+                      
+                      // Si tiene +, dividir y mostrar de forma más compacta
+                      if (breedName.includes('+')) {
+                        const parts = breedName.split('+').map(p => p.trim());
+                        return `${parts[0].split(' ')[0]} + ${parts[1].split(' ')[0]}`;
+                      }
+                      
+                      // Truncar con elipsis
+                      return breedName.substring(0, 27) + '...';
+                    };
+
                     return (
                       <Card
                         key={animal.id}
-                        className="overflow-hidden hover:shadow-lg transition-all duration-300"
+                        className="overflow-hidden hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 border-2 border-gray-100 hover:border-primary-200 bg-white"
                       >
-                        <div className="aspect-square overflow-hidden rounded-t-2xl relative">
+                        <div className="aspect-square overflow-hidden relative group">
+                          <div className="absolute top-3 right-3 z-10">
+                            <Badge variant={b.variant} className="shadow-lg">{b.label}</Badge>
+                          </div>
                           <img
                             src={urlFromBackend(animal.photos?.[0] || "")}
                             alt={`Foto de ${animal.name}`}
-                            className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                           />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                         </div>
 
-                        <div className="p-6">
-                          <div className="flex items-start justify-between mb-4">
-                            <div>
-                              <h3 className="text-xl font-semibold text-gray-900 mb-1">
-                                {animal.name}
-                              </h3>
-                              <p className="text-gray-600">{breed}</p>
-                            </div>
-                            <Badge variant={b.variant}>{b.label}</Badge>
+                        <div className="p-5">
+                          <div className="mb-4">
+                            <h3 className="text-2xl font-bold text-gray-900 mb-2 tracking-tight">
+                              {animal.name}
+                            </h3>
+                            <p 
+                              className="text-base font-medium text-gray-600 leading-tight"
+                              title={breed}
+                            >
+                              {formatBreed(breed)}
+                            </p>
                           </div>
 
-                          <div className="space-y-2 mb-4">
-                            <div className="flex items-center text-sm text-gray-600">
-                              <Cake className="h-4 w-4 mr-2 text-primary-500" />
-                              <span className="font-medium">{formatAge(age)}</span>
-                              <span className="mx-2">•</span>
-                              <span className="text-gray-500">{ageBucket(age)}</span>
+                          <div className="space-y-3 mb-5 bg-gradient-to-br from-gray-50 to-primary-50/30 p-4 rounded-xl">
+                            <div className="flex items-center text-sm">
+                              <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center mr-3">
+                                <Cake className="h-4 w-4 text-primary-600" />
+                              </div>
+                              <div className="flex-1">
+                                <span className="font-bold text-gray-900">{formatAge(age)}</span>
+                                <span className="mx-2 text-gray-400">•</span>
+                                <span className="text-gray-600 font-medium">{ageBucket(age)}</span>
+                              </div>
                             </div>
-                            <div className="flex items-center text-sm text-gray-600">
-                              <Ruler className="h-4 w-4 mr-2 text-primary-500" />
-                              <span className="font-medium">{sizeLabel(size)}</span>
+                            <div className="flex items-center text-sm">
+                              <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center mr-3">
+                                <Ruler className="h-4 w-4 text-primary-600" />
+                              </div>
+                              <span className="font-bold text-gray-900">{sizeLabel(size)}</span>
                             </div>
-                            <div className="flex items-center text-sm text-gray-600">
-                              <Zap className="h-4 w-4 mr-2 text-primary-500" />
-                              <span className="font-medium">{energyLabel(energy)}</span>
+                            <div className="flex items-center text-sm">
+                              <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center mr-3">
+                                <Zap className="h-4 w-4 text-primary-600" />
+                              </div>
+                              <span className="font-bold text-gray-900">{energyLabel(energy)}</span>
                             </div>
                           </div>
 
                           {/* Badges de características destacadas */}
-                          <div className="flex flex-wrap gap-1.5 mb-3">
+                          <div className="flex flex-wrap gap-2 mb-4">
                             {animal.clinicalHistory?.sterilized && (
-                              <Badge size="sm" variant="success">Esterilizado</Badge>
+                              <Badge size="sm" variant="success" className="font-semibold">✓ Esterilizado</Badge>
                             )}
-                            {animal.compatibility?.kids && <Badge size="sm">Con niños</Badge>}
-                            {animal.compatibility?.cats && <Badge size="sm">Con gatos</Badge>}
-                            {animal.compatibility?.dogs && <Badge size="sm">Con perros</Badge>}
-                            {animal.compatibility?.apartment && <Badge size="sm">Apto depto</Badge>}
+                            {animal.compatibility?.kids && <Badge size="sm" className="font-semibold">👶 Con niños</Badge>}
+                            {animal.compatibility?.cats && <Badge size="sm" className="font-semibold">🐱 Con gatos</Badge>}
+                            {animal.compatibility?.dogs && <Badge size="sm" className="font-semibold">🐕 Con perros</Badge>}
+                            {animal.compatibility?.apartment && <Badge size="sm" className="font-semibold">🏢 Apto depto</Badge>}
                           </div>
 
                           {/* Personalidad (si existe) */}
@@ -995,20 +1025,20 @@ const CatalogPage: React.FC = () => {
                             </div>
                           )}
 
-                          <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                            {animal.clinicalSummary || "Salud validada y lista para adopción"}
+                          <p className="text-gray-600 text-sm mb-5 line-clamp-2 leading-relaxed italic">
+                            {animal.clinicalSummary || "🩺 Salud validada y lista para adopción"}
                           </p>
 
                           <div className="flex gap-2">
                             <Link to={`/adoptar/${animal.id}`} className="flex-1">
-                              <Button variant="outline" size="sm" className="w-full h-9 text-xs">
+                              <Button variant="outline" size="sm" className="w-full h-10 text-sm font-semibold border-2 hover:border-primary-600 hover:bg-primary-50 transition-all">
                                 <Eye className="h-4 w-4 mr-2" />
                                 Ver más
                               </Button>
                             </Link>
                             <Button 
                               size="sm" 
-                              className="flex-1 h-9 text-xs"
+                              className="flex-1 h-10 text-sm font-bold bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 shadow-md hover:shadow-xl transition-all"
                               onClick={() => handleAdoptClick(animal.id)}
                               disabled={animal.state === "ADOPTED"}
                               title={animal.state === "ADOPTED" ? "Este animal ya ha sido adoptado" : "Adoptar"}
