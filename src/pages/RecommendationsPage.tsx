@@ -20,7 +20,7 @@ import toast from "react-hot-toast";
 type MatchResult = {
   animalId: string;
   animalName: string;
-  distance: number; // Distancia Manhattan del KNN
+  distance: number; // Distancia Manhattan del sistema de matching
   score: number; // Score 0-100 convertido de distancia
   rank: number; // Posición en el ranking
   isTopK: boolean; // Si está en los K mejores vecinos
@@ -95,8 +95,55 @@ const RecommendationsPage: React.FC = () => {
     s === "SMALL" ? "Pequeño" : s === "MEDIUM" ? "Mediano" : "Grande";
   const energyLabel = (e: string) => 
     e === "LOW" ? "Tranquilo" : e === "MEDIUM" ? "Moderado" : "Activo";
-  const ageBucket = (years: number) =>
-    years < 1 ? "Cachorro" : years < 3 ? "Joven" : years < 7 ? "Adulto" : "Senior";
+  
+  // Función para formatear la edad correctamente
+  const formatAge = (animal: any) => {
+    const ageMonths = animal.ageMonths;
+    const ageYears = animal.attributes?.age;
+    
+    // Si tenemos edad en meses, usarla
+    if (ageMonths !== undefined && ageMonths !== null) {
+      if (ageMonths < 12) {
+        return `${ageMonths} ${ageMonths === 1 ? 'mes' : 'meses'}`;
+      } else {
+        const years = Math.floor(ageMonths / 12);
+        const months = ageMonths % 12;
+        if (months === 0) {
+          return `${years} ${years === 1 ? 'año' : 'años'}`;
+        }
+        return `${years} ${years === 1 ? 'año' : 'años'} y ${months} ${months === 1 ? 'mes' : 'meses'}`;
+      }
+    }
+    
+    // Fallback a años si no hay meses
+    if (ageYears !== undefined && ageYears !== null) {
+      if (ageYears < 1) {
+        // Si es menor a 1 año, mostrar en meses aproximados
+        const approxMonths = Math.round(ageYears * 12);
+        return approxMonths > 0 ? `${approxMonths} ${approxMonths === 1 ? 'mes' : 'meses'}` : 'Cachorro';
+      }
+      return `${ageYears} ${ageYears === 1 ? 'año' : 'años'}`;
+    }
+    
+    return 'Edad no especificada';
+  };
+
+  const getAgeBucket = (animal: any) => {
+    const ageMonths = animal.ageMonths || (animal.attributes?.age ? animal.attributes.age * 12 : 0);
+    if (ageMonths < 12) return "Cachorro";
+    if (ageMonths < 36) return "Joven";
+    if (ageMonths < 84) return "Adulto";
+    return "Senior";
+  };
+
+  // Función para obtener nivel de compatibilidad amigable
+  const getCompatibilityLevel = (score: number) => {
+    if (score >= 80) return { text: "Muy Alta", color: "text-green-600", bg: "bg-green-100", stars: 5 };
+    if (score >= 65) return { text: "Alta", color: "text-emerald-600", bg: "bg-emerald-100", stars: 4 };
+    if (score >= 50) return { text: "Buena", color: "text-blue-600", bg: "bg-blue-100", stars: 3 };
+    if (score >= 35) return { text: "Moderada", color: "text-orange-600", bg: "bg-orange-100", stars: 2 };
+    return { text: "Básica", color: "text-gray-600", bg: "bg-gray-100", stars: 1 };
+  };
 
   if (loading) {
     return (
@@ -165,7 +212,7 @@ const RecommendationsPage: React.FC = () => {
             {matches.length} canino{matches.length !== 1 ? "s" : ""} seleccionado{matches.length !== 1 ? "s" : ""} especialmente para ti
           </p>
           <p className="text-sm text-gray-500 mt-1">
-            Basado en tu perfil usando K-Nearest Neighbors (K=15) entrenado con dataset real
+            Basado en tu perfil usando nuestro Sistema de Matching Inteligente
           </p>
         </div>
 
@@ -235,7 +282,7 @@ const RecommendationsPage: React.FC = () => {
               const { animal } = match;
               const finalScore = match.score || match.matchScore || 0;
               const scoreBadge = getScoreBadge(finalScore);
-              const { age, breed, size, energy } = animal.attributes;
+              const { breed, size, energy } = animal.attributes;
 
               return (
                 <Card
@@ -269,7 +316,6 @@ const RecommendationsPage: React.FC = () => {
                     <div className="absolute top-4 left-4">
                       <Badge variant={scoreBadge.variant}>
                         {scoreBadge.label}
-                        {match.isTopK && " • Top K"}
                       </Badge>
                     </div>
                   </div>
@@ -286,7 +332,7 @@ const RecommendationsPage: React.FC = () => {
                     <div className="space-y-2 mb-4">
                       <div className="flex items-center text-sm text-gray-600">
                         <Calendar className="h-4 w-4 mr-2 text-gray-400" />
-                        {age} {age === 1 ? "año" : "años"} • {ageBucket(age)}
+                        {formatAge(animal)} • {getAgeBucket(animal)}
                       </div>
                       <div className="flex items-center text-sm text-gray-600">
                         <MapPin className="h-4 w-4 mr-2 text-gray-400" />
@@ -294,30 +340,49 @@ const RecommendationsPage: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Información del KNN */}
-                    <div className="mb-4 p-3 bg-gradient-to-r from-primary-50 to-blue-50 rounded-lg border border-primary-200">
-                      <p className="text-xs font-semibold text-primary-900 mb-1 flex items-center gap-1">
-                        <Info className="h-3 w-3" />
-                        Match KNN
-                      </p>
-                      <div className="grid grid-cols-2 gap-2 text-xs">
-                        <div>
-                          <span className="text-gray-600">Distancia:</span>
-                          <span className="font-medium text-gray-900 ml-1">
-                            {match.distance?.toFixed(2) || 'N/A'}
-                          </span>
+                    {/* Información de Compatibilidad - Mejorada */}
+                    {(() => {
+                      const compat = getCompatibilityLevel(finalScore);
+                      return (
+                        <div className={`mb-4 p-3 ${compat.bg} rounded-lg border border-primary-100`}>
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="text-xs font-semibold text-gray-700 flex items-center gap-1">
+                              <Heart className="h-3 w-3 text-primary-500" />
+                              Compatibilidad
+                            </p>
+                            <span className={`text-xs font-bold ${compat.color}`}>
+                              {compat.text}
+                            </span>
+                          </div>
+                          
+                          {/* Barra de progreso visual */}
+                          <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
+                            <div 
+                              className="h-2 rounded-full bg-gradient-to-r from-primary-400 to-primary-600 transition-all duration-500"
+                              style={{ width: `${Math.min(100, finalScore)}%` }}
+                            />
+                          </div>
+                          
+                          {/* Estrellas */}
+                          <div className="flex items-center justify-center gap-0.5">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <svg
+                                key={star}
+                                className={`h-4 w-4 ${star <= compat.stars ? 'text-yellow-400' : 'text-gray-300'}`}
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                              >
+                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                              </svg>
+                            ))}
+                          </div>
+                          
+                          <p className="text-[10px] text-gray-500 mt-2 text-center">
+                            Basado en tus preferencias de adopción
+                          </p>
                         </div>
-                        <div>
-                          <span className="text-gray-600">Ranking:</span>
-                          <span className="font-medium text-gray-900 ml-1">
-                            #{match.rank || '?'}
-                          </span>
-                        </div>
-                      </div>
-                      <p className="text-[10px] text-gray-500 mt-1">
-                        Calculado con K-Nearest Neighbors (distancia Manhattan)
-                      </p>
-                    </div>
+                      );
+                    })()}
 
                     {/* Razones del match (si existen - legacy) */}
                     {match.matchReasons && match.matchReasons.length > 0 && (

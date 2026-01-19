@@ -46,7 +46,7 @@ type DisplayAnimal = {
   personality?: { sociability?: number; energy?: number; training?: number; adaptability?: number };
   compatibility?: { kids?: boolean; cats?: boolean; dogs?: boolean; apartment?: boolean };
   clinicalHistory?: { lastVaccination?: string | null; sterilized?: boolean; conditions?: string | null };
-  matchScore?: number; // Score de compatibilidad del sistema KNN (0-100)
+  matchScore?: number; // Score de compatibilidad del sistema de matching (0-100)
 };
 
 type LocalFilters = {
@@ -286,7 +286,7 @@ const CatalogPage: React.FC = () => {
     };
   }, []);
 
-  // Cargar recomendaciones KNN si el usuario tiene preferencias completadas (ordenamiento silencioso)
+  // Cargar recomendaciones si el usuario tiene preferencias completadas (ordenamiento silencioso)
   useEffect(() => {
     if (!userLoaded) return;
     if (!user || user.role !== "ADOPTANTE") return;
@@ -301,13 +301,13 @@ const CatalogPage: React.FC = () => {
         
         setHasUserPreferences(true);
         
-        // Cargar recomendaciones del sistema KNN (para ordenamiento silencioso)
+        // Cargar recomendaciones del sistema de matching (para ordenamiento silencioso)
         try {
           const response = await apiClient.getRecommendations();
           const matches = response?.matches || [];
           
           if (Array.isArray(matches) && matches.length > 0) {
-            // Crear mapas de datos KNN por ID de animal (para ordenamiento silencioso)
+            // Crear mapas de datos de matching por ID de animal (para ordenamiento silencioso)
             const scoresMap = new Map<string, number>();
             const distancesMap = new Map<string, number>();
             const rankingsMap = new Map<string, number>();
@@ -315,7 +315,7 @@ const CatalogPage: React.FC = () => {
             matches.forEach((match: any) => {
               // El backend devuelve animalId directamente, o dentro de animal
               const animalId = String(match.animalId || match.animal?.id || match.animal?._id);
-              // Usar datos del nuevo KNN
+              // Usar datos del sistema de matching
               const score = match.score || match.matchScore || 0;
               const distance = match.distance || 0;
               const rank = match.rank || 0;
@@ -339,7 +339,7 @@ const CatalogPage: React.FC = () => {
     })();
   }, [user, animals.length, userLoaded]);
 
-  // Filtro en memoria y aplicar datos de matching KNN
+  // Filtro en memoria y aplicar datos de matching
   const filteredAnimals = useMemo(() => {
     let list = animals.map(animal => ({
       ...animal,

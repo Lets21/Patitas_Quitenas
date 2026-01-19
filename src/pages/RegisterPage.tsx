@@ -80,7 +80,7 @@ const registerSchema = z
       }, "Debes ser mayor de 18 años para adoptar")
       .refine((date) => new Date(date) <= new Date(), "La fecha no puede ser futura"),
     terms: z.boolean().refine((v) => v === true, "Debes aceptar los términos y condiciones"),
-    // Preferencias para matching con KNN
+    // Preferencias para sistema de matching
     preferredSize: z.enum(["SMALL", "MEDIUM", "LARGE"]),
     preferredEnergy: z.enum(["LOW", "MEDIUM", "HIGH"]),
     hasChildren: z.boolean(),
@@ -487,9 +487,8 @@ export const RegisterPage: React.FC = () => {
                     <div>
                       <h3 className="font-semibold text-primary-900">¡Casi listo! 🐾</h3>
                       <p className="mt-1 text-sm text-primary-800">
-                        Nuestro sistema de inteligencia artificial usa el <strong>Modelo KNN</strong> para
-                        analizar tus respuestas y encontrar el perrito que mejor se adapte a tu estilo de
-                        vida. ¡Solo faltan unas preguntas!
+                        Nuestro <strong>Sistema de Matching Inteligente</strong> analiza tus respuestas
+                        y encuentra el perrito que mejor se adapte a tu estilo de vida. ¡Solo faltan unas preguntas!
                       </p>
                     </div>
                   </div>

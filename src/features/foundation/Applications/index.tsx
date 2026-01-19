@@ -413,7 +413,7 @@ export default function FoundationApplicationsPage() {
                                   </span>
                                 </div>
                                 
-                                {/* Explicación KNN */}
+                                {/* Explicación del Análisis */}
                                 {(a as any).mlExplanation && (
                                   <div className="space-y-2">
                                     <div className="bg-white/60 backdrop-blur-sm rounded-md p-3 border border-indigo-100">
@@ -615,7 +615,7 @@ export default function FoundationApplicationsPage() {
                                 </span>
                               </div>
                               
-                              {/* Explicación KNN */}
+                              {/* Explicación del Análisis */}
                               {(a as any).mlExplanation && (
                                 <div className="space-y-2">
                                   <div className="bg-white/60 backdrop-blur-sm rounded-md p-3 border border-indigo-100">

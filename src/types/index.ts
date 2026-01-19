@@ -41,7 +41,7 @@ export interface UserProfile {
   hasYard?: boolean;
   hasChildren?: boolean;
   hasOtherPets?: boolean;
-  preferences?: UserPreferences; // Preferencias para matching KNN
+  preferences?: UserPreferences; // Preferencias para sistema de matching
 }
 
 // ---------- Animales ----------
@@ -143,12 +143,12 @@ export interface Application {
   timeline: TimelineEvent[];
   foundationNotes?: string;
   clinicApproval?: boolean;
-  knnScore?: number;
-  knnFactors?: string[];
+  matchingScore?: number;
+  matchingFactors?: string[];
   // Campos ML Prediction
   propensityPred?: 0 | 1;        // 0 = No propenso, 1 = Propenso a adoptar
   propensityProba?: number;      // Probabilidad 0-1
-  mlVersion?: string;            // Versión del modelo (ej. "knn-v1")
+  mlVersion?: string;            // Versión del modelo (ej. "matching-v1")
   createdAt: string;
   updatedAt: string;
 }

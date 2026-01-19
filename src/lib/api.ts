@@ -676,14 +676,14 @@ async getAnimal(id: string) {
     return res.data;
   }
 
-  // ===== Matching con KNN =====
+  // ===== Sistema de Matching =====
   async getRecommendations(limit?: number) {
     const params = limit ? `?limit=${limit}` : "";
     return request<{
       matches: Array<{
         animalId: string;
         animalName: string;
-        // Nuevo formato KNN
+        // Formato del sistema de matching
         distance: number;
         score: number;
         rank: number;
