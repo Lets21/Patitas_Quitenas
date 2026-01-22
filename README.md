@@ -213,13 +213,3 @@ Este frontend forma parte del desarrollo de una **tesis universitaria**, orienta
 * Integrar tecnología con impacto social
 * Diseñar sistemas éticos y responsables
 * Facilitar procesos de adopción animal mediante tecnología
-
----
-
-## 👤 Autor
-
-**Nombre del proyecto:** Huellitas Quiteñas
-**Tipo:** WebApp – Frontend
-**Tecnologías:** React, TypeScript, Vite
-**Propósito:** Académico y social
-
