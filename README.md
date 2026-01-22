@@ -223,5 +223,3 @@ Este frontend forma parte del desarrollo de una **tesis universitaria**, orienta
 **Tecnologías:** React, TypeScript, Vite
 **Propósito:** Académico y social
 
-* O hacerlo **más orientado a producto/startup**
-* O crear también el **README del backend** para que ambos queden alineados 🔥
