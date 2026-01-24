@@ -4,7 +4,7 @@ import { apiClient, urlFromBackend } from "@/lib/api";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { PawPrint, CheckCircle2, Clock4, Home, MailWarning, ListChecks, Calendar, CalendarCheck } from "lucide-react";
+import { PawPrint, CheckCircle2, Clock4, Home, MailWarning, ListChecks, Calendar, CalendarCheck, MessageCircle } from "lucide-react";
 import MyApplicationResponsesModal from "@/features/application/MyApplicationResponsesModal";
 import type { Appointment } from "@/types";
 
@@ -320,6 +320,18 @@ export default function MyApplicationsPage() {
                     </div>
                   )}
 
+                  {a.status === "HOME_VISIT" && (
+                    <div className="text-sm text-purple-900 bg-purple-50 border border-purple-100 rounded-2xl p-4">
+                      <div className="font-semibold mb-2 flex items-center gap-2">
+                        <Home className="h-4 w-4" />
+                        Quieren conocerte mejor
+                      </div>
+                      <p className="leading-relaxed">
+                        La fundación quiere coordinar una visita domiciliaria para conocerte mejor y asegurarse de que tu hogar sea el ambiente ideal para tu futuro compañero.
+                      </p>
+                    </div>
+                  )}
+
                   <div className="flex justify-between items-center gap-4">
                     <Button
                       variant="outline"
@@ -330,6 +342,24 @@ export default function MyApplicationsPage() {
                       <ListChecks className="h-4 w-4" />
                       Ver cuestionario
                     </Button>
+                    {a.status === "HOME_VISIT" && (() => {
+                      const dogName = dog?.name || "perrito";
+                      const whatsappMessage = encodeURIComponent(
+                        `Hola! Me gustaría coordinar la visita domiciliaria para la adopción de ${dogName}. Mi nombre es [tu nombre] y mi solicitud fue aprobada para esta etapa. ¿Cuándo podríamos coordinar la visita? Gracias!`
+                      );
+                      const whatsappURL = `https://wa.me/593960152853?text=${whatsappMessage}`;
+
+                      return (
+                        <Button
+                          size="sm"
+                          className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white"
+                          onClick={() => window.open(whatsappURL, '_blank')}
+                        >
+                          <MessageCircle className="h-4 w-4" />
+                          Coordinar por WhatsApp
+                        </Button>
+                      );
+                    })()}
                     {a.status === "APPROVED" && (() => {
                       const appointment = appointments.find(
                         (apt) => apt.applicationId === a._id
