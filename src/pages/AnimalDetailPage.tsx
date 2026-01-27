@@ -341,23 +341,23 @@ const AnimalDetailPage: React.FC = () => {
               </div>
 
               {/* Estado de salud */}
-              <div className="mb-6 bg-gradient-to-br from-green-50 to-primary-50 p-5 rounded-2xl">
-                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
-                  <Stethoscope className="h-5 w-5 mr-2 text-primary-600" />
+              <div className="mb-6 bg-gradient-to-br from-green-50 to-primary-50 p-4 sm:p-5 rounded-2xl">
+                <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-3 sm:mb-4 flex items-center">
+                  <Stethoscope className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-primary-600" />
                   Estado de salud
                 </h3>
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="flex flex-col items-center justify-center bg-white p-4 rounded-xl shadow-sm">
-                    <Syringe className={`h-6 w-6 mb-2 ${animal.clinicalHistory?.lastVaccination ? 'text-green-500' : 'text-gray-400'}`} />
-                    <span className="text-xs font-semibold text-gray-700">Vacunado</span>
+                <div className="grid grid-cols-1 xs:grid-cols-3 gap-3 sm:gap-4">
+                  <div className="flex flex-col items-center justify-center bg-white p-3 sm:p-4 rounded-xl shadow-sm transition-all hover:shadow-md">
+                    <Syringe className={`h-5 w-5 sm:h-6 sm:w-6 mb-1.5 sm:mb-2 ${animal.clinicalHistory?.lastVaccination ? 'text-green-500' : 'text-gray-400'}`} />
+                    <span className="text-xs sm:text-sm font-semibold text-gray-700 text-center">Vacunado</span>
                   </div>
-                  <div className="flex flex-col items-center justify-center bg-white p-4 rounded-xl shadow-sm">
-                    <Pill className="h-6 w-6 mb-2 text-green-500" />
-                    <span className="text-xs font-semibold text-gray-700">Desparasitado</span>
+                  <div className="flex flex-col items-center justify-center bg-white p-3 sm:p-4 rounded-xl shadow-sm transition-all hover:shadow-md">
+                    <Pill className="h-5 w-5 sm:h-6 sm:w-6 mb-1.5 sm:mb-2 text-green-500" />
+                    <span className="text-xs sm:text-sm font-semibold text-gray-700 text-center">Desparasitado</span>
                   </div>
-                  <div className="flex flex-col items-center justify-center bg-white p-4 rounded-xl shadow-sm">
-                    <Scissors className={`h-6 w-6 mb-2 ${animal.clinicalHistory?.sterilized ? 'text-green-500' : 'text-gray-400'}`} />
-                    <span className="text-xs font-semibold text-gray-700">Esterilizado</span>
+                  <div className="flex flex-col items-center justify-center bg-white p-3 sm:p-4 rounded-xl shadow-sm transition-all hover:shadow-md">
+                    <Scissors className={`h-5 w-5 sm:h-6 sm:w-6 mb-1.5 sm:mb-2 ${animal.clinicalHistory?.sterilized ? 'text-green-500' : 'text-gray-400'}`} />
+                    <span className="text-xs sm:text-sm font-semibold text-gray-700 text-center">Esterilizado</span>
                   </div>
                 </div>
               </div>

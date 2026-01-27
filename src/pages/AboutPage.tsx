@@ -1,9 +1,12 @@
 import React from 'react';
 import { Heart, Shield, Home, Stethoscope, Users, MapPin } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 
 const AboutPage: React.FC = () => {
+  const navigate = useNavigate();
+  
   const principios = [
     {
       icon: <Heart className="w-6 h-6 text-green-600" />,
@@ -194,19 +197,16 @@ const AboutPage: React.FC = () => {
           </p>
           <div className="flex justify-center">
             <Button
-  size="lg"
-  className="rounded-full border-2 border-white text-white bg-transparent
-             px-10 py-3 font-semibold shadow-[0_8px_20px_rgba(0,0,0,0.25)]
-             hover:bg-orange-500 hover:border-orange-500 hover:text-white
-             transition-colors duration-200
-             focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-orange-400/60"
->
-  Adoptar Ahora
-</Button>
-
-
-
-
+              size="lg"
+              onClick={() => navigate('/catalog')}
+              className="rounded-full border-2 border-white text-white bg-transparent
+                         px-10 py-3 font-semibold shadow-[0_8px_20px_rgba(0,0,0,0.25)]
+                         hover:bg-orange-500 hover:border-orange-500 hover:text-white
+                         transition-colors duration-200
+                         focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-orange-400/60"
+            >
+              Adoptar Ahora
+            </Button>
           </div>
         </div>
       </div>
